@@ -47,7 +47,7 @@ function IncomePage() {
 
   const del = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("expenses" === "" ? "expenses" : "incomes").delete().eq("id", id);
+      const { error } = await supabase.from("incomes").delete().eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => { toast.success(t("deleted")); qc.invalidateQueries({ queryKey: ["incomes"] }); },
