@@ -62,7 +62,7 @@ function SalaryPage() {
         <div className="space-y-3">
           {staff.map((s) => {
             const existing = salaries.find(x => x.staff_id === s.id);
-            return <SalaryRow key={s.id} staff={s} existing={existing} onPay={(p) => pay.mutate({ staff_id: s.id, ...p })} />;
+            return <SalaryRow key={s.id} staff={s} existing={existing} onPay={(p: { base_salary: number; deductions: number; bonus: number }) => pay.mutate({ staff_id: s.id, ...p })} />;
           })}
         </div>
         <div className="mt-4 pt-4 border-t flex justify-between font-semibold">
