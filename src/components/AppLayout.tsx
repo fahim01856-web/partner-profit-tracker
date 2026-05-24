@@ -1,47 +1,60 @@
 import { Link, useRouter, Outlet } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
+import { useI18n } from "@/lib/i18n";
 import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
-  Wallet, Handshake, FileBarChart, LogOut, Menu, X
+  Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
 
-const nav = [
-  { to: "/dashboard", label: "ড্যাশবোর্ড", icon: LayoutDashboard },
-  { to: "/income", label: "আয় এন্ট্রি", icon: TrendingUp },
-  { to: "/expense", label: "খরচ ভাউচার", icon: Receipt },
-  { to: "/staff", label: "স্টাফ", icon: Users },
-  { to: "/attendance", label: "হাজিরা", icon: ClipboardCheck },
-  { to: "/salary", label: "বেতন হিসাব", icon: Wallet },
-  { to: "/partners", label: "পার্টনার শেয়ার", icon: Handshake },
-  { to: "/reports", label: "রিপোর্ট", icon: FileBarChart },
-] as const;
-
 export function AppLayout() {
   const { user, signOut } = useAuth();
+  const { t, lang, setLang } = useI18n();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const path = router.state.location.pathname;
 
+  const nav = [
+    { to: "/dashboard", label: t("nav_dashboard"), icon: LayoutDashboard },
+    { to: "/income", label: t("nav_income"), icon: TrendingUp },
+    { to: "/expense", label: t("nav_expense"), icon: Receipt },
+    { to: "/staff", label: t("nav_staff"), icon: Users },
+    { to: "/attendance", label: t("nav_attendance"), icon: ClipboardCheck },
+    { to: "/salary", label: t("nav_salary"), icon: Wallet },
+    { to: "/partners", label: t("nav_partners"), icon: Handshake },
+    { to: "/reports", label: t("nav_reports"), icon: FileBarChart },
+  ] as const;
+
+  const LangToggle = ({ className = "" }: { className?: string }) => (
+    <button
+      onClick={() => setLang(lang === "bn" ? "en" : "bn")}
+      className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border border-sidebar-border hover:bg-sidebar-accent/60 transition", className)}
+      title="Switch language"
+    >
+      <Languages className="w-3.5 h-3.5" />
+      {lang === "bn" ? "EN" : "বাং"}
+    </button>
+  );
+
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Sidebar */}
       <aside className={cn(
         "fixed lg:static inset-y-0 left-0 z-40 w-72 bg-sidebar text-sidebar-foreground transform transition-transform lg:translate-x-0 no-print",
         open ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="p-5 border-b border-sidebar-border">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-lg flex items-center justify-center text-xl font-bold" style={{ background: 'var(--gradient-gold)', color: 'var(--gold-foreground)' }}>
-              ইব
+            <div className="w-11 h-11 rounded-lg flex items-center justify-center text-xl font-bold shrink-0" style={{ background: 'var(--gradient-gold)', color: 'var(--gold-foreground)' }}>
+              {lang === "bn" ? "ইব" : "IB"}
             </div>
-            <div>
-              <div className="font-bold text-sm leading-tight">ইসলামী ব্যাংক</div>
-              <div className="text-xs opacity-80">এজেন্ট আউটলেট ১২১/১১</div>
-              <div className="text-[10px] opacity-60">ফকির বাজার, বুড়িচং</div>
+            <div className="min-w-0 flex-1">
+              <div className="font-bold text-sm leading-tight truncate">{t("bankShort")}</div>
+              <div className="text-xs opacity-80 truncate">{t("outlet")}</div>
+              <div className="text-[10px] opacity-60 truncate">{t("location")}</div>
             </div>
+            <LangToggle />
           </div>
         </div>
         <nav className="p-3 space-y-1">
@@ -71,7 +84,7 @@ export function AppLayout() {
             onClick={() => signOut()}
             className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm hover:bg-sidebar-accent/60"
           >
-            <LogOut className="w-4 h-4" /> লগআউট
+            <LogOut className="w-4 h-4" /> {t("logout")}
           </button>
         </div>
       </aside>
@@ -83,8 +96,8 @@ export function AppLayout() {
           <button onClick={() => setOpen(true)} className="p-1.5 rounded-md hover:bg-muted">
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <div className="font-semibold text-sm">এজেন্ট ব্যাংক হিসাব</div>
-          <div className="w-7" />
+          <div className="font-semibold text-sm">{t("appTitle")}</div>
+          <LangToggle />
         </header>
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
           <Outlet />
