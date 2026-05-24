@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, ClientOnly } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -346,42 +346,48 @@ function PartnersPage() {
         <Card className="p-5 lg:col-span-2">
           <h3 className="font-semibold mb-3">{t("pp_monthly_chart")}</h3>
           <div className="h-72">
-            {chartData.length ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="name" fontSize={11} />
-                  <YAxis fontSize={11} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="p1" name={lang === "bn" ? "পার্টনার ১" : "Partner 1"} fill="hsl(150 60% 35%)" />
-                  <Bar dataKey="p2" name={lang === "bn" ? "পার্টনার ২" : "Partner 2"} fill="hsl(42 80% 50%)" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full grid place-items-center text-sm text-muted-foreground">{t("pp_no_entries")}</div>
-            )}
+            <ClientOnly fallback={<div className="h-full grid place-items-center text-sm text-muted-foreground">…</div>}>
+              {chartData.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="name" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="p1" name={lang === "bn" ? "পার্টনার ১" : "Partner 1"} fill="hsl(150 60% 35%)" />
+                    <Bar dataKey="p2" name={lang === "bn" ? "পার্টনার ২" : "Partner 2"} fill="hsl(42 80% 50%)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full grid place-items-center text-sm text-muted-foreground">{t("pp_no_entries")}</div>
+              )}
+            </ClientOnly>
           </div>
         </Card>
         <Card className="p-5">
           <h3 className="font-semibold mb-3">{t("pp_share_chart")}</h3>
           <div className="h-72">
-            {stats.totalProfit > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
-                    {pieData.map((_, i) => <Cell key={i} fill={pieColors[i]} />)}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full grid place-items-center text-sm text-muted-foreground">{t("pp_no_entries")}</div>
-            )}
+            <ClientOnly fallback={<div className="h-full grid place-items-center text-sm text-muted-foreground">…</div>}>
+              {stats.totalProfit > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90} label>
+                      {pieData.map((_, i) => <Cell key={i} fill={pieColors[i]} />)}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full grid place-items-center text-sm text-muted-foreground">{t("pp_no_entries")}</div>
+              )}
+            </ClientOnly>
           </div>
         </Card>
       </div>
+
+
 
       {/* PRINT AREA — banking style sheet */}
       <div className="print-area">
