@@ -14,7 +14,249 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      attendance: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          note: string | null
+          staff_id: string
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          note?: string | null
+          staff_id: string
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          staff_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expenses: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string | null
+          id: string
+          note: string | null
+          paid_to: string | null
+          voucher_no: string
+        }
+        Insert: {
+          amount?: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          note?: string | null
+          paid_to?: string | null
+          voucher_no: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          note?: string | null
+          paid_to?: string | null
+          voucher_no?: string
+        }
+        Relationships: []
+      }
+      incomes: {
+        Row: {
+          amount: number
+          category: string
+          created_at: string
+          created_by: string | null
+          date: string
+          description: string | null
+          id: string
+        }
+        Insert: {
+          amount?: number
+          category: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+        }
+        Update: {
+          amount?: number
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      partner_withdrawals: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          note: string | null
+          partner_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          partner_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          partner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_withdrawals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          share_percent: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          share_percent?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          share_percent?: number
+        }
+        Relationships: []
+      }
+      salaries: {
+        Row: {
+          base_salary: number
+          bonus: number
+          created_at: string
+          deductions: number
+          id: string
+          month: number
+          net_paid: number
+          note: string | null
+          paid_on: string | null
+          staff_id: string
+          year: number
+        }
+        Insert: {
+          base_salary?: number
+          bonus?: number
+          created_at?: string
+          deductions?: number
+          id?: string
+          month: number
+          net_paid?: number
+          note?: string | null
+          paid_on?: string | null
+          staff_id: string
+          year: number
+        }
+        Update: {
+          base_salary?: number
+          bonus?: number
+          created_at?: string
+          deductions?: number
+          id?: string
+          month?: number
+          net_paid?: number
+          note?: string | null
+          paid_on?: string | null
+          staff_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "salaries_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          joining_date: string | null
+          monthly_salary: number
+          name: string
+          phone: string | null
+          position: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          joining_date?: string | null
+          monthly_salary?: number
+          name: string
+          phone?: string | null
+          position?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          joining_date?: string | null
+          monthly_salary?: number
+          name?: string
+          phone?: string | null
+          position?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
