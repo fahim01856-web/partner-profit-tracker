@@ -4,6 +4,7 @@ import {
   HeadContent, Scripts,
 } from "@tanstack/react-router";
 import { AuthProvider } from "@/lib/auth-context";
+import { I18nProvider } from "@/lib/i18n";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -74,9 +75,11 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Outlet />
-      </AuthProvider>
+      <I18nProvider>
+        <AuthProvider>
+          <Outlet />
+        </AuthProvider>
+      </I18nProvider>
     </QueryClientProvider>
   );
 }

@@ -2,12 +2,15 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { fmtBDT, toBn, bnMonths, monthRange } from "@/lib/format";
+import { useFmt, monthRange } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import { TrendingUp, TrendingDown, Wallet, Handshake } from "lucide-react";
 
 export const Route = createFileRoute("/_app/dashboard")({ component: Dashboard });
 
 function Dashboard() {
+  const { t } = useI18n();
+  const fmt = useFmt();
   const now = new Date();
   const { start, end } = monthRange(now.getFullYear(), now.getMonth() + 1);
 
@@ -26,18 +29,18 @@ function Dashboard() {
   });
 
   const stats = [
-    { label: "মাসিক আয়", value: fmtBDT(data?.totalInc ?? 0), icon: TrendingUp, color: "text-success", bg: "bg-success/10" },
-    { label: "মাসিক ব্যয়", value: fmtBDT(data?.totalExp ?? 0), icon: TrendingDown, color: "text-destructive", bg: "bg-destructive/10" },
-    { label: "নেট প্রফিট", value: fmtBDT(data?.profit ?? 0), icon: Wallet, color: "text-primary", bg: "bg-primary/10" },
-    { label: "পার্টনার", value: toBn(data?.partners.length ?? 0) + " জন", icon: Handshake, color: "text-gold-foreground", bg: "bg-gold/20" },
+    { label: t("monthlyIncome"), value: fmt.bdt(data?.totalInc ?? 0), icon: TrendingUp, color: "text-success", bg: "bg-success/10" },
+    { label: t("monthlyExpense"), value: fmt.bdt(data?.totalExp ?? 0), icon: TrendingDown, color: "text-destructive", bg: "bg-destructive/10" },
+    { label: t("netProfit"), value: fmt.bdt(data?.profit ?? 0), icon: Wallet, color: "text-primary", bg: "bg-primary/10" },
+    { label: t("partners"), value: `${fmt.num(data?.partners.length ?? 0)} ${t("persons")}`.trim(), icon: Handshake, color: "text-gold-foreground", bg: "bg-gold/20" },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold">ড্যাশবোর্ড</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold">{t("nav_dashboard")}</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          {bnMonths[now.getMonth()]} {toBn(now.getFullYear())} — সারসংক্ষেপ
+          {fmt.months[now.getMonth()]} {fmt.num(now.getFullYear())} — {t("dashboard_summary")}
         </p>
       </div>
 
@@ -54,7 +57,7 @@ function Dashboard() {
       </div>
 
       <Card className="p-6">
-        <h2 className="font-semibold mb-4">পার্টনারদের চলতি মাসের শেয়ার (নেট প্রফিট থেকে)</h2>
+        <h2 className="font-semibold mb-4">{t("partnerShareTitle")}</h2>
         <div className="space-y-3">
           {(data?.partners ?? []).map((p) => {
             const share = ((data?.profit ?? 0) * Number(p.share_percent)) / 100;
@@ -62,9 +65,9 @@ function Dashboard() {
               <div key={p.id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
                 <div>
                   <div className="font-semibold">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">শেয়ার: {toBn(p.share_percent)}%</div>
+                  <div className="text-xs text-muted-foreground">{t("share")}: {fmt.num(p.share_percent)}%</div>
                 </div>
-                <div className="text-lg font-bold text-primary">{fmtBDT(share)}</div>
+                <div className="text-lg font-bold text-primary">{fmt.bdt(share)}</div>
               </div>
             );
           })}

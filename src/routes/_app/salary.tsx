@@ -5,13 +5,16 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { fmtBDT, toBn, bnMonths } from "@/lib/format";
+import { useFmt } from "@/lib/format";
+import { useI18n } from "@/lib/i18n";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/salary")({ component: SalaryPage });
 
 function SalaryPage() {
+  const { t } = useI18n();
+  const fmt = useFmt();
   const qc = useQueryClient();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -37,7 +40,7 @@ function SalaryPage() {
       }, { onConflict: "staff_id,month,year" });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success("বেতন রেকর্ড হয়েছে"); qc.invalidateQueries({ queryKey: ["salaries"] }); },
+    onSuccess: () => { toast.success(t("salary_saved")); qc.invalidateQueries({ queryKey: ["salaries"] }); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -47,12 +50,12 @@ function SalaryPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold">বেতন হিসাব</h1>
-          <p className="text-sm text-muted-foreground">{bnMonths[month-1]} {toBn(year)}</p>
+          <h1 className="text-2xl font-bold">{t("salary_title")}</h1>
+          <p className="text-sm text-muted-foreground">{fmt.months[month-1]} {fmt.num(year)}</p>
         </div>
         <div className="flex gap-2">
           <select className="h-9 rounded-md border px-3 text-sm bg-background" value={month} onChange={(e) => setMonth(Number(e.target.value))}>
-            {bnMonths.map((m, i) => <option key={i} value={i+1}>{m}</option>)}
+            {fmt.months.map((m, i) => <option key={i} value={i+1}>{m}</option>)}
           </select>
           <Input type="number" className="w-24" value={year} onChange={(e) => setYear(Number(e.target.value))} />
         </div>
@@ -66,8 +69,8 @@ function SalaryPage() {
           })}
         </div>
         <div className="mt-4 pt-4 border-t flex justify-between font-semibold">
-          <span>মোট প্রদত্ত বেতন:</span>
-          <span className="text-primary">{fmtBDT(total)}</span>
+          <span>{t("total_paid_salary")}</span>
+          <span className="text-primary">{fmt.bdt(total)}</span>
         </div>
       </Card>
     </div>
@@ -75,6 +78,8 @@ function SalaryPage() {
 }
 
 function SalaryRow({ staff, existing, onPay }: any) {
+  const { t } = useI18n();
+  const fmt = useFmt();
   const [base, setBase] = useState(existing?.base_salary ?? staff.monthly_salary);
   const [ded, setDed] = useState(existing?.deductions ?? 0);
   const [bonus, setBonus] = useState(existing?.bonus ?? 0);
@@ -84,15 +89,15 @@ function SalaryRow({ staff, existing, onPay }: any) {
     <div className="p-3 rounded-lg border space-y-2">
       <div className="flex justify-between items-center">
         <div className="font-semibold">{staff.name} <span className="text-xs text-muted-foreground">— {staff.position}</span></div>
-        {existing && <span className="text-xs px-2 py-0.5 rounded bg-success/15 text-success">প্রদত্ত</span>}
+        {existing && <span className="text-xs px-2 py-0.5 rounded bg-success/15 text-success">{t("paid")}</span>}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        <div><Label className="text-xs">মূল বেতন</Label><Input type="number" value={base} onChange={(e) => setBase(Number(e.target.value))} /></div>
-        <div><Label className="text-xs">কর্তন</Label><Input type="number" value={ded} onChange={(e) => setDed(Number(e.target.value))} /></div>
-        <div><Label className="text-xs">বোনাস</Label><Input type="number" value={bonus} onChange={(e) => setBonus(Number(e.target.value))} /></div>
-        <div><Label className="text-xs">নেট</Label><div className="h-9 flex items-center font-bold text-primary">{fmtBDT(net)}</div></div>
+        <div><Label className="text-xs">{t("base_salary")}</Label><Input type="number" value={base} onChange={(e) => setBase(Number(e.target.value))} /></div>
+        <div><Label className="text-xs">{t("deductions")}</Label><Input type="number" value={ded} onChange={(e) => setDed(Number(e.target.value))} /></div>
+        <div><Label className="text-xs">{t("bonus")}</Label><Input type="number" value={bonus} onChange={(e) => setBonus(Number(e.target.value))} /></div>
+        <div><Label className="text-xs">{t("net")}</Label><div className="h-9 flex items-center font-bold text-primary">{fmt.bdt(net)}</div></div>
       </div>
-      <Button size="sm" onClick={() => onPay({ base_salary: Number(base), deductions: Number(ded), bonus: Number(bonus) })}>সংরক্ষণ</Button>
+      <Button size="sm" onClick={() => onPay({ base_salary: Number(base), deductions: Number(ded), bonus: Number(bonus) })}>{t("save")}</Button>
     </div>
   );
 }
