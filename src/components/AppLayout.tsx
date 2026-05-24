@@ -24,6 +24,7 @@ export function AppLayout() {
     { to: "/staff", label: t("nav_staff"), icon: Users },
     { to: "/attendance", label: t("nav_attendance"), icon: ClipboardCheck },
     { to: "/salary", label: t("nav_salary"), icon: Wallet },
+    { to: "/salary-sheet", label: t("nav_salary_sheet"), icon: FileBarChart },
     { to: "/partners", label: t("nav_partners"), icon: Handshake },
     { to: "/reports", label: t("nav_reports"), icon: FileBarChart },
   ] as const;
