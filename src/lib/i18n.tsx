@@ -22,6 +22,27 @@ const dict = {
   nav_salary: { bn: "বেতন হিসাব", en: "Salary" },
   nav_partners: { bn: "পার্টনার শেয়ার", en: "Partner Share" },
   nav_reports: { bn: "রিপোর্ট", en: "Reports" },
+  nav_monthly_report: { bn: "মাসিক রিপোর্ট", en: "Monthly Report" },
+
+  // Monthly Report (Income & Expense banking sheet)
+  mr_title: { bn: "মাসিক আয়-ব্যয় রিপোর্ট", en: "Monthly Income & Expense Report" },
+  mr_sub: { bn: "ব্যাংকিং স্টাইল A4 শীট — অটো প্রফিট হিসাব ও প্রিন্ট", en: "Banking-style A4 sheet with auto profit calculation & print" },
+  mr_sheet_no: { bn: "শীট নং", en: "Sheet No." },
+  mr_print: { bn: "শীট প্রিন্ট / PDF", en: "Print / PDF" },
+  mr_duplicate: { bn: "পরের মাসে কপি", en: "Duplicate → Next Month" },
+  mr_add_income: { bn: "আয় যোগ করুন", en: "Add Income Row" },
+  mr_add_expense: { bn: "খরচ যোগ করুন", en: "Add Expense Row" },
+  mr_income_desc: { bn: "আয়ের বিবরণ", en: "Income Description" },
+  mr_expense_desc: { bn: "খরচের বিবরণ", en: "Expense Description" },
+  mr_total_income: { bn: "মোট আয়", en: "Total Income" },
+  mr_total_expense: { bn: "মোট ব্যয়", en: "Total Expenditure" },
+  mr_net_profit: { bn: "মাসিক নেট প্রফিট", en: "Monthly Net Profit" },
+  mr_prepared_by: { bn: "প্রস্তুতকারী", en: "Prepared by" },
+  mr_checked_by: { bn: "পরীক্ষাকারী", en: "Checked by" },
+  mr_saved: { bn: "সংরক্ষণ হয়েছে", en: "Saved" },
+  mr_duplicated: { bn: "পরের মাসে কপি হয়েছে", en: "Duplicated to next month" },
+  mr_nothing_to_copy: { bn: "কপি করার মতো কোনো এন্ট্রি নেই", en: "Nothing to copy" },
+  mr_save_all: { bn: "সব সংরক্ষণ", en: "Save All Edits" },
   logout: { bn: "লগআউট", en: "Logout" },
 
   // Common
