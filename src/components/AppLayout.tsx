@@ -18,6 +18,7 @@ export function AppLayout() {
 
   const nav = [
     { to: "/dashboard", label: t("nav_dashboard"), icon: LayoutDashboard },
+    { to: "/monthly-report", label: t("nav_monthly_report"), icon: FileBarChart },
     { to: "/income", label: t("nav_income"), icon: TrendingUp },
     { to: "/expense", label: t("nav_expense"), icon: Receipt },
     { to: "/staff", label: t("nav_staff"), icon: Users },

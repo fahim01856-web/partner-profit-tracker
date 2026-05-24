@@ -16,6 +16,7 @@ import { Route as AppStaffRouteImport } from './routes/_app/staff'
 import { Route as AppSalaryRouteImport } from './routes/_app/salary'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppPartnersRouteImport } from './routes/_app/partners'
+import { Route as AppMonthlyReportRouteImport } from './routes/_app/monthly-report'
 import { Route as AppIncomeRouteImport } from './routes/_app/income'
 import { Route as AppExpenseRouteImport } from './routes/_app/expense'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
@@ -55,6 +56,11 @@ const AppPartnersRoute = AppPartnersRouteImport.update({
   path: '/partners',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMonthlyReportRoute = AppMonthlyReportRouteImport.update({
+  id: '/monthly-report',
+  path: '/monthly-report',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppIncomeRoute = AppIncomeRouteImport.update({
   id: '/income',
   path: '/income',
@@ -83,6 +89,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
+  '/monthly-report': typeof AppMonthlyReportRoute
   '/partners': typeof AppPartnersRoute
   '/reports': typeof AppReportsRoute
   '/salary': typeof AppSalaryRoute
@@ -95,6 +102,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
+  '/monthly-report': typeof AppMonthlyReportRoute
   '/partners': typeof AppPartnersRoute
   '/reports': typeof AppReportsRoute
   '/salary': typeof AppSalaryRoute
@@ -109,6 +117,7 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/expense': typeof AppExpenseRoute
   '/_app/income': typeof AppIncomeRoute
+  '/_app/monthly-report': typeof AppMonthlyReportRoute
   '/_app/partners': typeof AppPartnersRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/salary': typeof AppSalaryRoute
@@ -123,6 +132,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/expense'
     | '/income'
+    | '/monthly-report'
     | '/partners'
     | '/reports'
     | '/salary'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/expense'
     | '/income'
+    | '/monthly-report'
     | '/partners'
     | '/reports'
     | '/salary'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/expense'
     | '/_app/income'
+    | '/_app/monthly-report'
     | '/_app/partners'
     | '/_app/reports'
     | '/_app/salary'
@@ -211,6 +223,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppPartnersRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/monthly-report': {
+      id: '/_app/monthly-report'
+      path: '/monthly-report'
+      fullPath: '/monthly-report'
+      preLoaderRoute: typeof AppMonthlyReportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/income': {
       id: '/_app/income'
       path: '/income'
@@ -247,6 +266,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppExpenseRoute: typeof AppExpenseRoute
   AppIncomeRoute: typeof AppIncomeRoute
+  AppMonthlyReportRoute: typeof AppMonthlyReportRoute
   AppPartnersRoute: typeof AppPartnersRoute
   AppReportsRoute: typeof AppReportsRoute
   AppSalaryRoute: typeof AppSalaryRoute
@@ -258,6 +278,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppExpenseRoute: AppExpenseRoute,
   AppIncomeRoute: AppIncomeRoute,
+  AppMonthlyReportRoute: AppMonthlyReportRoute,
   AppPartnersRoute: AppPartnersRoute,
   AppReportsRoute: AppReportsRoute,
   AppSalaryRoute: AppSalaryRoute,
