@@ -384,6 +384,10 @@ function PartnersPage() {
               )}
             </ClientOnly>
           </div>
+        </Card>
+      </div>
+
+
 
       {/* PRINT AREA — banking style sheet */}
       <div className="print-area">
