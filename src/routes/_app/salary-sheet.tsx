@@ -190,6 +190,7 @@ function SalarySheetPage() {
 
   return (
     <div className="space-y-6">
+      <style>{`@media print { @page { size: A4 landscape; margin: 8mm; } }`}</style>
       {/* Toolbar */}
       <div className="no-print flex flex-wrap items-end gap-3 justify-between">
         <div>
