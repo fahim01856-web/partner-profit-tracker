@@ -4,20 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { fmtBnDate } from "@/lib/format";
+import { useFmt } from "@/lib/format";
+import { useI18n, type DictKey } from "@/lib/i18n";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_app/attendance")({ component: AttendancePage });
 
-const STATUSES = [
-  { v: 'present', l: 'উপস্থিত', c: 'bg-success/15 text-success' },
-  { v: 'absent', l: 'অনুপস্থিত', c: 'bg-destructive/15 text-destructive' },
-  { v: 'late', l: 'দেরি', c: 'bg-gold/30 text-gold-foreground' },
-  { v: 'leave', l: 'ছুটি', c: 'bg-muted text-muted-foreground' },
+const STATUSES: { v: string; key: DictKey }[] = [
+  { v: 'present', key: 'st_present' },
+  { v: 'absent', key: 'st_absent' },
+  { v: 'late', key: 'st_late' },
+  { v: 'leave', key: 'st_leave' },
 ];
 
 function AttendancePage() {
+  const { t } = useI18n();
+  const fmt = useFmt();
   const qc = useQueryClient();
   const [date, setDate] = useState(new Date().toISOString().slice(0,10));
 
@@ -46,8 +49,8 @@ function AttendancePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="text-2xl font-bold">হাজিরা খাতা</h1>
-          <p className="text-sm text-muted-foreground">{fmtBnDate(date)}</p>
+          <h1 className="text-2xl font-bold">{t("attendance_title")}</h1>
+          <p className="text-sm text-muted-foreground">{fmt.date(date)}</p>
         </div>
         <Input type="date" className="w-auto" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
@@ -65,16 +68,15 @@ function AttendancePage() {
                 <div className="flex gap-1 flex-wrap">
                   {STATUSES.map(st => (
                     <Button key={st.v} size="sm" variant={cur === st.v ? "default" : "outline"}
-                      onClick={() => mark.mutate({ staff_id: s.id, status: st.v })}
-                      className={cur === st.v ? "" : ""}>
-                      {st.l}
+                      onClick={() => mark.mutate({ staff_id: s.id, status: st.v })}>
+                      {t(st.key)}
                     </Button>
                   ))}
                 </div>
               </div>
             );
           })}
-          {staff.length === 0 && <div className="text-center text-muted-foreground py-8">প্রথমে স্টাফ যোগ করুন</div>}
+          {staff.length === 0 && <div className="text-center text-muted-foreground py-8">{t("add_staff_first")}</div>}
         </div>
       </Card>
     </div>
