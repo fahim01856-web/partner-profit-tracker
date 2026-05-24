@@ -118,6 +118,48 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_profits: {
+        Row: {
+          created_at: string
+          id: string
+          month: number
+          notes: string | null
+          partner1_name: string
+          partner1_percent: number
+          partner2_name: string
+          partner2_percent: number
+          total_profit: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: number
+          notes?: string | null
+          partner1_name?: string
+          partner1_percent?: number
+          partner2_name?: string
+          partner2_percent?: number
+          total_profit?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: number
+          notes?: string | null
+          partner1_name?: string
+          partner1_percent?: number
+          partner2_name?: string
+          partner2_percent?: number
+          total_profit?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       partner_withdrawals: {
         Row: {
           amount: number

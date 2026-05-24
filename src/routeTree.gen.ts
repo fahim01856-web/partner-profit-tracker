@@ -14,6 +14,8 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppStaffRouteImport } from './routes/_app/staff'
 import { Route as AppSalaryRouteImport } from './routes/_app/salary'
+import { Route as AppReportsRouteImport } from './routes/_app/reports'
+import { Route as AppPartnersRouteImport } from './routes/_app/partners'
 import { Route as AppIncomeRouteImport } from './routes/_app/income'
 import { Route as AppExpenseRouteImport } from './routes/_app/expense'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
@@ -41,6 +43,16 @@ const AppStaffRoute = AppStaffRouteImport.update({
 const AppSalaryRoute = AppSalaryRouteImport.update({
   id: '/salary',
   path: '/salary',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppReportsRoute = AppReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPartnersRoute = AppPartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIncomeRoute = AppIncomeRouteImport.update({
@@ -71,6 +83,8 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
+  '/partners': typeof AppPartnersRoute
+  '/reports': typeof AppReportsRoute
   '/salary': typeof AppSalaryRoute
   '/staff': typeof AppStaffRoute
 }
@@ -81,6 +95,8 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
+  '/partners': typeof AppPartnersRoute
+  '/reports': typeof AppReportsRoute
   '/salary': typeof AppSalaryRoute
   '/staff': typeof AppStaffRoute
 }
@@ -93,6 +109,8 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/expense': typeof AppExpenseRoute
   '/_app/income': typeof AppIncomeRoute
+  '/_app/partners': typeof AppPartnersRoute
+  '/_app/reports': typeof AppReportsRoute
   '/_app/salary': typeof AppSalaryRoute
   '/_app/staff': typeof AppStaffRoute
 }
@@ -105,6 +123,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/expense'
     | '/income'
+    | '/partners'
+    | '/reports'
     | '/salary'
     | '/staff'
   fileRoutesByTo: FileRoutesByTo
@@ -115,6 +135,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/expense'
     | '/income'
+    | '/partners'
+    | '/reports'
     | '/salary'
     | '/staff'
   id:
@@ -126,6 +148,8 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/expense'
     | '/_app/income'
+    | '/_app/partners'
+    | '/_app/reports'
     | '/_app/salary'
     | '/_app/staff'
   fileRoutesById: FileRoutesById
@@ -173,6 +197,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSalaryRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/reports': {
+      id: '/_app/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof AppReportsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/partners': {
+      id: '/_app/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof AppPartnersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/income': {
       id: '/_app/income'
       path: '/income'
@@ -209,6 +247,8 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppExpenseRoute: typeof AppExpenseRoute
   AppIncomeRoute: typeof AppIncomeRoute
+  AppPartnersRoute: typeof AppPartnersRoute
+  AppReportsRoute: typeof AppReportsRoute
   AppSalaryRoute: typeof AppSalaryRoute
   AppStaffRoute: typeof AppStaffRoute
 }
@@ -218,6 +258,8 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppExpenseRoute: AppExpenseRoute,
   AppIncomeRoute: AppIncomeRoute,
+  AppPartnersRoute: AppPartnersRoute,
+  AppReportsRoute: AppReportsRoute,
   AppSalaryRoute: AppSalaryRoute,
   AppStaffRoute: AppStaffRoute,
 }
