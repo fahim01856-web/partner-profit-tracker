@@ -160,6 +160,42 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_report_items: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string
+          id: string
+          item_type: string
+          month: number
+          sl_no: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          item_type: string
+          month: number
+          sl_no?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string
+          id?: string
+          item_type?: string
+          month?: number
+          sl_no?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       partner_withdrawals: {
         Row: {
           amount: number
