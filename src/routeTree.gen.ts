@@ -14,6 +14,7 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppStaffRouteImport } from './routes/_app/staff'
 import { Route as AppSalaryRouteImport } from './routes/_app/salary'
+import { Route as AppPartnersRouteImport } from './routes/_app/partners'
 import { Route as AppIncomeRouteImport } from './routes/_app/income'
 import { Route as AppExpenseRouteImport } from './routes/_app/expense'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
@@ -41,6 +42,11 @@ const AppStaffRoute = AppStaffRouteImport.update({
 const AppSalaryRoute = AppSalaryRouteImport.update({
   id: '/salary',
   path: '/salary',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPartnersRoute = AppPartnersRouteImport.update({
+  id: '/partners',
+  path: '/partners',
   getParentRoute: () => AppRoute,
 } as any)
 const AppIncomeRoute = AppIncomeRouteImport.update({
@@ -71,6 +77,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AppDashboardRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
+  '/partners': typeof AppPartnersRoute
   '/salary': typeof AppSalaryRoute
   '/staff': typeof AppStaffRoute
 }
@@ -81,6 +88,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AppDashboardRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
+  '/partners': typeof AppPartnersRoute
   '/salary': typeof AppSalaryRoute
   '/staff': typeof AppStaffRoute
 }
@@ -93,6 +101,7 @@ export interface FileRoutesById {
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/expense': typeof AppExpenseRoute
   '/_app/income': typeof AppIncomeRoute
+  '/_app/partners': typeof AppPartnersRoute
   '/_app/salary': typeof AppSalaryRoute
   '/_app/staff': typeof AppStaffRoute
 }
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/expense'
     | '/income'
+    | '/partners'
     | '/salary'
     | '/staff'
   fileRoutesByTo: FileRoutesByTo
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/expense'
     | '/income'
+    | '/partners'
     | '/salary'
     | '/staff'
   id:
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '/_app/dashboard'
     | '/_app/expense'
     | '/_app/income'
+    | '/_app/partners'
     | '/_app/salary'
     | '/_app/staff'
   fileRoutesById: FileRoutesById
@@ -173,6 +185,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSalaryRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/partners': {
+      id: '/_app/partners'
+      path: '/partners'
+      fullPath: '/partners'
+      preLoaderRoute: typeof AppPartnersRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/income': {
       id: '/_app/income'
       path: '/income'
@@ -209,6 +228,7 @@ interface AppRouteChildren {
   AppDashboardRoute: typeof AppDashboardRoute
   AppExpenseRoute: typeof AppExpenseRoute
   AppIncomeRoute: typeof AppIncomeRoute
+  AppPartnersRoute: typeof AppPartnersRoute
   AppSalaryRoute: typeof AppSalaryRoute
   AppStaffRoute: typeof AppStaffRoute
 }
@@ -218,6 +238,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppDashboardRoute: AppDashboardRoute,
   AppExpenseRoute: AppExpenseRoute,
   AppIncomeRoute: AppIncomeRoute,
+  AppPartnersRoute: AppPartnersRoute,
   AppSalaryRoute: AppSalaryRoute,
   AppStaffRoute: AppStaffRoute,
 }
@@ -232,3 +253,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
