@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppStaffRouteImport } from './routes/_app/staff'
+import { Route as AppSalarySheetRouteImport } from './routes/_app/salary-sheet'
 import { Route as AppSalaryRouteImport } from './routes/_app/salary'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppPartnersRouteImport } from './routes/_app/partners'
@@ -39,6 +40,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppStaffRoute = AppStaffRouteImport.update({
   id: '/staff',
   path: '/staff',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSalarySheetRoute = AppSalarySheetRouteImport.update({
+  id: '/salary-sheet',
+  path: '/salary-sheet',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSalaryRoute = AppSalaryRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/partners': typeof AppPartnersRoute
   '/reports': typeof AppReportsRoute
   '/salary': typeof AppSalaryRoute
+  '/salary-sheet': typeof AppSalarySheetRoute
   '/staff': typeof AppStaffRoute
 }
 export interface FileRoutesByTo {
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/partners': typeof AppPartnersRoute
   '/reports': typeof AppReportsRoute
   '/salary': typeof AppSalaryRoute
+  '/salary-sheet': typeof AppSalarySheetRoute
   '/staff': typeof AppStaffRoute
 }
 export interface FileRoutesById {
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_app/partners': typeof AppPartnersRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/salary': typeof AppSalaryRoute
+  '/_app/salary-sheet': typeof AppSalarySheetRoute
   '/_app/staff': typeof AppStaffRoute
 }
 export interface FileRouteTypes {
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/reports'
     | '/salary'
+    | '/salary-sheet'
     | '/staff'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/partners'
     | '/reports'
     | '/salary'
+    | '/salary-sheet'
     | '/staff'
   id:
     | '__root__'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_app/partners'
     | '/_app/reports'
     | '/_app/salary'
+    | '/_app/salary-sheet'
     | '/_app/staff'
   fileRoutesById: FileRoutesById
 }
@@ -200,6 +212,13 @@ declare module '@tanstack/react-router' {
       path: '/staff'
       fullPath: '/staff'
       preLoaderRoute: typeof AppStaffRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/salary-sheet': {
+      id: '/_app/salary-sheet'
+      path: '/salary-sheet'
+      fullPath: '/salary-sheet'
+      preLoaderRoute: typeof AppSalarySheetRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/salary': {
@@ -270,6 +289,7 @@ interface AppRouteChildren {
   AppPartnersRoute: typeof AppPartnersRoute
   AppReportsRoute: typeof AppReportsRoute
   AppSalaryRoute: typeof AppSalaryRoute
+  AppSalarySheetRoute: typeof AppSalarySheetRoute
   AppStaffRoute: typeof AppStaffRoute
 }
 
@@ -282,6 +302,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppPartnersRoute: AppPartnersRoute,
   AppReportsRoute: AppReportsRoute,
   AppSalaryRoute: AppSalaryRoute,
+  AppSalarySheetRoute: AppSalarySheetRoute,
   AppStaffRoute: AppStaffRoute,
 }
 

@@ -254,6 +254,7 @@ export type Database = {
       }
       salaries: {
         Row: {
+          allowance: number
           base_salary: number
           bonus: number
           created_at: string
@@ -263,10 +264,13 @@ export type Database = {
           net_paid: number
           note: string | null
           paid_on: string | null
+          payment_status: string
           staff_id: string
+          working_days: number
           year: number
         }
         Insert: {
+          allowance?: number
           base_salary?: number
           bonus?: number
           created_at?: string
@@ -276,10 +280,13 @@ export type Database = {
           net_paid?: number
           note?: string | null
           paid_on?: string | null
+          payment_status?: string
           staff_id: string
+          working_days?: number
           year: number
         }
         Update: {
+          allowance?: number
           base_salary?: number
           bonus?: number
           created_at?: string
@@ -289,7 +296,9 @@ export type Database = {
           net_paid?: number
           note?: string | null
           paid_on?: string | null
+          payment_status?: string
           staff_id?: string
+          working_days?: number
           year?: number
         }
         Relationships: [
