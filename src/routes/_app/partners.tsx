@@ -346,21 +346,23 @@ function PartnersPage() {
         <Card className="p-5 lg:col-span-2">
           <h3 className="font-semibold mb-3">{t("pp_monthly_chart")}</h3>
           <div className="h-72">
-            {chartData.length ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="name" fontSize={11} />
-                  <YAxis fontSize={11} />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="p1" name={lang === "bn" ? "পার্টনার ১" : "Partner 1"} fill="hsl(150 60% 35%)" />
-                  <Bar dataKey="p2" name={lang === "bn" ? "পার্টনার ২" : "Partner 2"} fill="hsl(42 80% 50%)" />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full grid place-items-center text-sm text-muted-foreground">{t("pp_no_entries")}</div>
-            )}
+            <ClientOnly fallback={<div className="h-full grid place-items-center text-sm text-muted-foreground">…</div>}>
+              {chartData.length ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="name" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="p1" name={lang === "bn" ? "পার্টনার ১" : "Partner 1"} fill="hsl(150 60% 35%)" />
+                    <Bar dataKey="p2" name={lang === "bn" ? "পার্টনার ২" : "Partner 2"} fill="hsl(42 80% 50%)" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full grid place-items-center text-sm text-muted-foreground">{t("pp_no_entries")}</div>
+              )}
+            </ClientOnly>
           </div>
         </Card>
         <Card className="p-5">
