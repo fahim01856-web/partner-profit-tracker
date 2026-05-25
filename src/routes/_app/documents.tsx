@@ -56,8 +56,8 @@ function DocumentsPage() {
         const path = `${activeCat}/${Date.now()}_${file.name}`;
         const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
         if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from("documents").getPublicUrl(path);
-        file_url = pub.publicUrl;
+        // Store the storage path; signed URLs are generated on demand for view/download.
+        file_url = path;
         file_name = file.name;
       }
       const payload: any = {
