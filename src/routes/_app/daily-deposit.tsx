@@ -471,6 +471,3 @@ function StatCard({ label, value, sub, icon, accent = "" }: { label: string; val
     </Card>
   );
 }
-
-// Need Cell import for bar coloring
-import { Cell } from "recharts";
