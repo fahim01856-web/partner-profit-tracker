@@ -93,10 +93,35 @@ function DocumentsPage() {
     setShowForm(true);
   };
 
+  // Extract storage path from either a stored path or a legacy public URL.
+  const toStoragePath = (val: string) => {
+    const marker = "/documents/";
+    const idx = val.indexOf(marker);
+    return idx >= 0 ? val.substring(idx + marker.length) : val;
+  };
+
+  const getSignedUrl = async (val: string) => {
+    const path = toStoragePath(val);
+    const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, 60);
+    if (error || !data) throw error || new Error("signed url failed");
+    return data.signedUrl;
+  };
+
+  const handleView = async (d: Doc) => {
+    if (!d.file_url) return;
+    try {
+      const url = await getSignedUrl(d.file_url);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      toast.error(lang === "bn" ? "ফাইল খোলা যায়নি" : "Could not open file");
+    }
+  };
+
   const handleDownload = async (d: Doc) => {
     if (!d.file_url) return;
     try {
-      const res = await fetch(d.file_url);
+      const signed = await getSignedUrl(d.file_url);
+      const res = await fetch(signed);
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
