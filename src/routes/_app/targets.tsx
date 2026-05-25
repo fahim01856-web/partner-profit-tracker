@@ -205,7 +205,10 @@ function TargetsPage() {
               <div><Label>{lang === "bn" ? "টার্গেট সংখ্যা" : "Target Quantity"}</Label><Input type="number" value={tf.target_quantity} onChange={(e) => setTf({ ...tf, target_quantity: Number(e.target.value) })} /></div>
               <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "মন্তব্য" : "Notes"}</Label><Textarea rows={2} value={tf.notes} onChange={(e) => setTf({ ...tf, notes: e.target.value })} /></div>
             </div>
-            <Button className="mt-3" onClick={() => saveTarget.mutate()}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</Button>
+            <div className="mt-3 flex gap-2">
+              <Button onClick={() => saveTarget.mutate()}>{editTargetId ? <><Pencil className="w-4 h-4 mr-1" />{t("update")}</> : <><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</>}</Button>
+              {editTargetId && <Button variant="outline" onClick={resetTf}><X className="w-4 h-4 mr-1" />{t("cancel_edit")}</Button>}
+            </div>
           </Card>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto"><Table>
