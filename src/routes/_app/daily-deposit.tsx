@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -15,8 +16,8 @@ import { useFmt } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
 import {
-  Printer, Plus, Trash2, Pencil, TrendingUp, TrendingDown, Wallet, Calendar,
-  ArrowUp, ArrowDown, Minus, FileDown, BarChart3,
+  Printer, Plus, Trash2, Pencil, TrendingUp, TrendingDown, Wallet,
+  ArrowUp, ArrowDown, Minus, FileDown, BarChart3, Calendar, Save,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -41,21 +42,19 @@ function DailyDepositPage() {
   const fmt = useFmt();
   const qc = useQueryClient();
 
+  const today = new Date();
+  const [tab, setTab] = useState("add");
+
   const [form, setForm] = useState({
     id: null as string | null,
     date: todayStr(),
     amount: "" as string,
     note: "",
-    submitted_by: "",
   });
-  const [showForm, setShowForm] = useState(false);
 
-  // Filters
-  const today = new Date();
+  // Filters shared by history/diff/monthly tabs
   const [fMonth, setFMonth] = useState<string>(String(today.getMonth() + 1));
   const [fYear, setFYear] = useState<string>(String(today.getFullYear()));
-  const [fFrom, setFFrom] = useState("");
-  const [fTo, setFTo] = useState("");
 
   const { data: all = [] } = useQuery({
     queryKey: ["daily_deposits"],
@@ -73,13 +72,7 @@ function DailyDepositPage() {
     mutationFn: async () => {
       const amount = Number(form.amount || 0);
       if (!form.date) throw new Error("Date required");
-      if (amount < 0) throw new Error("Invalid amount");
-      const payload = {
-        date: form.date,
-        amount,
-        note: form.note || null,
-        submitted_by: form.submitted_by || null,
-      };
+      const payload = { date: form.date, amount, note: form.note || null, submitted_by: null };
       if (form.id) {
         const { error } = await supabase.from("daily_deposits").update(payload).eq("id", form.id);
         if (error) throw error;
@@ -91,8 +84,7 @@ function DailyDepositPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["daily_deposits"] });
       toast.success(t("dd_saved"));
-      setForm({ id: null, date: todayStr(), amount: "", note: "", submitted_by: "" });
-      setShowForm(false);
+      setForm({ id: null, date: todayStr(), amount: "", note: "" });
     },
     onError: (e: any) => toast.error(e.message || "Error"),
   });
@@ -108,12 +100,11 @@ function DailyDepositPage() {
     },
   });
 
-  // Sorted ascending by date for diff calc
+  // Asc sorted for diff calc
   const ascSorted = useMemo(
     () => [...all].sort((a, b) => a.date.localeCompare(b.date)),
     [all],
   );
-
   const diffMap = useMemo(() => {
     const m = new Map<string, number | null>();
     for (let i = 0; i < ascSorted.length; i++) {
@@ -122,19 +113,15 @@ function DailyDepositPage() {
     return m;
   }, [ascSorted]);
 
-  // Apply filters
-  const filtered = useMemo(() => {
+  // Filter by month/year
+  const periodFiltered = useMemo(() => {
     return all.filter((d) => {
-      if (fFrom && d.date < fFrom) return false;
-      if (fTo && d.date > fTo) return false;
       const dt = new Date(d.date);
-      if (!fFrom && !fTo) {
-        if (fYear !== "all" && dt.getFullYear() !== Number(fYear)) return false;
-        if (fMonth !== "all" && dt.getMonth() + 1 !== Number(fMonth)) return false;
-      }
+      if (fYear !== "all" && dt.getFullYear() !== Number(fYear)) return false;
+      if (fMonth !== "all" && dt.getMonth() + 1 !== Number(fMonth)) return false;
       return true;
     });
-  }, [all, fMonth, fYear, fFrom, fTo]);
+  }, [all, fMonth, fYear]);
 
   // Dashboard analytics
   const tStr = todayStr();
@@ -144,48 +131,58 @@ function DailyDepositPage() {
   const todayVsYest = todayDep - yestDep;
   const todayVsYestPct = yestDep > 0 ? (todayVsYest / yestDep) * 100 : 0;
 
-  const monthFiltered = useMemo(
-    () =>
-      all.filter((d) => {
-        const dt = new Date(d.date);
-        return (
-          dt.getFullYear() === Number(fYear === "all" ? today.getFullYear() : fYear) &&
-          (fMonth === "all" || dt.getMonth() + 1 === Number(fMonth))
-        );
-      }),
-    [all, fMonth, fYear],
-  );
+  const monthlyTotal = periodFiltered.reduce((s, d) => s + Number(d.amount), 0);
+  const highest = periodFiltered.reduce<Deposit | null>((h, d) => (!h || d.amount > h.amount ? d : h), null);
+  const lowest = periodFiltered.reduce<Deposit | null>((l, d) => (!l || d.amount < l.amount ? d : l), null);
+  const avg = periodFiltered.length ? monthlyTotal / periodFiltered.length : 0;
 
-  const monthlyTotal = monthFiltered.reduce((s, d) => s + Number(d.amount), 0);
-  const highest = monthFiltered.reduce<Deposit | null>((h, d) => (!h || d.amount > h.amount ? d : h), null);
-  const lowest = monthFiltered.reduce<Deposit | null>((l, d) => (!l || d.amount < l.amount ? d : l), null);
-  const avg = monthFiltered.length ? monthlyTotal / monthFiltered.length : 0;
+  const highestEver = all.reduce<Deposit | null>((h, d) => (!h || d.amount > h.amount ? d : h), null);
+  const lowestEver = all.reduce<Deposit | null>((l, d) => (!l || d.amount < l.amount ? d : l), null);
 
-  // Chart data (chronological)
+  // Chart data (asc within period)
   const chartData = useMemo(
     () =>
-      [...filtered]
+      [...periodFiltered]
         .sort((a, b) => a.date.localeCompare(b.date))
         .map((d) => ({
           date: d.date.slice(5),
           amount: Number(d.amount),
           diff: diffMap.get(d.id) ?? 0,
         })),
-    [filtered, diffMap],
+    [periodFiltered, diffMap],
   );
+
+  // Yearly aggregate
+  const yearlyData = useMemo(() => {
+    const map = new Map<number, { total: number; days: number }>();
+    all.forEach((d) => {
+      const m = new Date(d.date).getMonth();
+      const cur = map.get(m) ?? { total: 0, days: 0 };
+      if (new Date(d.date).getFullYear() === Number(fYear === "all" ? today.getFullYear() : fYear)) {
+        cur.total += Number(d.amount);
+        cur.days += 1;
+        map.set(m, cur);
+      }
+    });
+    const months = lang === "bn"
+      ? ["জান","ফেব","মার্চ","এপ্রি","মে","জুন","জুল","আগ","সেপ্ট","অক্টো","নভে","ডিসে"]
+      : ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    return months.map((label, i) => ({
+      label,
+      total: map.get(i)?.total ?? 0,
+      avg: map.get(i)?.days ? (map.get(i)!.total / map.get(i)!.days) : 0,
+    }));
+  }, [all, fYear, lang]);
 
   const exportCSV = () => {
     const rows = [
-      [t("date"), t("dd_amount"), t("dd_diff"), t("dd_status"), t("note"), t("dd_submitted_by")],
-      ...filtered.map((d) => {
+      [t("date"), t("dd_amount"), t("dd_diff"), t("dd_status"), t("note")],
+      ...periodFiltered.map((d) => {
         const diff = diffMap.get(d.id);
         return [
-          d.date,
-          d.amount,
-          diff ?? "",
-          diff == null ? "Normal" : diff > 0 ? "Increased" : diff < 0 ? "Decreased" : "Same",
+          d.date, d.amount, diff ?? "",
+          diff == null ? "—" : diff > 0 ? "Increased" : diff < 0 ? "Decreased" : "Same",
           d.note ?? "",
-          d.submitted_by ?? "",
         ];
       }),
     ];
@@ -194,20 +191,14 @@ function DailyDepositPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `daily-deposit-${fYear}-${fMonth}.csv`;
+    a.download = `total-deposit-${fYear}-${fMonth}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
   const startEdit = (d: Deposit) => {
-    setForm({
-      id: d.id,
-      date: d.date,
-      amount: String(d.amount),
-      note: d.note ?? "",
-      submitted_by: d.submitted_by ?? "",
-    });
-    setShowForm(true);
+    setForm({ id: d.id, date: d.date, amount: String(d.amount), note: d.note ?? "" });
+    setTab("add");
   };
 
   const months = lang === "bn"
@@ -220,7 +211,7 @@ function DailyDepositPage() {
     return Array.from(set).sort((a, b) => b - a);
   }, [all]);
 
-  const DiffBadge = ({ diff }: { diff: number | null }) => {
+  const DiffCell = ({ diff }: { diff: number | null }) => {
     if (diff == null) return <span className="text-muted-foreground">—</span>;
     if (diff === 0)
       return (
@@ -230,9 +221,7 @@ function DailyDepositPage() {
       );
     const up = diff > 0;
     return (
-      <span
-        className={`inline-flex items-center gap-1 font-semibold ${up ? "text-emerald-600" : "text-red-600"}`}
-      >
+      <span className={`inline-flex items-center gap-1 font-semibold ${up ? "text-emerald-600" : "text-red-600"}`}>
         {up ? <ArrowUp className="w-3.5 h-3.5" /> : <ArrowDown className="w-3.5 h-3.5" />}
         {up ? "+" : "-"} {fmt.bdt(Math.abs(diff))}
       </span>
@@ -241,13 +230,62 @@ function DailyDepositPage() {
 
   const StatusBadge = ({ diff }: { diff: number | null }) => {
     if (diff == null)
-      return <span className="px-2 py-0.5 rounded-full text-xs bg-muted text-muted-foreground">{t("dd_normal")}</span>;
+      return <span className="px-2 py-0.5 rounded-full text-xs bg-muted text-muted-foreground">—</span>;
     if (diff > 0)
       return <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-100 text-emerald-700">{t("dd_increased")}</span>;
     if (diff < 0)
       return <span className="px-2 py-0.5 rounded-full text-xs bg-red-100 text-red-700">{t("dd_decreased")}</span>;
     return <span className="px-2 py-0.5 rounded-full text-xs bg-muted text-muted-foreground">{t("dd_normal")}</span>;
   };
+
+  const PctCell = ({ id, amount }: { id: string; amount: number }) => {
+    const diff = diffMap.get(id);
+    if (diff == null) return <span className="text-muted-foreground">—</span>;
+    const prev = amount - diff;
+    if (prev <= 0) return <span className="text-muted-foreground">—</span>;
+    const pct = (diff / prev) * 100;
+    const up = pct >= 0;
+    return (
+      <span className={`font-medium ${up ? "text-emerald-600" : "text-red-600"}`}>
+        {up ? "+" : ""}{pct.toFixed(2)}%
+      </span>
+    );
+  };
+
+  const FiltersBar = () => (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div>
+        <Label>{t("dd_filter_month")}</Label>
+        <Select value={fMonth} onValueChange={setFMonth}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("dd_all")}</SelectItem>
+            {months.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>{t("dd_filter_year")}</Label>
+        <Select value={fYear} onValueChange={setFYear}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("dd_all")}</SelectItem>
+            {years.map((y) => <SelectItem key={y} value={String(y)}>{fmt.num(y)}</SelectItem>)}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="flex items-end gap-2">
+        <Button variant="outline" className="w-full" onClick={() => { setFMonth(String(today.getMonth() + 1)); setFYear(String(today.getFullYear())); }}>
+          {t("dd_clear")}
+        </Button>
+      </div>
+      <div className="flex items-end gap-2">
+        <Button variant="outline" className="w-full" onClick={exportCSV}>
+          <FileDown className="w-4 h-4" /> CSV
+        </Button>
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -260,19 +298,13 @@ function DailyDepositPage() {
           <p className="text-muted-foreground text-sm">{t("dd_sub")}</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={exportCSV}>
-            <FileDown className="w-4 h-4" /> {t("eatt_export_csv")}
-          </Button>
           <Button variant="outline" onClick={() => window.print()}>
             <Printer className="w-4 h-4" /> {t("print")}
-          </Button>
-          <Button onClick={() => { setForm({ id: null, date: todayStr(), amount: "", note: "", submitted_by: "" }); setShowForm(true); }}>
-            <Plus className="w-4 h-4" /> {t("dd_new")}
           </Button>
         </div>
       </div>
 
-      {/* Analytics cards */}
+      {/* Dashboard Summary */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 no-print">
         <StatCard label={t("dd_today")} value={fmt.bdt(todayDep)} icon={<Calendar className="w-4 h-4" />} accent="text-primary" />
         <StatCard label={t("dd_yesterday")} value={fmt.bdt(yestDep)} icon={<Calendar className="w-4 h-4" />} />
@@ -281,140 +313,264 @@ function DailyDepositPage() {
           value={`${todayVsYest >= 0 ? "+" : "-"} ${fmt.bdt(Math.abs(todayVsYest))}`}
           icon={todayVsYest >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
           accent={todayVsYest >= 0 ? "text-emerald-600" : "text-red-600"}
-          sub={yestDep > 0 ? `${todayVsYestPct >= 0 ? "+" : ""}${todayVsYestPct.toFixed(1)}%` : ""}
+          sub={yestDep > 0 ? `${todayVsYestPct >= 0 ? "+" : ""}${todayVsYestPct.toFixed(2)}%` : ""}
         />
-        <StatCard label={t("dd_monthly_total")} value={fmt.bdt(monthlyTotal)} icon={<BarChart3 className="w-4 h-4" />} accent="text-primary" />
-        <StatCard label={t("dd_highest")} value={fmt.bdt(highest?.amount ?? 0)} sub={highest?.date ?? ""} icon={<TrendingUp className="w-4 h-4" />} accent="text-emerald-600" />
-        <StatCard label={t("dd_lowest")} value={fmt.bdt(lowest?.amount ?? 0)} sub={lowest?.date ?? ""} icon={<TrendingDown className="w-4 h-4" />} accent="text-red-600" />
+        <StatCard label={t("dd_highest_ever")} value={fmt.bdt(highestEver?.amount ?? 0)} sub={highestEver?.date ?? ""} icon={<TrendingUp className="w-4 h-4" />} accent="text-emerald-600" />
+        <StatCard label={t("dd_lowest_ever")} value={fmt.bdt(lowestEver?.amount ?? 0)} sub={lowestEver?.date ?? ""} icon={<TrendingDown className="w-4 h-4" />} accent="text-red-600" />
+        <StatCard label={t("dd_avg_daily")} value={fmt.bdt(avg)} icon={<BarChart3 className="w-4 h-4" />} accent="text-primary" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 no-print">
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground mb-1">{t("dd_avg_daily")}</div>
-          <div className="text-2xl font-bold text-primary">{fmt.bdt(avg)}</div>
-        </Card>
-        <Card className="p-4">
-          <div className="text-sm text-muted-foreground mb-1">{t("dd_entries_count")}</div>
-          <div className="text-2xl font-bold">{fmt.num(monthFiltered.length)}</div>
-        </Card>
-      </div>
+      {/* Tabs */}
+      <Tabs value={tab} onValueChange={setTab} className="no-print">
+        <TabsList className="flex flex-wrap h-auto">
+          <TabsTrigger value="add">{t("dd_tab_add")}</TabsTrigger>
+          <TabsTrigger value="history">{t("dd_tab_history")}</TabsTrigger>
+          <TabsTrigger value="diff">{t("dd_tab_diff")}</TabsTrigger>
+          <TabsTrigger value="monthly">{t("dd_tab_monthly")}</TabsTrigger>
+          <TabsTrigger value="yearly">{t("dd_tab_yearly")}</TabsTrigger>
+          <TabsTrigger value="analytics">{t("dd_tab_analytics")}</TabsTrigger>
+          <TabsTrigger value="print">{t("dd_tab_print")}</TabsTrigger>
+        </TabsList>
 
-      {/* Form */}
-      {showForm && (
-        <Card className="p-5 no-print">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold">{form.id ? t("edit") : t("dd_new")}</h3>
-            <Button variant="ghost" size="sm" onClick={() => setShowForm(false)}>✕</Button>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <Label>{t("date")}</Label>
-              <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+        {/* ADD */}
+        <TabsContent value="add" className="mt-4">
+          <Card className="p-5 max-w-2xl">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <Plus className="w-4 h-4 text-primary" />
+              {form.id ? t("edit") : t("dd_tab_add")}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <Label>{t("date")}</Label>
+                <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} />
+              </div>
+              <div>
+                <Label>{t("dd_amount")} (৳)</Label>
+                <Input type="number" step="0.01" placeholder="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+              </div>
+              <div className="md:col-span-2">
+                <Label>{t("note")} ({lang === "bn" ? "ঐচ্ছিক" : "Optional"})</Label>
+                <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+              </div>
             </div>
-            <div>
-              <Label>{t("dd_amount")}</Label>
-              <Input type="number" step="0.01" placeholder="0" value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
+            <div className="flex justify-end gap-2 mt-4">
+              {form.id && (
+                <Button variant="outline" onClick={() => setForm({ id: null, date: todayStr(), amount: "", note: "" })}>
+                  {t("cancel")}
+                </Button>
+              )}
+              <Button onClick={() => save.mutate()} disabled={save.isPending}>
+                <Save className="w-4 h-4" /> {t("save")}
+              </Button>
             </div>
-            <div>
-              <Label>{t("dd_submitted_by")}</Label>
-              <Input value={form.submitted_by} onChange={(e) => setForm({ ...form, submitted_by: e.target.value })} />
-            </div>
-            <div className="md:col-span-2">
-              <Label>{t("note")}</Label>
-              <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
-            </div>
-          </div>
-          <div className="flex justify-end gap-2 mt-3">
-            <Button variant="outline" onClick={() => setShowForm(false)}>{t("delete")}</Button>
-            <Button onClick={() => save.mutate()} disabled={save.isPending}>
-              <Wallet className="w-4 h-4" /> {t("save")}
-            </Button>
-          </div>
-        </Card>
-      )}
+          </Card>
+        </TabsContent>
 
-      {/* Filters */}
-      <Card className="p-4 no-print">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <div>
-            <Label>{t("dd_filter_month")}</Label>
-            <Select value={fMonth} onValueChange={setFMonth}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("dd_all")}</SelectItem>
-                {months.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>{t("dd_filter_year")}</Label>
-            <Select value={fYear} onValueChange={setFYear}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("dd_all")}</SelectItem>
-                {years.map((y) => <SelectItem key={y} value={String(y)}>{fmt.num(y)}</SelectItem>)}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label>{t("dd_from")}</Label>
-            <Input type="date" value={fFrom} onChange={(e) => setFFrom(e.target.value)} />
-          </div>
-          <div>
-            <Label>{t("dd_to")}</Label>
-            <Input type="date" value={fTo} onChange={(e) => setFTo(e.target.value)} />
-          </div>
-          <div className="flex items-end">
-            <Button variant="outline" className="w-full" onClick={() => { setFFrom(""); setFTo(""); setFMonth("all"); setFYear("all"); }}>
-              {t("dd_clear")}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
-      {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 no-print">
-        <Card className="p-4">
-          <h3 className="font-semibold mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /> {t("dd_chart_trend")}</h3>
-          <ClientOnly fallback={<div className="h-64" />}>
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="date" fontSize={11} />
-                <YAxis fontSize={11} />
-                <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
-                <Legend />
-                <Line type="monotone" dataKey="amount" name={t("dd_amount")} stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </ClientOnly>
-        </Card>
-        <Card className="p-4">
-          <h3 className="font-semibold mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> {t("dd_chart_diff")}</h3>
-          <ClientOnly fallback={<div className="h-64" />}>
-            <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                <XAxis dataKey="date" fontSize={11} />
-                <YAxis fontSize={11} />
-                <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
-                <Bar dataKey="diff" name={t("dd_diff")}>
-                  {chartData.map((d, i) => (
-                    <Cell key={i} fill={d.diff >= 0 ? "#10b981" : "#ef4444"} />
+        {/* HISTORY */}
+        <TabsContent value="history" className="mt-4 space-y-4">
+          <Card className="p-4"><FiltersBar /></Card>
+          <Card className="p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>{t("date")}</TableHead>
+                    <TableHead className="text-right">{t("dd_amount")}</TableHead>
+                    <TableHead>{t("note")}</TableHead>
+                    <TableHead className="text-right">{t("edit")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {periodFiltered.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">{t("noEntries")}</TableCell></TableRow>
+                  )}
+                  {periodFiltered.map((d, i) => (
+                    <TableRow key={d.id}>
+                      <TableCell>{fmt.num(i + 1)}</TableCell>
+                      <TableCell>{fmt.date(d.date)}</TableCell>
+                      <TableCell className="text-right font-semibold">{fmt.bdt(d.amount)}</TableCell>
+                      <TableCell className="max-w-[260px] truncate">{d.note || "—"}</TableCell>
+                      <TableCell className="text-right">
+                        <div className="inline-flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => startEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => { if (confirm("Delete?")) del.mutate(d.id); }}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ClientOnly>
-        </Card>
-      </div>
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
 
-      {/* Report table - printable */}
-      <Card className="p-0 overflow-hidden">
+        {/* DIFFERENCE REPORT */}
+        <TabsContent value="diff" className="mt-4 space-y-4">
+          <Card className="p-4"><FiltersBar /></Card>
+          <Card className="p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>#</TableHead>
+                    <TableHead>{t("date")}</TableHead>
+                    <TableHead className="text-right">{t("dd_amount")}</TableHead>
+                    <TableHead className="text-right">{t("dd_diff")}</TableHead>
+                    <TableHead className="text-right">{t("dd_pct_change")}</TableHead>
+                    <TableHead>{t("dd_status")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {periodFiltered.length === 0 && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t("noEntries")}</TableCell></TableRow>
+                  )}
+                  {periodFiltered.map((d, i) => {
+                    const diff = diffMap.get(d.id) ?? null;
+                    return (
+                      <TableRow key={d.id}>
+                        <TableCell>{fmt.num(i + 1)}</TableCell>
+                        <TableCell>{fmt.date(d.date)}</TableCell>
+                        <TableCell className="text-right font-semibold">{fmt.bdt(d.amount)}</TableCell>
+                        <TableCell className="text-right"><DiffCell diff={diff} /></TableCell>
+                        <TableCell className="text-right"><PctCell id={d.id} amount={d.amount} /></TableCell>
+                        <TableCell><StatusBadge diff={diff} /></TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* MONTHLY REPORT */}
+        <TabsContent value="monthly" className="mt-4 space-y-4">
+          <Card className="p-4"><FiltersBar /></Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard label={t("dd_monthly_total")} value={fmt.bdt(monthlyTotal)} accent="text-primary" icon={<BarChart3 className="w-4 h-4" />} />
+            <StatCard label={t("dd_avg_daily")} value={fmt.bdt(avg)} />
+            <StatCard label={t("dd_highest")} value={fmt.bdt(highest?.amount ?? 0)} sub={highest?.date ?? ""} accent="text-emerald-600" />
+            <StatCard label={t("dd_lowest")} value={fmt.bdt(lowest?.amount ?? 0)} sub={lowest?.date ?? ""} accent="text-red-600" />
+          </div>
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /> {t("dd_chart_trend")}</h3>
+            <ClientOnly fallback={<div className="h-64" />}>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis dataKey="date" fontSize={11} />
+                  <YAxis fontSize={11} />
+                  <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                  <Legend />
+                  <Line type="monotone" dataKey="amount" name={t("dd_amount")} stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ClientOnly>
+          </Card>
+        </TabsContent>
+
+        {/* YEARLY REPORT */}
+        <TabsContent value="yearly" className="mt-4 space-y-4">
+          <Card className="p-4"><FiltersBar /></Card>
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3">{t("dd_tab_yearly")} — {fmt.num(Number(fYear === "all" ? today.getFullYear() : fYear))}</h3>
+            <ClientOnly fallback={<div className="h-64" />}>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={yearlyData}>
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis dataKey="label" fontSize={11} />
+                  <YAxis fontSize={11} />
+                  <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                  <Legend />
+                  <Bar dataKey="total" name={t("dd_total")} fill="hsl(var(--primary))" />
+                  <Bar dataKey="avg" name={t("dd_avg")} fill="#10b981" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ClientOnly>
+          </Card>
+          <Card className="p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t("dd_month")}</TableHead>
+                    <TableHead className="text-right">{t("dd_total")}</TableHead>
+                    <TableHead className="text-right">{t("dd_avg")}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {yearlyData.map((r) => (
+                    <TableRow key={r.label}>
+                      <TableCell>{r.label}</TableCell>
+                      <TableCell className="text-right font-semibold">{fmt.bdt(r.total)}</TableCell>
+                      <TableCell className="text-right">{fmt.bdt(r.avg)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
+
+        {/* ANALYTICS */}
+        <TabsContent value="analytics" className="mt-4 space-y-4">
+          <Card className="p-4"><FiltersBar /></Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /> {t("dd_chart_trend")}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="date" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                    <Line type="monotone" dataKey="amount" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+            </Card>
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> {t("dd_chart_diff")}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="date" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                    <Bar dataKey="diff">
+                      {chartData.map((d, i) => (
+                        <Cell key={i} fill={d.diff >= 0 ? "#10b981" : "#ef4444"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* PRINT */}
+        <TabsContent value="print" className="mt-4 space-y-4">
+          <Card className="p-4"><FiltersBar /></Card>
+          <div className="flex gap-2">
+            <Button onClick={() => window.print()}><Printer className="w-4 h-4" /> {t("print")} (PDF)</Button>
+            <Button variant="outline" onClick={exportCSV}><FileDown className="w-4 h-4" /> Excel/CSV</Button>
+          </div>
+        </TabsContent>
+      </Tabs>
+
+      {/* Printable section (always rendered for print) */}
+      <Card className="p-0 overflow-hidden print:shadow-none print:border-0">
         <div className="hidden print:block p-6 text-center border-b">
           <h1 className="text-xl font-bold">{t("bankName")}</h1>
           <div className="text-sm">{t("outlet")} — {t("locationFull")}</div>
           <h2 className="text-lg font-semibold mt-2">{t("dd_title")}</h2>
+          <div className="text-sm text-muted-foreground">
+            {fMonth !== "all" ? months[Number(fMonth) - 1] : t("dd_all")} {fYear !== "all" ? fmt.num(Number(fYear)) : ""}
+          </div>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -425,35 +581,33 @@ function DailyDepositPage() {
                 <TableHead className="text-right">{t("dd_amount")}</TableHead>
                 <TableHead className="text-right">{t("dd_diff")}</TableHead>
                 <TableHead>{t("dd_status")}</TableHead>
-                <TableHead>{t("dd_submitted_by")}</TableHead>
                 <TableHead>{t("note")}</TableHead>
-                <TableHead className="text-right no-print">{t("edit")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 && (
-                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">{t("noEntries")}</TableCell></TableRow>
+              {periodFiltered.length === 0 && (
+                <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">{t("noEntries")}</TableCell></TableRow>
               )}
-              {filtered.map((d, i) => {
+              {periodFiltered.map((d, i) => {
                 const diff = diffMap.get(d.id) ?? null;
                 return (
                   <TableRow key={d.id}>
                     <TableCell>{fmt.num(i + 1)}</TableCell>
                     <TableCell>{fmt.date(d.date)}</TableCell>
                     <TableCell className="text-right font-semibold">{fmt.bdt(d.amount)}</TableCell>
-                    <TableCell className="text-right"><DiffBadge diff={diff} /></TableCell>
+                    <TableCell className="text-right"><DiffCell diff={diff} /></TableCell>
                     <TableCell><StatusBadge diff={diff} /></TableCell>
-                    <TableCell>{d.submitted_by || "—"}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{d.note || "—"}</TableCell>
-                    <TableCell className="text-right no-print">
-                      <div className="inline-flex gap-1">
-                        <Button size="sm" variant="ghost" onClick={() => startEdit(d)}><Pencil className="w-3.5 h-3.5" /></Button>
-                        <Button size="sm" variant="ghost" onClick={() => { if (confirm("Delete?")) del.mutate(d.id); }}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
-                      </div>
-                    </TableCell>
                   </TableRow>
                 );
               })}
+              {periodFiltered.length > 0 && (
+                <TableRow className="bg-muted/50 font-bold">
+                  <TableCell colSpan={2}>{t("dd_total")}</TableCell>
+                  <TableCell className="text-right">{fmt.bdt(monthlyTotal)}</TableCell>
+                  <TableCell colSpan={3}></TableCell>
+                </TableRow>
+              )}
             </TableBody>
           </Table>
         </div>
