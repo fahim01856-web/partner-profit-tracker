@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AppTargetsRouteImport } from './routes/_app/targets'
 import { Route as AppStaffRouteImport } from './routes/_app/staff'
 import { Route as AppSmsSendingRouteImport } from './routes/_app/sms-sending'
@@ -41,6 +42,11 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiChatRoute = ApiChatRouteImport.update({
+  id: '/api/chat',
+  path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppTargetsRoute = AppTargetsRouteImport.update({
@@ -143,6 +149,7 @@ export interface FileRoutesByFullPath {
   '/sms-sending': typeof AppSmsSendingRoute
   '/staff': typeof AppStaffRoute
   '/targets': typeof AppTargetsRoute
+  '/api/chat': typeof ApiChatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -163,6 +170,7 @@ export interface FileRoutesByTo {
   '/sms-sending': typeof AppSmsSendingRoute
   '/staff': typeof AppStaffRoute
   '/targets': typeof AppTargetsRoute
+  '/api/chat': typeof ApiChatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -185,6 +193,7 @@ export interface FileRoutesById {
   '/_app/sms-sending': typeof AppSmsSendingRoute
   '/_app/staff': typeof AppStaffRoute
   '/_app/targets': typeof AppTargetsRoute
+  '/api/chat': typeof ApiChatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -207,6 +216,7 @@ export interface FileRouteTypes {
     | '/sms-sending'
     | '/staff'
     | '/targets'
+    | '/api/chat'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -227,6 +237,7 @@ export interface FileRouteTypes {
     | '/sms-sending'
     | '/staff'
     | '/targets'
+    | '/api/chat'
   id:
     | '__root__'
     | '/'
@@ -248,12 +259,14 @@ export interface FileRouteTypes {
     | '/_app/sms-sending'
     | '/_app/staff'
     | '/_app/targets'
+    | '/api/chat'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
+  ApiChatRoute: typeof ApiChatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -277,6 +290,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/chat': {
+      id: '/api/chat'
+      path: '/api/chat'
+      fullPath: '/api/chat'
+      preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/targets': {
@@ -438,6 +458,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
+  ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
