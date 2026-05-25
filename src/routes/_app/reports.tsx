@@ -15,6 +15,7 @@ import {
   Plus, Trash2, Printer, Download, FileSpreadsheet,
   Handshake, TrendingUp, Receipt, Wallet, Pencil, Save, X,
 } from "lucide-react";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_app/reports")({ component: ReportsPage });
 
