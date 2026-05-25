@@ -377,38 +377,34 @@ function DailyDepositPage() {
         <Card className="p-4">
           <h3 className="font-semibold mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /> {t("dd_chart_trend")}</h3>
           <ClientOnly fallback={<div className="h-64" />}>
-            {() => (
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="date" fontSize={11} />
-                  <YAxis fontSize={11} />
-                  <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
-                  <Legend />
-                  <Line type="monotone" dataKey="amount" name={t("dd_amount")} stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="date" fontSize={11} />
+                <YAxis fontSize={11} />
+                <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                <Legend />
+                <Line type="monotone" dataKey="amount" name={t("dd_amount")} stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
           </ClientOnly>
         </Card>
         <Card className="p-4">
           <h3 className="font-semibold mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" /> {t("dd_chart_diff")}</h3>
           <ClientOnly fallback={<div className="h-64" />}>
-            {() => (
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={chartData}>
-                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-                  <XAxis dataKey="date" fontSize={11} />
-                  <YAxis fontSize={11} />
-                  <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
-                  <Bar dataKey="diff" name={t("dd_diff")}>
-                    {chartData.map((d, i) => (
-                      <Cell key={i} fill={d.diff >= 0 ? "#10b981" : "#ef4444"} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                <XAxis dataKey="date" fontSize={11} />
+                <YAxis fontSize={11} />
+                <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                <Bar dataKey="diff" name={t("dd_diff")}>
+                  {chartData.map((d, i) => (
+                    <Cell key={i} fill={d.diff >= 0 ? "#10b981" : "#ef4444"} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </ClientOnly>
         </Card>
       </div>
