@@ -4,7 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
-  ClipboardList, MessageSquare, Target, FileText
+  ClipboardList, MessageSquare, Target, FileText, Banknote
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
