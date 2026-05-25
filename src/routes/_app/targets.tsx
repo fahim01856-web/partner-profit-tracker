@@ -36,7 +36,7 @@ const CATEGORIES = [
 const MONTHS_BN = ["জানু", "ফেব্রু", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগ", "সেপ্ট", "অক্টো", "নভে", "ডিসে"];
 const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-type Target = { id: string; month: number; year: number; staff_name: string; target_category: string; target_amount: number; target_quantity: number; notes: string | null };
+type TargetRow = { id: string; month: number; year: number; staff_name: string; target_category: string; target_amount: number; target_quantity: number; notes: string | null };
 type Achievement = { id: string; date: string; staff_name: string; achievement_category: string; amount: number; quantity: number; remarks: string | null };
 
 function TargetsPage() {
@@ -52,7 +52,7 @@ function TargetsPage() {
     queryFn: async () => {
       const { data, error } = await supabase.from("monthly_targets" as any).select("*").order("year", { ascending: false }).order("month", { ascending: false });
       if (error) throw error;
-      return (data || []) as unknown as Target[];
+      return (data || []) as unknown as TargetRow[];
     },
   });
   const { data: achievements = [] } = useQuery({
