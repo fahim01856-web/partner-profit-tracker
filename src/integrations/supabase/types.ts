@@ -64,7 +64,9 @@ export type Database = {
           created_at: string
           date: string
           id: string
+          in_time: string | null
           note: string | null
+          out_time: string | null
           staff_id: string
           status: string
         }
@@ -72,7 +74,9 @@ export type Database = {
           created_at?: string
           date: string
           id?: string
+          in_time?: string | null
           note?: string | null
+          out_time?: string | null
           staff_id: string
           status?: string
         }
@@ -80,7 +84,9 @@ export type Database = {
           created_at?: string
           date?: string
           id?: string
+          in_time?: string | null
           note?: string | null
+          out_time?: string | null
           staff_id?: string
           status?: string
         }
@@ -133,6 +139,30 @@ export type Database = {
         }
         Relationships: []
       }
+      holidays: {
+        Row: {
+          created_at: string
+          date: string
+          holiday_type: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          holiday_type?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          holiday_type?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       incomes: {
         Row: {
           amount: number
@@ -162,6 +192,50 @@ export type Database = {
           id?: string
         }
         Relationships: []
+      }
+      leaves: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          end_date: string
+          id: string
+          leave_type: string
+          reason: string | null
+          staff_id: string
+          start_date: string
+          status: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          end_date: string
+          id?: string
+          leave_type?: string
+          reason?: string | null
+          staff_id: string
+          start_date: string
+          status?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          end_date?: string
+          id?: string
+          leave_type?: string
+          reason?: string | null
+          staff_id?: string
+          start_date?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leaves_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       monthly_profits: {
         Row: {
@@ -399,31 +473,37 @@ export type Database = {
         Row: {
           active: boolean
           created_at: string
+          employee_code: string | null
           id: string
           joining_date: string | null
           monthly_salary: number
           name: string
           phone: string | null
+          photo_url: string | null
           position: string | null
         }
         Insert: {
           active?: boolean
           created_at?: string
+          employee_code?: string | null
           id?: string
           joining_date?: string | null
           monthly_salary?: number
           name: string
           phone?: string | null
+          photo_url?: string | null
           position?: string | null
         }
         Update: {
           active?: boolean
           created_at?: string
+          employee_code?: string | null
           id?: string
           joining_date?: string | null
           monthly_salary?: number
           name?: string
           phone?: string | null
+          photo_url?: string | null
           position?: string | null
         }
         Relationships: []

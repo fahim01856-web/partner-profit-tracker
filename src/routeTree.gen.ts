@@ -20,6 +20,7 @@ import { Route as AppPartnersRouteImport } from './routes/_app/partners'
 import { Route as AppMonthlyReportRouteImport } from './routes/_app/monthly-report'
 import { Route as AppIncomeRouteImport } from './routes/_app/income'
 import { Route as AppExpenseRouteImport } from './routes/_app/expense'
+import { Route as AppEmployeeAttendanceRouteImport } from './routes/_app/employee-attendance'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 
@@ -77,6 +78,11 @@ const AppExpenseRoute = AppExpenseRouteImport.update({
   path: '/expense',
   getParentRoute: () => AppRoute,
 } as any)
+const AppEmployeeAttendanceRoute = AppEmployeeAttendanceRouteImport.update({
+  id: '/employee-attendance',
+  path: '/employee-attendance',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppDashboardRoute = AppDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/attendance': typeof AppAttendanceRoute
   '/dashboard': typeof AppDashboardRoute
+  '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
   '/monthly-report': typeof AppMonthlyReportRoute
@@ -107,6 +114,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/attendance': typeof AppAttendanceRoute
   '/dashboard': typeof AppDashboardRoute
+  '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
   '/monthly-report': typeof AppMonthlyReportRoute
@@ -123,6 +131,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/attendance': typeof AppAttendanceRoute
   '/_app/dashboard': typeof AppDashboardRoute
+  '/_app/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/_app/expense': typeof AppExpenseRoute
   '/_app/income': typeof AppIncomeRoute
   '/_app/monthly-report': typeof AppMonthlyReportRoute
@@ -139,6 +148,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/attendance'
     | '/dashboard'
+    | '/employee-attendance'
     | '/expense'
     | '/income'
     | '/monthly-report'
@@ -153,6 +163,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/attendance'
     | '/dashboard'
+    | '/employee-attendance'
     | '/expense'
     | '/income'
     | '/monthly-report'
@@ -168,6 +179,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/attendance'
     | '/_app/dashboard'
+    | '/_app/employee-attendance'
     | '/_app/expense'
     | '/_app/income'
     | '/_app/monthly-report'
@@ -263,6 +275,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppExpenseRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/employee-attendance': {
+      id: '/_app/employee-attendance'
+      path: '/employee-attendance'
+      fullPath: '/employee-attendance'
+      preLoaderRoute: typeof AppEmployeeAttendanceRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/dashboard': {
       id: '/_app/dashboard'
       path: '/dashboard'
@@ -283,6 +302,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppDashboardRoute: typeof AppDashboardRoute
+  AppEmployeeAttendanceRoute: typeof AppEmployeeAttendanceRoute
   AppExpenseRoute: typeof AppExpenseRoute
   AppIncomeRoute: typeof AppIncomeRoute
   AppMonthlyReportRoute: typeof AppMonthlyReportRoute
@@ -296,6 +316,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAttendanceRoute: AppAttendanceRoute,
   AppDashboardRoute: AppDashboardRoute,
+  AppEmployeeAttendanceRoute: AppEmployeeAttendanceRoute,
   AppExpenseRoute: AppExpenseRoute,
   AppIncomeRoute: AppIncomeRoute,
   AppMonthlyReportRoute: AppMonthlyReportRoute,
