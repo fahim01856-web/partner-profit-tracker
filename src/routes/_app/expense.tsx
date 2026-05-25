@@ -10,7 +10,7 @@ import { useFmt, genVoucherNo } from "@/lib/format";
 import { useI18n, type DictKey } from "@/lib/i18n";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Printer, FileDown } from "lucide-react";
+import { Plus, Trash2, Printer, FileDown, Pencil, X } from "lucide-react";
 
 export const Route = createFileRoute("/_app/expense")({ component: ExpensePage });
 
@@ -20,10 +20,12 @@ function ExpensePage() {
   const { t } = useI18n();
   const fmt = useFmt();
   const qc = useQueryClient();
-  const [form, setForm] = useState({
+  const emptyForm = () => ({
     voucher_no: genVoucherNo(), date: new Date().toISOString().slice(0,10),
     category: CATEGORY_KEYS[0] as string, description: "", paid_to: "", amount: "", note: "",
   });
+  const [form, setForm] = useState(emptyForm());
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [printRow, setPrintRow] = useState<any>(null);
 
   const { data: rows = [] } = useQuery({
@@ -35,17 +37,25 @@ function ExpensePage() {
     },
   });
 
-  const add = useMutation({
+  const resetForm = () => { setForm(emptyForm()); setEditingId(null); };
+
+  const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("expenses").insert({
+      const payload = {
         voucher_no: form.voucher_no, date: form.date, category: form.category,
         description: form.description, paid_to: form.paid_to, amount: Number(form.amount), note: form.note,
-      });
-      if (error) throw error;
+      };
+      if (editingId) {
+        const { error } = await supabase.from("expenses").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("expenses").insert(payload);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      toast.success(t("voucher_created"));
-      setForm({ ...form, voucher_no: genVoucherNo(), description: "", paid_to: "", amount: "", note: "" });
+      toast.success(editingId ? t("updated") : t("voucher_created"));
+      resetForm();
       qc.invalidateQueries({ queryKey: ["expenses"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -58,6 +68,16 @@ function ExpensePage() {
     },
     onSuccess: () => { toast.success(t("deleted")); qc.invalidateQueries({ queryKey: ["expenses"] }); },
   });
+
+  const startEdit = (r: any) => {
+    setEditingId(r.id);
+    setForm({
+      voucher_no: r.voucher_no, date: r.date, category: r.category,
+      description: r.description ?? "", paid_to: r.paid_to ?? "", amount: String(r.amount), note: r.note ?? "",
+    });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const onDelete = (id: string) => { if (window.confirm(t("confirm_delete"))) del.mutate(id); };
 
   const total = rows.reduce((s, r) => s + Number(r.amount), 0);
   const showCat = (val: string) =>
@@ -78,9 +98,11 @@ function ExpensePage() {
         <Button variant="outline" onClick={() => { setPrintRow(null); window.print(); }}><FileDown className="w-4 h-4 mr-2" /> {t("printAll")}</Button>
       </div>
 
-      <Card className="p-5 no-print">
-        <h2 className="font-semibold mb-4 flex items-center gap-2"><Plus className="w-4 h-4" /> {t("expense_new")}</h2>
-        <form onSubmit={(e) => { e.preventDefault(); add.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <Card className={`p-5 no-print ${editingId ? "ring-2 ring-primary" : ""}`}>
+        <h2 className="font-semibold mb-4 flex items-center gap-2">
+          {editingId ? <><Pencil className="w-4 h-4" /> {t("edit")}</> : <><Plus className="w-4 h-4" /> {t("expense_new")}</>}
+        </h2>
+        <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <div><Label>{t("voucher_no")}</Label><Input value={form.voucher_no} onChange={(e) => setForm({...form, voucher_no: e.target.value})} required /></div>
           <div><Label>{t("date")}</Label><Input type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} required /></div>
           <div><Label>{t("category")}</Label>
@@ -92,7 +114,10 @@ function ExpensePage() {
           <div><Label>{t("amountBDT")}</Label><Input type="number" step="0.01" required value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} /></div>
           <div><Label>{t("description")}</Label><Input value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} /></div>
           <div className="sm:col-span-2 lg:col-span-3"><Label>{t("note")}</Label><Textarea value={form.note} onChange={(e) => setForm({...form, note: e.target.value})} /></div>
-          <div><Button type="submit" disabled={add.isPending}>{t("create_voucher")}</Button></div>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={save.isPending}>{editingId ? t("update") : t("create_voucher")}</Button>
+            {editingId && <Button type="button" variant="outline" onClick={resetForm}><X className="w-4 h-4 mr-1" /> {t("cancel_edit")}</Button>}
+          </div>
         </form>
       </Card>
 
@@ -135,15 +160,18 @@ function ExpensePage() {
             </tr></thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t">
+                <tr key={r.id} className={`border-t ${editingId === r.id ? "bg-primary/5" : ""}`}>
                   <td className="p-2 font-mono text-xs">{r.voucher_no}</td>
                   <td className="p-2">{fmt.date(r.date)}</td>
                   <td className="p-2">{showCat(r.category)}</td>
                   <td className="p-2">{r.paid_to}</td>
                   <td className="p-2 text-right font-semibold">{fmt.bdt(Number(r.amount))}</td>
-                  <td className="p-2 no-print flex gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => doPrint(r)}><Printer className="w-4 h-4" /></Button>
-                    <Button size="sm" variant="ghost" onClick={() => del.mutate(r.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                  <td className="p-2 no-print">
+                    <div className="flex gap-1 justify-end">
+                      <Button size="sm" variant="ghost" onClick={() => doPrint(r)} title={t("print")}><Printer className="w-4 h-4" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => startEdit(r)} title={t("edit")}><Pencil className="w-4 h-4 text-primary" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => onDelete(r.id)} title={t("delete")}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    </div>
                   </td>
                 </tr>
               ))}
