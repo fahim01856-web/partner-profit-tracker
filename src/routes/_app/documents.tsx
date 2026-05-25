@@ -170,8 +170,13 @@ function DocumentsPage() {
                 <TableCell>{d.file_url ? <a href={d.file_url} target="_blank" rel="noreferrer" className="text-primary inline-flex items-center gap-1 hover:underline">{d.file_name || "View"} <ExternalLink className="w-3 h-3" /></a> : "-"}</TableCell>
                 <TableCell>{d.expiry_date || "-"}</TableCell><TableCell>{d.uploaded_by || "-"}</TableCell><TableCell>{d.created_at.slice(0, 10)}</TableCell>
                 <TableCell className="no-print">
-                  <Button size="icon" variant="ghost" onClick={() => startEdit(d)}><Pencil className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => { if (confirm(lang === "bn" ? "মুছবেন?" : "Delete?")) del.mutate(d.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                  <div className="flex items-center gap-1">
+                    {d.file_url && (
+                      <Button size="icon" variant="ghost" onClick={() => handleDownload(d)} title={lang === "bn" ? "ডাউনলোড" : "Download"}><Download className="w-4 h-4 text-primary" /></Button>
+                    )}
+                    <Button size="icon" variant="ghost" onClick={() => startEdit(d)}><Pencil className="w-4 h-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => { if (confirm(lang === "bn" ? "মুছবেন?" : "Delete?")) del.mutate(d.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
