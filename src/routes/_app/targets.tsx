@@ -262,18 +262,16 @@ function TargetsPage() {
           <Card className="p-4">
             <h3 className="font-bold mb-3">{lang === "bn" ? "বার্ষিক টার্গেট vs অর্জন" : "Yearly Target vs Achievement"} — {year}</h3>
             <ClientOnly fallback={<div className="h-72" />}>
-              {() => (
-                <div className="h-72">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={yearlyChart}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="month" /><YAxis /><Tooltip /><Legend />
-                      <Bar dataKey="target" fill="#94a3b8" name={lang === "bn" ? "টার্গেট" : "Target"} />
-                      <Bar dataKey="achievement" fill="#10b981" name={lang === "bn" ? "অর্জন" : "Achievement"} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
+              <div className="h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={yearlyChart}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" /><YAxis /><Tooltip /><Legend />
+                    <Bar dataKey="target" fill="#94a3b8" name={lang === "bn" ? "টার্গেট" : "Target"} />
+                    <Bar dataKey="achievement" fill="#10b981" name={lang === "bn" ? "অর্জন" : "Achievement"} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </ClientOnly>
           </Card>
           <Card className="overflow-hidden">
