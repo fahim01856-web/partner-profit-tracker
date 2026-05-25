@@ -29,6 +29,7 @@ import { Route as AppDocumentsRouteImport } from './routes/_app/documents'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppDailyDepositRouteImport } from './routes/_app/daily-deposit'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
+import { Route as AppAssistantRouteImport } from './routes/_app/assistant'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -129,10 +130,16 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAssistantRoute = AppAssistantRouteImport.update({
+  id: '/assistant',
+  path: '/assistant',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/assistant': typeof AppAssistantRoute
   '/attendance': typeof AppAttendanceRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/assistant': typeof AppAssistantRoute
   '/attendance': typeof AppAttendanceRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/assistant': typeof AppAssistantRoute
   '/_app/attendance': typeof AppAttendanceRoute
   '/_app/daily-deposit': typeof AppDailyDepositRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/assistant'
     | '/attendance'
     | '/daily-deposit'
     | '/dashboard'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/assistant'
     | '/attendance'
     | '/daily-deposit'
     | '/dashboard'
@@ -243,6 +254,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/assistant'
     | '/_app/attendance'
     | '/_app/daily-deposit'
     | '/_app/dashboard'
@@ -411,10 +423,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/assistant': {
+      id: '/_app/assistant'
+      path: '/assistant'
+      fullPath: '/assistant'
+      preLoaderRoute: typeof AppAssistantRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAssistantRoute: typeof AppAssistantRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppDailyDepositRoute: typeof AppDailyDepositRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -434,6 +454,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAssistantRoute: AppAssistantRoute,
   AppAttendanceRoute: AppAttendanceRoute,
   AppDailyDepositRoute: AppDailyDepositRoute,
   AppDashboardRoute: AppDashboardRoute,
