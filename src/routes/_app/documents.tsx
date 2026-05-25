@@ -56,8 +56,8 @@ function DocumentsPage() {
         const path = `${activeCat}/${Date.now()}_${file.name}`;
         const { error: upErr } = await supabase.storage.from("documents").upload(path, file);
         if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from("documents").getPublicUrl(path);
-        file_url = pub.publicUrl;
+        // Store the storage path; signed URLs are generated on demand for view/download.
+        file_url = path;
         file_name = file.name;
       }
       const payload: any = {
@@ -93,10 +93,35 @@ function DocumentsPage() {
     setShowForm(true);
   };
 
+  // Extract storage path from either a stored path or a legacy public URL.
+  const toStoragePath = (val: string) => {
+    const marker = "/documents/";
+    const idx = val.indexOf(marker);
+    return idx >= 0 ? val.substring(idx + marker.length) : val;
+  };
+
+  const getSignedUrl = async (val: string) => {
+    const path = toStoragePath(val);
+    const { data, error } = await supabase.storage.from("documents").createSignedUrl(path, 60);
+    if (error || !data) throw error || new Error("signed url failed");
+    return data.signedUrl;
+  };
+
+  const handleView = async (d: Doc) => {
+    if (!d.file_url) return;
+    try {
+      const url = await getSignedUrl(d.file_url);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      toast.error(lang === "bn" ? "ফাইল খোলা যায়নি" : "Could not open file");
+    }
+  };
+
   const handleDownload = async (d: Doc) => {
     if (!d.file_url) return;
     try {
-      const res = await fetch(d.file_url);
+      const signed = await getSignedUrl(d.file_url);
+      const res = await fetch(signed);
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -167,7 +192,7 @@ function DocumentsPage() {
             {filtered.map((d, i) => (
               <TableRow key={d.id}>
                 <TableCell>{i + 1}</TableCell><TableCell className="font-medium">{d.title}</TableCell>
-                <TableCell>{d.file_url ? <a href={d.file_url} target="_blank" rel="noreferrer" className="text-primary inline-flex items-center gap-1 hover:underline">{d.file_name || "View"} <ExternalLink className="w-3 h-3" /></a> : "-"}</TableCell>
+                <TableCell>{d.file_url ? <button type="button" onClick={() => handleView(d)} className="text-primary inline-flex items-center gap-1 hover:underline">{d.file_name || "View"} <ExternalLink className="w-3 h-3" /></button> : "-"}</TableCell>
                 <TableCell>{d.expiry_date || "-"}</TableCell><TableCell>{d.uploaded_by || "-"}</TableCell><TableCell>{d.created_at.slice(0, 10)}</TableCell>
                 <TableCell className="no-print">
                   <div className="flex items-center gap-1">
