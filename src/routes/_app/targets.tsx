@@ -64,37 +64,63 @@ function TargetsPage() {
     },
   });
 
-  // -- Target form
+  // -- Target form (insert + edit)
   const [tf, setTf] = useState({ month, year, staff_name: "", target_category: CATEGORIES[0].id, target_amount: 0, target_quantity: 0, notes: "" });
+  const [editTargetId, setEditTargetId] = useState<string | null>(null);
+  const resetTf = () => { setTf({ month, year, staff_name: "", target_category: CATEGORIES[0].id, target_amount: 0, target_quantity: 0, notes: "" }); setEditTargetId(null); };
   const saveTarget = useMutation({
     mutationFn: async () => {
       if (!tf.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
-      const { error } = await supabase.from("monthly_targets" as any).insert(tf);
-      if (error) throw error;
+      if (editTargetId) {
+        const { error } = await supabase.from("monthly_targets" as any).update(tf).eq("id", editTargetId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("monthly_targets" as any).insert(tf);
+        if (error) throw error;
+      }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["monthly_targets"] }); toast.success(lang === "bn" ? "টার্গেট সেট হয়েছে" : "Target set"); setTf({ ...tf, staff_name: "", target_amount: 0, target_quantity: 0, notes: "" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["monthly_targets"] }); toast.success(editTargetId ? t("updated") : (lang === "bn" ? "টার্গেট সেট হয়েছে" : "Target set")); resetTf(); },
     onError: (e: any) => toast.error(e.message),
   });
   const delTarget = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("monthly_targets" as any).delete().eq("id", id); if (error) throw error; },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["monthly_targets"] }),
   });
+  const startEditTarget = (r: TargetRow) => {
+    setEditTargetId(r.id);
+    setTf({ month: r.month, year: r.year, staff_name: r.staff_name, target_category: r.target_category, target_amount: Number(r.target_amount), target_quantity: Number(r.target_quantity), notes: r.notes ?? "" });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const onDelTarget = (id: string) => { if (window.confirm(t("confirm_delete"))) delTarget.mutate(id); };
 
-  // -- Achievement form
+  // -- Achievement form (insert + edit)
   const [af, setAf] = useState({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, amount: 0, quantity: 0, remarks: "" });
+  const [editAchId, setEditAchId] = useState<string | null>(null);
+  const resetAf = () => { setAf({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, amount: 0, quantity: 0, remarks: "" }); setEditAchId(null); };
   const saveAch = useMutation({
     mutationFn: async () => {
       if (!af.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
-      const { error } = await supabase.from("achievements" as any).insert(af);
-      if (error) throw error;
+      if (editAchId) {
+        const { error } = await supabase.from("achievements" as any).update(af).eq("id", editAchId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("achievements" as any).insert(af);
+        if (error) throw error;
+      }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["achievements"] }); toast.success(lang === "bn" ? "অর্জন এন্ট্রি হয়েছে" : "Achievement saved"); setAf({ ...af, staff_name: "", amount: 0, quantity: 0, remarks: "" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["achievements"] }); toast.success(editAchId ? t("updated") : (lang === "bn" ? "অর্জন এন্ট্রি হয়েছে" : "Achievement saved")); resetAf(); },
     onError: (e: any) => toast.error(e.message),
   });
   const delAch = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("achievements" as any).delete().eq("id", id); if (error) throw error; },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["achievements"] }),
   });
+  const startEditAch = (r: Achievement) => {
+    setEditAchId(r.id);
+    setAf({ date: r.date, staff_name: r.staff_name, achievement_category: r.achievement_category, amount: Number(r.amount), quantity: Number(r.quantity), remarks: r.remarks ?? "" });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const onDelAch = (id: string) => { if (window.confirm(t("confirm_delete"))) delAch.mutate(id); };
 
   // -- Compute progress per category for selected month/year
   const progress = useMemo(() => {
