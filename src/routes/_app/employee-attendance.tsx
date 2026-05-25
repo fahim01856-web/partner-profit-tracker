@@ -95,7 +95,7 @@ function DailyTab() {
   const upsert = useMutation({
     mutationFn: async (payload: { staff_id: string; status?: string; in_time?: string | null; out_time?: string | null; note?: string | null }) => {
       const existing = attendance.find(a => a.staff_id === payload.staff_id);
-      const row = { staff_id: payload.staff_id, date, ...existing, ...payload };
+      const row = { ...(existing ?? {}), ...payload, date };
       const { error } = await supabase.from("attendance").upsert(row, { onConflict: "staff_id,date" });
       if (error) throw error;
     },
