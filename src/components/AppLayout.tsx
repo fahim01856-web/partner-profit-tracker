@@ -19,6 +19,7 @@ export function AppLayout() {
 
   const nav = [
     { to: "/dashboard", label: t("nav_dashboard"), icon: LayoutDashboard },
+    { to: "/assistant", label: lang === "bn" ? "এআই অ্যাসিস্ট্যান্ট" : "AI Assistant", icon: Bot },
     { to: "/monthly-report", label: t("nav_monthly_report"), icon: FileBarChart },
     { to: "/income", label: t("nav_income"), icon: TrendingUp },
     { to: "/daily-deposit", label: t("nav_daily_deposit"), icon: Banknote },
