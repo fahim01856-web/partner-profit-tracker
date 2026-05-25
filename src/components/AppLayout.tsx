@@ -21,6 +21,7 @@ export function AppLayout() {
     { to: "/dashboard", label: t("nav_dashboard"), icon: LayoutDashboard },
     { to: "/monthly-report", label: t("nav_monthly_report"), icon: FileBarChart },
     { to: "/income", label: t("nav_income"), icon: TrendingUp },
+    { to: "/daily-deposit", label: t("nav_daily_deposit"), icon: Banknote },
     { to: "/expense", label: t("nav_expense"), icon: Receipt },
     { to: "/staff", label: t("nav_staff"), icon: Users },
     { to: "/employee-attendance", label: t("nav_emp_att"), icon: ClipboardCheck },
