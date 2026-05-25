@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { useFmt } from "@/lib/format";
 import { toast } from "sonner";
-import { Target, Plus, Trash2, Printer, Trophy, TrendingUp, Award } from "lucide-react";
+import { Target, Plus, Trash2, Printer, Trophy, TrendingUp, Award, Pencil, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 export const Route = createFileRoute("/_app/targets")({ component: TargetsPage });
@@ -64,37 +64,63 @@ function TargetsPage() {
     },
   });
 
-  // -- Target form
+  // -- Target form (insert + edit)
   const [tf, setTf] = useState({ month, year, staff_name: "", target_category: CATEGORIES[0].id, target_amount: 0, target_quantity: 0, notes: "" });
+  const [editTargetId, setEditTargetId] = useState<string | null>(null);
+  const resetTf = () => { setTf({ month, year, staff_name: "", target_category: CATEGORIES[0].id, target_amount: 0, target_quantity: 0, notes: "" }); setEditTargetId(null); };
   const saveTarget = useMutation({
     mutationFn: async () => {
       if (!tf.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
-      const { error } = await supabase.from("monthly_targets" as any).insert(tf);
-      if (error) throw error;
+      if (editTargetId) {
+        const { error } = await supabase.from("monthly_targets" as any).update(tf).eq("id", editTargetId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("monthly_targets" as any).insert(tf);
+        if (error) throw error;
+      }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["monthly_targets"] }); toast.success(lang === "bn" ? "টার্গেট সেট হয়েছে" : "Target set"); setTf({ ...tf, staff_name: "", target_amount: 0, target_quantity: 0, notes: "" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["monthly_targets"] }); toast.success(editTargetId ? t("updated") : (lang === "bn" ? "টার্গেট সেট হয়েছে" : "Target set")); resetTf(); },
     onError: (e: any) => toast.error(e.message),
   });
   const delTarget = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("monthly_targets" as any).delete().eq("id", id); if (error) throw error; },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["monthly_targets"] }),
   });
+  const startEditTarget = (r: TargetRow) => {
+    setEditTargetId(r.id);
+    setTf({ month: r.month, year: r.year, staff_name: r.staff_name, target_category: r.target_category, target_amount: Number(r.target_amount), target_quantity: Number(r.target_quantity), notes: r.notes ?? "" });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const onDelTarget = (id: string) => { if (window.confirm(t("confirm_delete"))) delTarget.mutate(id); };
 
-  // -- Achievement form
+  // -- Achievement form (insert + edit)
   const [af, setAf] = useState({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, amount: 0, quantity: 0, remarks: "" });
+  const [editAchId, setEditAchId] = useState<string | null>(null);
+  const resetAf = () => { setAf({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, amount: 0, quantity: 0, remarks: "" }); setEditAchId(null); };
   const saveAch = useMutation({
     mutationFn: async () => {
       if (!af.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
-      const { error } = await supabase.from("achievements" as any).insert(af);
-      if (error) throw error;
+      if (editAchId) {
+        const { error } = await supabase.from("achievements" as any).update(af).eq("id", editAchId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("achievements" as any).insert(af);
+        if (error) throw error;
+      }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["achievements"] }); toast.success(lang === "bn" ? "অর্জন এন্ট্রি হয়েছে" : "Achievement saved"); setAf({ ...af, staff_name: "", amount: 0, quantity: 0, remarks: "" }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["achievements"] }); toast.success(editAchId ? t("updated") : (lang === "bn" ? "অর্জন এন্ট্রি হয়েছে" : "Achievement saved")); resetAf(); },
     onError: (e: any) => toast.error(e.message),
   });
   const delAch = useMutation({
     mutationFn: async (id: string) => { const { error } = await supabase.from("achievements" as any).delete().eq("id", id); if (error) throw error; },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["achievements"] }),
   });
+  const startEditAch = (r: Achievement) => {
+    setEditAchId(r.id);
+    setAf({ date: r.date, staff_name: r.staff_name, achievement_category: r.achievement_category, amount: Number(r.amount), quantity: Number(r.quantity), remarks: r.remarks ?? "" });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const onDelAch = (id: string) => { if (window.confirm(t("confirm_delete"))) delAch.mutate(id); };
 
   // -- Compute progress per category for selected month/year
   const progress = useMemo(() => {
@@ -179,13 +205,16 @@ function TargetsPage() {
               <div><Label>{lang === "bn" ? "টার্গেট সংখ্যা" : "Target Quantity"}</Label><Input type="number" value={tf.target_quantity} onChange={(e) => setTf({ ...tf, target_quantity: Number(e.target.value) })} /></div>
               <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "মন্তব্য" : "Notes"}</Label><Textarea rows={2} value={tf.notes} onChange={(e) => setTf({ ...tf, notes: e.target.value })} /></div>
             </div>
-            <Button className="mt-3" onClick={() => saveTarget.mutate()}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</Button>
+            <div className="mt-3 flex gap-2">
+              <Button onClick={() => saveTarget.mutate()}>{editTargetId ? <><Pencil className="w-4 h-4 mr-1" />{t("update")}</> : <><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</>}</Button>
+              {editTargetId && <Button variant="outline" onClick={resetTf}><X className="w-4 h-4 mr-1" />{t("cancel_edit")}</Button>}
+            </div>
           </Card>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto"><Table>
               <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "মাস/বছর" : "Month/Year"}</TableHead><TableHead>{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead><TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead><TableHead>{lang === "bn" ? "পরিমাণ" : "Amount"}</TableHead><TableHead>{lang === "bn" ? "সংখ্যা" : "Quantity"}</TableHead><TableHead></TableHead></TableRow></TableHeader>
               <TableBody>{targets.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো টার্গেট নেই" : "No targets"}</TableCell></TableRow>}
-                {targets.map((t, i) => (<TableRow key={t.id}><TableCell>{i + 1}</TableCell><TableCell>{MONTHS_EN[t.month - 1]} {t.year}</TableCell><TableCell>{t.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === t.target_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt.num(t.target_amount)}</TableCell><TableCell>{t.target_quantity}</TableCell><TableCell><Button size="icon" variant="ghost" onClick={() => delTarget.mutate(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></TableCell></TableRow>))}
+                {targets.map((tr, i) => (<TableRow key={tr.id} className={editTargetId === tr.id ? "bg-primary/5" : ""}><TableCell>{i + 1}</TableCell><TableCell>{MONTHS_EN[tr.month - 1]} {tr.year}</TableCell><TableCell>{tr.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === tr.target_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt.num(tr.target_amount)}</TableCell><TableCell>{tr.target_quantity}</TableCell><TableCell><div className="flex gap-1 justify-end"><Button size="icon" variant="ghost" onClick={() => startEditTarget(tr)}><Pencil className="w-4 h-4 text-primary" /></Button><Button size="icon" variant="ghost" onClick={() => onDelTarget(tr.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div></TableCell></TableRow>))}
               </TableBody>
             </Table></div>
           </Card>
@@ -202,13 +231,16 @@ function TargetsPage() {
               <div><Label>{lang === "bn" ? "সংখ্যা" : "Quantity"}</Label><Input type="number" value={af.quantity} onChange={(e) => setAf({ ...af, quantity: Number(e.target.value) })} /></div>
               <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "মন্তব্য" : "Remarks"}</Label><Textarea rows={2} value={af.remarks} onChange={(e) => setAf({ ...af, remarks: e.target.value })} /></div>
             </div>
-            <Button className="mt-3" onClick={() => saveAch.mutate()}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</Button>
+            <div className="mt-3 flex gap-2">
+              <Button onClick={() => saveAch.mutate()}>{editAchId ? <><Pencil className="w-4 h-4 mr-1" />{t("update")}</> : <><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</>}</Button>
+              {editAchId && <Button variant="outline" onClick={resetAf}><X className="w-4 h-4 mr-1" />{t("cancel_edit")}</Button>}
+            </div>
           </Card>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto"><Table>
               <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead><TableHead>{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead><TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead><TableHead>{lang === "bn" ? "পরিমাণ" : "Amount"}</TableHead><TableHead>{lang === "bn" ? "সংখ্যা" : "Qty"}</TableHead><TableHead></TableHead></TableRow></TableHeader>
               <TableBody>{achievements.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো অর্জন নেই" : "No achievements"}</TableCell></TableRow>}
-                {achievements.slice(0, 50).map((a, i) => (<TableRow key={a.id}><TableCell>{i + 1}</TableCell><TableCell>{a.date}</TableCell><TableCell>{a.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === a.achievement_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt.num(a.amount)}</TableCell><TableCell>{a.quantity}</TableCell><TableCell><Button size="icon" variant="ghost" onClick={() => delAch.mutate(a.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></TableCell></TableRow>))}
+                {achievements.slice(0, 50).map((a, i) => (<TableRow key={a.id} className={editAchId === a.id ? "bg-primary/5" : ""}><TableCell>{i + 1}</TableCell><TableCell>{a.date}</TableCell><TableCell>{a.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === a.achievement_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt.num(a.amount)}</TableCell><TableCell>{a.quantity}</TableCell><TableCell><div className="flex gap-1 justify-end"><Button size="icon" variant="ghost" onClick={() => startEditAch(a)}><Pencil className="w-4 h-4 text-primary" /></Button><Button size="icon" variant="ghost" onClick={() => onDelAch(a.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div></TableCell></TableRow>))}
               </TableBody>
             </Table></div>
           </Card>
