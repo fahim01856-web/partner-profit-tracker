@@ -4,7 +4,7 @@ import { useI18n } from "@/lib/i18n";
 import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
-  ClipboardList, MessageSquare, Target, FileText, Banknote
+  ClipboardList, MessageSquare, Target, FileText, Banknote, Bot
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,7 @@ export function AppLayout() {
 
   const nav = [
     { to: "/dashboard", label: t("nav_dashboard"), icon: LayoutDashboard },
+    { to: "/assistant", label: lang === "bn" ? "এআই অ্যাসিস্ট্যান্ট" : "AI Assistant", icon: Bot },
     { to: "/monthly-report", label: t("nav_monthly_report"), icon: FileBarChart },
     { to: "/income", label: t("nav_income"), icon: TrendingUp },
     { to: "/daily-deposit", label: t("nav_daily_deposit"), icon: Banknote },
