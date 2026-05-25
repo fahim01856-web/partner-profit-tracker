@@ -3,7 +3,8 @@ import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
 import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
-  Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages
+  Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
+  ClipboardList, MessageSquare, Target, FileText
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,10 @@ export function AppLayout() {
     { to: "/salary-sheet", label: t("nav_salary_sheet"), icon: FileBarChart },
     { to: "/partners", label: t("nav_partners"), icon: Handshake },
     { to: "/reports", label: t("nav_reports"), icon: FileBarChart },
+    { to: "/pending-works", label: t("nav_pending"), icon: ClipboardList },
+    { to: "/sms-sending", label: t("nav_sms"), icon: MessageSquare },
+    { to: "/targets", label: t("nav_targets"), icon: Target },
+    { to: "/documents", label: t("nav_documents"), icon: FileText },
   ] as const;
 
   const LangToggle = ({ className = "" }: { className?: string }) => (

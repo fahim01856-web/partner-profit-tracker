@@ -25,6 +25,12 @@ const dict = {
   nav_monthly_report: { bn: "মাসিক রিপোর্ট", en: "Monthly Report" },
   nav_salary_sheet: { bn: "স্যালারি শীট", en: "Salary Sheet" },
   nav_emp_att: { bn: "এমপ্লয়ী হাজিরা", en: "Employee Attendance" },
+  nav_pending: { bn: "পেন্ডিং কাজ", en: "Pending Works" },
+  nav_sms: { bn: "SMS পাঠানো", en: "SMS Sending" },
+  nav_targets: { bn: "মাসিক টার্গেট", en: "Monthly Targets" },
+  nav_documents: { bn: "ডকুমেন্ট", en: "Documents" },
+
+
 
   // Employee Attendance
   eatt_title: { bn: "এমপ্লয়ী হাজিরা ম্যানেজমেন্ট", en: "Employee Attendance Management" },
