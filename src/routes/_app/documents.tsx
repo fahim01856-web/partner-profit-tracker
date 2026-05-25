@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { FileText, Upload, Trash2, Pencil, Printer, ExternalLink, Plus, X } from "lucide-react";
+import { FileText, Upload, Trash2, Pencil, Printer, ExternalLink, Plus, X, Download } from "lucide-react";
 
 export const Route = createFileRoute("/_app/documents")({ component: DocumentsPage });
 
