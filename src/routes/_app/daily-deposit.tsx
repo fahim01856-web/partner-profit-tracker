@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, Legend,
+  CartesianGrid, Legend, Cell,
 } from "recharts";
 
 export const Route = createFileRoute("/_app/daily-deposit")({ component: DailyDepositPage });
