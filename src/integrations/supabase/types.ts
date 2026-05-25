@@ -59,6 +59,39 @@ export type Database = {
         }
         Relationships: []
       }
+      achievements: {
+        Row: {
+          achievement_category: string
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          quantity: number
+          remarks: string | null
+          staff_name: string
+        }
+        Insert: {
+          achievement_category: string
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          quantity?: number
+          remarks?: string | null
+          staff_name: string
+        }
+        Update: {
+          achievement_category?: string
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          quantity?: number
+          remarks?: string | null
+          staff_name?: string
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
@@ -99,6 +132,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      documents: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          expiry_date: string | null
+          file_name: string | null
+          file_url: string | null
+          id: string
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          expiry_date?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          expiry_date?: string | null
+          file_name?: string | null
+          file_url?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
       }
       expenses: {
         Row: {
@@ -315,6 +387,45 @@ export type Database = {
         }
         Relationships: []
       }
+      monthly_targets: {
+        Row: {
+          created_at: string
+          id: string
+          month: number
+          notes: string | null
+          staff_name: string
+          target_amount: number
+          target_category: string
+          target_quantity: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: number
+          notes?: string | null
+          staff_name: string
+          target_amount?: number
+          target_category: string
+          target_quantity?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: number
+          notes?: string | null
+          staff_name?: string
+          target_amount?: number
+          target_category?: string
+          target_quantity?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       partner_withdrawals: {
         Row: {
           amount: number
@@ -368,6 +479,63 @@ export type Database = {
           id?: string
           name?: string
           share_percent?: number
+        }
+        Relationships: []
+      }
+      pending_works: {
+        Row: {
+          account_number: string | null
+          assigned_to: string | null
+          category: string
+          completed_at: string | null
+          created_at: string
+          customer_name: string | null
+          description: string | null
+          due_date: string | null
+          entry_date: string
+          id: string
+          mobile: string | null
+          priority: string
+          remarks: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          assigned_to?: string | null
+          category: string
+          completed_at?: string | null
+          created_at?: string
+          customer_name?: string | null
+          description?: string | null
+          due_date?: string | null
+          entry_date?: string
+          id?: string
+          mobile?: string | null
+          priority?: string
+          remarks?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          assigned_to?: string | null
+          category?: string
+          completed_at?: string | null
+          created_at?: string
+          customer_name?: string | null
+          description?: string | null
+          due_date?: string | null
+          entry_date?: string
+          id?: string
+          mobile?: string | null
+          priority?: string
+          remarks?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -468,6 +636,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sms_logs: {
+        Row: {
+          account_number: string | null
+          created_at: string
+          customer_name: string | null
+          id: string
+          message: string
+          mobile: string
+          receive_date: string | null
+          sent_at: string | null
+          sms_type: string
+          status: string
+        }
+        Insert: {
+          account_number?: string | null
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          message: string
+          mobile: string
+          receive_date?: string | null
+          sent_at?: string | null
+          sms_type?: string
+          status?: string
+        }
+        Update: {
+          account_number?: string | null
+          created_at?: string
+          customer_name?: string | null
+          id?: string
+          message?: string
+          mobile?: string
+          receive_date?: string | null
+          sent_at?: string | null
+          sms_type?: string
+          status?: string
+        }
+        Relationships: []
       }
       staff: {
         Row: {
