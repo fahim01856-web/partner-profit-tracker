@@ -844,9 +844,9 @@ function AccountOpeningTab() {
 }
 
 function YearChart({ year, matrix }: { year: number; matrix: Record<number, Record<string, { count: number; amt: number }>> }) {
-  // Lazy import recharts in client only
   // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } = require("recharts");
+  const recharts = require("recharts") as typeof import("recharts");
+  const { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } = recharts;
   const data = Array.from({ length: 12 }, (_, i) => {
     const m = i + 1;
     const total = ACCOUNT_TYPES.reduce((s, t) => s + matrix[m][t].count, 0);
