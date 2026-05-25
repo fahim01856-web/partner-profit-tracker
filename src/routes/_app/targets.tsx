@@ -15,7 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { useFmt } from "@/lib/format";
 import { toast } from "sonner";
-import { Target, Plus, Trash2, Printer, Trophy, TrendingUp, Award } from "lucide-react";
+import { Target, Plus, Trash2, Printer, Trophy, TrendingUp, Award, Pencil, X } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
 
 export const Route = createFileRoute("/_app/targets")({ component: TargetsPage });
