@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { FileText, Upload, Trash2, Pencil, Printer, ExternalLink, Plus, X } from "lucide-react";
+import { FileText, Upload, Trash2, Pencil, Printer, ExternalLink, Plus, X, Download } from "lucide-react";
 
 export const Route = createFileRoute("/_app/documents")({ component: DocumentsPage });
 
@@ -93,6 +93,25 @@ function DocumentsPage() {
     setShowForm(true);
   };
 
+  const handleDownload = async (d: Doc) => {
+    if (!d.file_url) return;
+    try {
+      const res = await fetch(d.file_url);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = d.file_name || d.title;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success(lang === "bn" ? "ডাউনলোড শুরু হয়েছে" : "Download started");
+    } catch {
+      toast.error(lang === "bn" ? "ডাউনলোড ব্যর্থ" : "Download failed");
+    }
+  };
+
   const filtered = useMemo(() => docs.filter((d) => d.category === activeCat), [docs, activeCat]);
   const lbl = (c: typeof DOC_CATEGORIES[number]) => (lang === "bn" ? c.bn : c.en);
 
@@ -151,8 +170,13 @@ function DocumentsPage() {
                 <TableCell>{d.file_url ? <a href={d.file_url} target="_blank" rel="noreferrer" className="text-primary inline-flex items-center gap-1 hover:underline">{d.file_name || "View"} <ExternalLink className="w-3 h-3" /></a> : "-"}</TableCell>
                 <TableCell>{d.expiry_date || "-"}</TableCell><TableCell>{d.uploaded_by || "-"}</TableCell><TableCell>{d.created_at.slice(0, 10)}</TableCell>
                 <TableCell className="no-print">
-                  <Button size="icon" variant="ghost" onClick={() => startEdit(d)}><Pencil className="w-4 h-4" /></Button>
-                  <Button size="icon" variant="ghost" onClick={() => { if (confirm(lang === "bn" ? "মুছবেন?" : "Delete?")) del.mutate(d.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                  <div className="flex items-center gap-1">
+                    {d.file_url && (
+                      <Button size="icon" variant="ghost" onClick={() => handleDownload(d)} title={lang === "bn" ? "ডাউনলোড" : "Download"}><Download className="w-4 h-4 text-primary" /></Button>
+                    )}
+                    <Button size="icon" variant="ghost" onClick={() => startEdit(d)}><Pencil className="w-4 h-4" /></Button>
+                    <Button size="icon" variant="ghost" onClick={() => { if (confirm(lang === "bn" ? "মুছবেন?" : "Delete?")) del.mutate(d.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
