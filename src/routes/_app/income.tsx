@@ -9,7 +9,7 @@ import { useFmt } from "@/lib/format";
 import { useI18n, type DictKey } from "@/lib/i18n";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, FileDown } from "lucide-react";
+import { Plus, Trash2, FileDown, Pencil, X } from "lucide-react";
 
 export const Route = createFileRoute("/_app/income")({ component: IncomePage });
 
@@ -19,7 +19,9 @@ function IncomePage() {
   const { t } = useI18n();
   const fmt = useFmt();
   const qc = useQueryClient();
-  const [form, setForm] = useState({ date: new Date().toISOString().slice(0,10), category: CATEGORY_KEYS[0] as string, description: "", amount: "" });
+  const emptyForm = () => ({ date: new Date().toISOString().slice(0,10), category: CATEGORY_KEYS[0] as string, description: "", amount: "" });
+  const [form, setForm] = useState(emptyForm());
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: rows = [] } = useQuery({
     queryKey: ["incomes"],
@@ -30,16 +32,24 @@ function IncomePage() {
     },
   });
 
-  const add = useMutation({
+  const resetForm = () => { setForm(emptyForm()); setEditingId(null); };
+
+  const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("incomes").insert({
+      const payload = {
         date: form.date, category: form.category, description: form.description, amount: Number(form.amount),
-      });
-      if (error) throw error;
+      };
+      if (editingId) {
+        const { error } = await supabase.from("incomes").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("incomes").insert(payload);
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      toast.success(t("income_added"));
-      setForm({ ...form, description: "", amount: "" });
+      toast.success(editingId ? t("updated") : t("income_added"));
+      resetForm();
       qc.invalidateQueries({ queryKey: ["incomes"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -53,9 +63,16 @@ function IncomePage() {
     onSuccess: () => { toast.success(t("deleted")); qc.invalidateQueries({ queryKey: ["incomes"] }); },
   });
 
+  const startEdit = (r: any) => {
+    setEditingId(r.id);
+    setForm({ date: r.date, category: r.category, description: r.description ?? "", amount: String(r.amount) });
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const onDelete = (id: string) => { if (window.confirm(t("confirm_delete"))) del.mutate(id); };
+
   const total = rows.reduce((s, r) => s + Number(r.amount), 0);
 
-  // Translate stored category keys back to user language
   const showCat = (val: string) => {
     if ((CATEGORY_KEYS as string[]).includes(val)) return t(val as DictKey);
     return val;
@@ -71,9 +88,11 @@ function IncomePage() {
         <Button variant="outline" onClick={() => window.print()}><FileDown className="w-4 h-4 mr-2" /> {t("printPdf")}</Button>
       </div>
 
-      <Card className="p-5 no-print">
-        <h2 className="font-semibold mb-4 flex items-center gap-2"><Plus className="w-4 h-4" /> {t("income_new")}</h2>
-        <form onSubmit={(e) => { e.preventDefault(); add.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      <Card className={`p-5 no-print ${editingId ? "ring-2 ring-primary" : ""}`}>
+        <h2 className="font-semibold mb-4 flex items-center gap-2">
+          {editingId ? <><Pencil className="w-4 h-4" /> {t("edit")}</> : <><Plus className="w-4 h-4" /> {t("income_new")}</>}
+        </h2>
+        <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div><Label>{t("date")}</Label><Input type="date" value={form.date} onChange={(e) => setForm({...form, date: e.target.value})} required /></div>
           <div><Label>{t("category")}</Label>
             <select className="w-full h-9 rounded-md border border-input px-3 text-sm bg-background" value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}>
@@ -82,7 +101,10 @@ function IncomePage() {
           </div>
           <div className="lg:col-span-2"><Label>{t("description")}</Label><Input value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} /></div>
           <div><Label>{t("amountBDT")}</Label><Input type="number" step="0.01" required value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} /></div>
-          <div className="lg:col-span-5"><Button type="submit" disabled={add.isPending}>{t("add")}</Button></div>
+          <div className="lg:col-span-5 flex gap-2">
+            <Button type="submit" disabled={save.isPending}>{editingId ? t("update") : t("add")}</Button>
+            {editingId && <Button type="button" variant="outline" onClick={resetForm}><X className="w-4 h-4 mr-1" /> {t("cancel_edit")}</Button>}
+          </div>
         </form>
       </Card>
 
@@ -99,12 +121,17 @@ function IncomePage() {
             </tr></thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.id} className="border-t">
+                <tr key={r.id} className={`border-t ${editingId === r.id ? "bg-primary/5" : ""}`}>
                   <td className="p-2">{fmt.date(r.date)}</td>
                   <td className="p-2">{showCat(r.category)}</td>
                   <td className="p-2">{r.description}</td>
                   <td className="p-2 text-right font-semibold">{fmt.bdt(Number(r.amount))}</td>
-                  <td className="p-2 no-print"><Button size="sm" variant="ghost" onClick={() => del.mutate(r.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></td>
+                  <td className="p-2 no-print">
+                    <div className="flex gap-1 justify-end">
+                      <Button size="sm" variant="ghost" onClick={() => startEdit(r)} title={t("edit")}><Pencil className="w-4 h-4 text-primary" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => onDelete(r.id)} title={t("delete")}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && <tr><td colSpan={5} className="p-6 text-center text-muted-foreground">{t("noEntries")}</td></tr>}
