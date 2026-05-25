@@ -494,7 +494,7 @@ function DailyDepositPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t("dd_month")}</TableHead>
+                    <TableHead>{t("dd_filter_month")}</TableHead>
                     <TableHead className="text-right">{t("dd_total")}</TableHead>
                     <TableHead className="text-right">{t("dd_avg")}</TableHead>
                   </TableRow>
