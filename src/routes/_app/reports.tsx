@@ -827,7 +827,7 @@ function AccountOpeningTab() {
               </div>
 
               <ClientOnly fallback={<div className="h-48 grid place-items-center text-sm text-muted-foreground">Loading chart…</div>}>
-                {() => <YearChart year={year} matrix={yearMatrix} />}
+                <YearChart year={year} matrix={yearMatrix} />
               </ClientOnly>
 
               <div className="grid grid-cols-3 gap-8 mt-10 text-center text-xs">
