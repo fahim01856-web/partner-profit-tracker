@@ -93,6 +93,25 @@ function DocumentsPage() {
     setShowForm(true);
   };
 
+  const handleDownload = async (d: Doc) => {
+    if (!d.file_url) return;
+    try {
+      const res = await fetch(d.file_url);
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = d.file_name || d.title;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+      toast.success(lang === "bn" ? "ডাউনলোড শুরু হয়েছে" : "Download started");
+    } catch {
+      toast.error(lang === "bn" ? "ডাউনলোড ব্যর্থ" : "Download failed");
+    }
+  };
+
   const filtered = useMemo(() => docs.filter((d) => d.category === activeCat), [docs, activeCat]);
   const lbl = (c: typeof DOC_CATEGORIES[number]) => (lang === "bn" ? c.bn : c.en);
 
