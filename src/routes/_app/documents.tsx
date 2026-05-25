@@ -192,7 +192,7 @@ function DocumentsPage() {
             {filtered.map((d, i) => (
               <TableRow key={d.id}>
                 <TableCell>{i + 1}</TableCell><TableCell className="font-medium">{d.title}</TableCell>
-                <TableCell>{d.file_url ? <a href={d.file_url} target="_blank" rel="noreferrer" className="text-primary inline-flex items-center gap-1 hover:underline">{d.file_name || "View"} <ExternalLink className="w-3 h-3" /></a> : "-"}</TableCell>
+                <TableCell>{d.file_url ? <button type="button" onClick={() => handleView(d)} className="text-primary inline-flex items-center gap-1 hover:underline">{d.file_name || "View"} <ExternalLink className="w-3 h-3" /></button> : "-"}</TableCell>
                 <TableCell>{d.expiry_date || "-"}</TableCell><TableCell>{d.uploaded_by || "-"}</TableCell><TableCell>{d.created_at.slice(0, 10)}</TableCell>
                 <TableCell className="no-print">
                   <div className="flex items-center gap-1">
