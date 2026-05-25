@@ -304,12 +304,12 @@ const dict = {
   pp_print_sheet: { bn: "শীট প্রিন্ট করুন", en: "Print Sheet" },
   cancel: { bn: "বাতিল", en: "Cancel" },
 
-  // Daily Deposit Report
-  nav_daily_deposit: { bn: "ডেইলি ডিপোজিট", en: "Daily Deposit" },
-  dd_title: { bn: "ডেইলি ডিপোজিট রিপোর্ট", en: "Daily Deposit Report" },
-  dd_sub: { bn: "দৈনিক ডিপোজিট এন্ট্রি, পার্থক্য ও বিশ্লেষণ", en: "Daily deposit entry, difference & analytics" },
-  dd_new: { bn: "নতুন ডিপোজিট", en: "New Deposit" },
-  dd_amount: { bn: "ডিপোজিট পরিমাণ", en: "Deposit Amount" },
+  // Daily Deposit / Total Deposit Position
+  nav_daily_deposit: { bn: "টোটাল ডিপোজিট পজিশন", en: "Total Deposit Position" },
+  dd_title: { bn: "টোটাল ডিপোজিট পজিশন", en: "Total Deposit Position" },
+  dd_sub: { bn: "দৈনিক মোট ডিপোজিট স্ট্যাটাস ও বিশ্লেষণ", en: "Daily total deposit status & analytics" },
+  dd_new: { bn: "নতুন ডিপোজিট", en: "Add Daily Deposit" },
+  dd_amount: { bn: "মোট ডিপোজিট", en: "Total Deposit" },
   dd_submitted_by: { bn: "এন্ট্রি দিয়েছেন", en: "Submitted By" },
   dd_diff: { bn: "পার্থক্য", en: "Difference" },
   dd_diff_today: { bn: "আজ vs গতকাল", en: "Today vs Yesterday" },
@@ -319,6 +319,8 @@ const dict = {
   dd_monthly_total: { bn: "মাসিক মোট", en: "Monthly Total" },
   dd_highest: { bn: "সর্বোচ্চ ডিপোজিট দিন", en: "Highest Deposit Day" },
   dd_lowest: { bn: "সর্বনিম্ন ডিপোজিট দিন", en: "Lowest Deposit Day" },
+  dd_highest_ever: { bn: "সর্বকালের সর্বোচ্চ", en: "Highest Ever" },
+  dd_lowest_ever: { bn: "সর্বকালের সর্বনিম্ন", en: "Lowest Ever" },
   dd_avg_daily: { bn: "গড় দৈনিক ডিপোজিট", en: "Average Daily Deposit" },
   dd_entries_count: { bn: "মাসিক এন্ট্রি", en: "Monthly Entries" },
   dd_filter_month: { bn: "মাস", en: "Month" },
@@ -333,6 +335,20 @@ const dict = {
   dd_increased: { bn: "বৃদ্ধি", en: "Increased" },
   dd_decreased: { bn: "হ্রাস", en: "Decreased" },
   dd_saved: { bn: "ডিপোজিট সংরক্ষণ হয়েছে", en: "Deposit saved" },
+  dd_tab_add: { bn: "ডিপোজিট এন্ট্রি", en: "Add Daily Deposit" },
+  dd_tab_history: { bn: "ডিপোজিট ইতিহাস", en: "Deposit History" },
+  dd_tab_diff: { bn: "পার্থক্য রিপোর্ট", en: "Difference Report" },
+  dd_tab_monthly: { bn: "মাসিক রিপোর্ট", en: "Monthly Report" },
+  dd_tab_yearly: { bn: "বার্ষিক রিপোর্ট", en: "Yearly Report" },
+  dd_tab_analytics: { bn: "ডিপোজিট অ্যানালিটিক্স", en: "Deposit Analytics" },
+  dd_tab_print: { bn: "প্রিন্ট রিপোর্ট", en: "Print Report" },
+  dd_total: { bn: "মোট", en: "Total" },
+  dd_avg: { bn: "গড়", en: "Average" },
+  dd_days: { bn: "দিন", en: "Days" },
+  dd_pct_change: { bn: "শতকরা পরিবর্তন", en: "% Change" },
+  dd_yearly_total: { bn: "বার্ষিক মোট", en: "Yearly Total" },
+  dd_growth: { bn: "বৃদ্ধি", en: "Growth" },
+  dd_decline: { bn: "হ্রাস", en: "Decline" },
 } as const;
 
 export type DictKey = keyof typeof dict;
