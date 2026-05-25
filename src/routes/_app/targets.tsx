@@ -185,7 +185,7 @@ function TargetsPage() {
             <div className="overflow-x-auto"><Table>
               <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "মাস/বছর" : "Month/Year"}</TableHead><TableHead>{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead><TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead><TableHead>{lang === "bn" ? "পরিমাণ" : "Amount"}</TableHead><TableHead>{lang === "bn" ? "সংখ্যা" : "Quantity"}</TableHead><TableHead></TableHead></TableRow></TableHeader>
               <TableBody>{targets.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো টার্গেট নেই" : "No targets"}</TableCell></TableRow>}
-                {targets.map((t, i) => (<TableRow key={t.id}><TableCell>{i + 1}</TableCell><TableCell>{MONTHS_EN[t.month - 1]} {t.year}</TableCell><TableCell>{t.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === t.target_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt(t.target_amount)}</TableCell><TableCell>{t.target_quantity}</TableCell><TableCell><Button size="icon" variant="ghost" onClick={() => delTarget.mutate(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></TableCell></TableRow>))}
+                {targets.map((t, i) => (<TableRow key={t.id}><TableCell>{i + 1}</TableCell><TableCell>{MONTHS_EN[t.month - 1]} {t.year}</TableCell><TableCell>{t.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === t.target_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt.num(t.target_amount)}</TableCell><TableCell>{t.target_quantity}</TableCell><TableCell><Button size="icon" variant="ghost" onClick={() => delTarget.mutate(t.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></TableCell></TableRow>))}
               </TableBody>
             </Table></div>
           </Card>
@@ -208,7 +208,7 @@ function TargetsPage() {
             <div className="overflow-x-auto"><Table>
               <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead><TableHead>{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead><TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead><TableHead>{lang === "bn" ? "পরিমাণ" : "Amount"}</TableHead><TableHead>{lang === "bn" ? "সংখ্যা" : "Qty"}</TableHead><TableHead></TableHead></TableRow></TableHeader>
               <TableBody>{achievements.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো অর্জন নেই" : "No achievements"}</TableCell></TableRow>}
-                {achievements.slice(0, 50).map((a, i) => (<TableRow key={a.id}><TableCell>{i + 1}</TableCell><TableCell>{a.date}</TableCell><TableCell>{a.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === a.achievement_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt(a.amount)}</TableCell><TableCell>{a.quantity}</TableCell><TableCell><Button size="icon" variant="ghost" onClick={() => delAch.mutate(a.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></TableCell></TableRow>))}
+                {achievements.slice(0, 50).map((a, i) => (<TableRow key={a.id}><TableCell>{i + 1}</TableCell><TableCell>{a.date}</TableCell><TableCell>{a.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === a.achievement_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt.num(a.amount)}</TableCell><TableCell>{a.quantity}</TableCell><TableCell><Button size="icon" variant="ghost" onClick={() => delAch.mutate(a.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></TableCell></TableRow>))}
               </TableBody>
             </Table></div>
           </Card>
@@ -216,8 +216,8 @@ function TargetsPage() {
 
         <TabsContent value="progress" className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <Card className="p-4"><div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট টার্গেট" : "Total Target"}</div><div className="text-2xl font-bold">৳ {fmt(totalTarget)}</div></Card>
-            <Card className="p-4"><div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট অর্জন" : "Total Achievement"}</div><div className="text-2xl font-bold text-green-600">৳ {fmt(totalAch)}</div></Card>
+            <Card className="p-4"><div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট টার্গেট" : "Total Target"}</div><div className="text-2xl font-bold">৳ {fmt.num(totalTarget)}</div></Card>
+            <Card className="p-4"><div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট অর্জন" : "Total Achievement"}</div><div className="text-2xl font-bold text-green-600">৳ {fmt.num(totalAch)}</div></Card>
             <Card className="p-4"><div className="text-xs text-muted-foreground">{lang === "bn" ? "অর্জন %" : "Achievement %"}</div><div className="text-2xl font-bold text-primary">{totalTarget > 0 ? Math.round((totalAch / totalTarget) * 100) : 0}%</div></Card>
           </div>
           <Card className="p-4 space-y-4">
@@ -225,7 +225,7 @@ function TargetsPage() {
               <div key={p.id} className="space-y-1">
                 <div className="flex items-center justify-between text-sm">
                   <span className="font-medium">{lbl(p)}</span>
-                  <span className="text-muted-foreground">৳ {fmt(p.ac.amount)} / ৳ {fmt(p.tg.amount)} ({Math.round(p.pct)}%)</span>
+                  <span className="text-muted-foreground">৳ {fmt.num(p.ac.amount)} / ৳ {fmt.num(p.tg.amount)} ({Math.round(p.pct)}%)</span>
                 </div>
                 <Progress value={p.pct} />
               </div>
@@ -246,13 +246,13 @@ function TargetsPage() {
                 {progress.map((p, i) => (
                   <TableRow key={p.id}>
                     <TableCell>{i + 1}</TableCell><TableCell>{lbl(p)}</TableCell>
-                    <TableCell className="text-right">{fmt(p.tg.amount)}</TableCell>
-                    <TableCell className="text-right">{fmt(p.ac.amount)}</TableCell>
-                    <TableCell className="text-right">{fmt(Math.max(0, p.tg.amount - p.ac.amount))}</TableCell>
+                    <TableCell className="text-right">{fmt.num(p.tg.amount)}</TableCell>
+                    <TableCell className="text-right">{fmt.num(p.ac.amount)}</TableCell>
+                    <TableCell className="text-right">{fmt.num(Math.max(0, p.tg.amount - p.ac.amount))}</TableCell>
                     <TableCell className="text-right font-semibold">{Math.round(p.pct)}%</TableCell>
                   </TableRow>
                 ))}
-                <TableRow className="font-bold border-t-2"><TableCell colSpan={2}>{lang === "bn" ? "মোট" : "Total"}</TableCell><TableCell className="text-right">{fmt(totalTarget)}</TableCell><TableCell className="text-right">{fmt(totalAch)}</TableCell><TableCell className="text-right">{fmt(Math.max(0, totalTarget - totalAch))}</TableCell><TableCell className="text-right">{totalTarget > 0 ? Math.round((totalAch / totalTarget) * 100) : 0}%</TableCell></TableRow>
+                <TableRow className="font-bold border-t-2"><TableCell colSpan={2}>{lang === "bn" ? "মোট" : "Total"}</TableCell><TableCell className="text-right">{fmt.num(totalTarget)}</TableCell><TableCell className="text-right">{fmt.num(totalAch)}</TableCell><TableCell className="text-right">{fmt.num(Math.max(0, totalTarget - totalAch))}</TableCell><TableCell className="text-right">{totalTarget > 0 ? Math.round((totalAch / totalTarget) * 100) : 0}%</TableCell></TableRow>
               </TableBody>
             </Table>
           </Card>
@@ -281,7 +281,7 @@ function TargetsPage() {
               <TableHeader><TableRow><TableHead>{lang === "bn" ? "মাস" : "Month"}</TableHead><TableHead className="text-right">{lang === "bn" ? "টার্গেট" : "Target"}</TableHead><TableHead className="text-right">{lang === "bn" ? "অর্জন" : "Achievement"}</TableHead><TableHead className="text-right">%</TableHead></TableRow></TableHeader>
               <TableBody>
                 {yearlyChart.map((m) => (
-                  <TableRow key={m.month}><TableCell>{m.month}</TableCell><TableCell className="text-right">{fmt(m.target)}</TableCell><TableCell className="text-right">{fmt(m.achievement)}</TableCell><TableCell className="text-right">{m.target > 0 ? Math.round((m.achievement / m.target) * 100) : 0}%</TableCell></TableRow>
+                  <TableRow key={m.month}><TableCell>{m.month}</TableCell><TableCell className="text-right">{fmt.num(m.target)}</TableCell><TableCell className="text-right">{fmt.num(m.achievement)}</TableCell><TableCell className="text-right">{m.target > 0 ? Math.round((m.achievement / m.target) * 100) : 0}%</TableCell></TableRow>
                 ))}
               </TableBody>
             </Table>
@@ -300,7 +300,7 @@ function TargetsPage() {
                 {ranking.map((r, i) => (
                   <TableRow key={r.name}>
                     <TableCell className="font-bold">{i + 1}</TableCell><TableCell>{r.name}</TableCell>
-                    <TableCell className="text-right">{r.count}</TableCell><TableCell className="text-right">{fmt(r.amount)}</TableCell><TableCell className="text-right">{r.qty}</TableCell>
+                    <TableCell className="text-right">{r.count}</TableCell><TableCell className="text-right">{fmt.num(r.amount)}</TableCell><TableCell className="text-right">{r.qty}</TableCell>
                     <TableCell>{i === 0 ? <Badge className="bg-amber-500"><Award className="w-3 h-3 mr-1" />Top Performer</Badge> : i === 1 ? <Badge className="bg-slate-400">2nd</Badge> : i === 2 ? <Badge className="bg-orange-700">3rd</Badge> : <Badge variant="outline">—</Badge>}</TableCell>
                   </TableRow>
                 ))}
