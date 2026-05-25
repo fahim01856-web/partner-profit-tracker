@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_opening_entries: {
+        Row: {
+          account_type: string
+          created_at: string
+          date: string
+          id: string
+          month: number
+          num_accounts: number
+          officer_name: string | null
+          opening_amount: number
+          remarks: string | null
+          status: string
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          account_type: string
+          created_at?: string
+          date?: string
+          id?: string
+          month: number
+          num_accounts?: number
+          officer_name?: string | null
+          opening_amount?: number
+          remarks?: string | null
+          status?: string
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          account_type?: string
+          created_at?: string
+          date?: string
+          id?: string
+          month?: number
+          num_accounts?: number
+          officer_name?: string | null
+          opening_amount?: number
+          remarks?: string | null
+          status?: string
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
@@ -249,6 +294,45 @@ export type Database = {
           id?: string
           name?: string
           share_percent?: number
+        }
+        Relationships: []
+      }
+      remittance_entries: {
+        Row: {
+          amount: number
+          branch: string | null
+          created_at: string
+          customer_name: string | null
+          date: string
+          id: string
+          note: string | null
+          quantity: number
+          remittance_type: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          branch?: string | null
+          created_at?: string
+          customer_name?: string | null
+          date?: string
+          id?: string
+          note?: string | null
+          quantity?: number
+          remittance_type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          branch?: string | null
+          created_at?: string
+          customer_name?: string | null
+          date?: string
+          id?: string
+          note?: string | null
+          quantity?: number
+          remittance_type?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
