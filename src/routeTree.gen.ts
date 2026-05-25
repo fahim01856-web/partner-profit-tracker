@@ -26,6 +26,7 @@ import { Route as AppExpenseRouteImport } from './routes/_app/expense'
 import { Route as AppEmployeeAttendanceRouteImport } from './routes/_app/employee-attendance'
 import { Route as AppDocumentsRouteImport } from './routes/_app/documents'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
+import { Route as AppDailyDepositRouteImport } from './routes/_app/daily-deposit'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 
 const LoginRoute = LoginRouteImport.update({
@@ -112,6 +113,11 @@ const AppDashboardRoute = AppDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AppRoute,
 } as any)
+const AppDailyDepositRoute = AppDailyDepositRouteImport.update({
+  id: '/daily-deposit',
+  path: '/daily-deposit',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAttendanceRoute = AppAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -122,6 +128,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/attendance': typeof AppAttendanceRoute
+  '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
   '/documents': typeof AppDocumentsRoute
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
@@ -141,6 +148,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/attendance': typeof AppAttendanceRoute
+  '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
   '/documents': typeof AppDocumentsRoute
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/attendance': typeof AppAttendanceRoute
+  '/_app/daily-deposit': typeof AppDailyDepositRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/documents': typeof AppDocumentsRoute
   '/_app/employee-attendance': typeof AppEmployeeAttendanceRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/attendance'
+    | '/daily-deposit'
     | '/dashboard'
     | '/documents'
     | '/employee-attendance'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/attendance'
+    | '/daily-deposit'
     | '/dashboard'
     | '/documents'
     | '/employee-attendance'
@@ -222,6 +233,7 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/attendance'
+    | '/_app/daily-deposit'
     | '/_app/dashboard'
     | '/_app/documents'
     | '/_app/employee-attendance'
@@ -365,6 +377,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDashboardRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/daily-deposit': {
+      id: '/_app/daily-deposit'
+      path: '/daily-deposit'
+      fullPath: '/daily-deposit'
+      preLoaderRoute: typeof AppDailyDepositRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/attendance': {
       id: '/_app/attendance'
       path: '/attendance'
@@ -377,6 +396,7 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppDailyDepositRoute: typeof AppDailyDepositRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppEmployeeAttendanceRoute: typeof AppEmployeeAttendanceRoute
@@ -395,6 +415,7 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAttendanceRoute: AppAttendanceRoute,
+  AppDailyDepositRoute: AppDailyDepositRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDocumentsRoute: AppDocumentsRoute,
   AppEmployeeAttendanceRoute: AppEmployeeAttendanceRoute,
