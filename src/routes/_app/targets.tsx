@@ -231,7 +231,10 @@ function TargetsPage() {
               <div><Label>{lang === "bn" ? "সংখ্যা" : "Quantity"}</Label><Input type="number" value={af.quantity} onChange={(e) => setAf({ ...af, quantity: Number(e.target.value) })} /></div>
               <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "মন্তব্য" : "Remarks"}</Label><Textarea rows={2} value={af.remarks} onChange={(e) => setAf({ ...af, remarks: e.target.value })} /></div>
             </div>
-            <Button className="mt-3" onClick={() => saveAch.mutate()}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</Button>
+            <div className="mt-3 flex gap-2">
+              <Button onClick={() => saveAch.mutate()}>{editAchId ? <><Pencil className="w-4 h-4 mr-1" />{t("update")}</> : <><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</>}</Button>
+              {editAchId && <Button variant="outline" onClick={resetAf}><X className="w-4 h-4 mr-1" />{t("cancel_edit")}</Button>}
+            </div>
           </Card>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto"><Table>
