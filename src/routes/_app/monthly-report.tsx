@@ -232,6 +232,16 @@ function MonthlyReportPage() {
         </div>
       </div>
 
+      {/* Empty-month template hint */}
+      {items.length === 0 && (
+        <Card className="p-4 no-print border-dashed flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-muted-foreground">{t("mr_auto_template_hint")}</div>
+          <Button size="sm" onClick={() => loadTemplateMutation.mutate()} disabled={loadTemplateMutation.isPending}>
+            <Copy className="w-4 h-4 mr-1" /> {t("mr_load_template")}
+          </Button>
+        </Card>
+      )}
+
       {/* Dashboard summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 no-print">
         <Card className="p-4">
