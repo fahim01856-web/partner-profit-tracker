@@ -220,6 +220,9 @@ function MonthlyReportPage() {
             <Label className="text-xs">{t("mr_sheet_no")}</Label>
             <Input className="h-9 w-28" value={sheetNo} onChange={(e) => setSheetNo(e.target.value)} placeholder="001" />
           </div>
+          <Button variant="outline" onClick={() => loadTemplateMutation.mutate()} disabled={loadTemplateMutation.isPending}>
+            <Copy className="w-4 h-4 mr-1" /> {t("mr_load_template")}
+          </Button>
           <Button variant="outline" onClick={() => duplicateMutation.mutate()}>
             <Copy className="w-4 h-4 mr-1" /> {t("mr_duplicate")}
           </Button>
