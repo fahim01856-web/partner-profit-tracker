@@ -121,6 +121,38 @@ function MonthlyReportPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Load only descriptions (with amount=0) from the most recent previous month that has entries
+  const loadTemplateMutation = useMutation({
+    mutationFn: async () => {
+      // find the most recent (year, month) before the current selection that has entries
+      const { data, error } = await supabase
+        .from("monthly_report_items")
+        .select("month, year, item_type, sl_no, description")
+        .or(`year.lt.${year},and(year.eq.${year},month.lt.${month})`)
+        .order("year", { ascending: false })
+        .order("month", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error(t("mr_no_template"));
+      const latestYear = data[0].year;
+      const latestMonth = data[0].month;
+      const source = data.filter((r) => r.year === latestYear && r.month === latestMonth);
+      if (source.length === 0) throw new Error(t("mr_no_template"));
+      const payload = source.map((i) => ({
+        month, year, item_type: i.item_type, sl_no: i.sl_no,
+        description: i.description, amount: 0,
+      }));
+      const { error: insErr } = await supabase.from("monthly_report_items").insert(payload);
+      if (insErr) throw insErr;
+    },
+    onSuccess: () => {
+      toast.success(t("mr_template_loaded"));
+      qc.invalidateQueries({ queryKey: ["mri", year, month] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   const years = useMemo(() => {
     const y = now.getFullYear();
     return Array.from({ length: 6 }, (_, i) => y - 2 + i);
