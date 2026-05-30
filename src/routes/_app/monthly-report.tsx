@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useFmt, monthsOf } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
@@ -168,8 +169,9 @@ function MonthlyReportPage() {
       <tr key={row.id} className="border-t">
         <td className="p-2 text-center w-12">{fmt.num(row.sl_no)}</td>
         <td className="p-2">
-          <Input
-            className="h-8 print:border-0 print:shadow-none print:bg-transparent print:p-0"
+          <Textarea
+            className="min-h-[32px] h-auto py-1 text-xs print:border-0 print:shadow-none print:bg-transparent print:p-0 print:min-h-0 resize-y"
+            rows={1}
             value={d?.description ?? row.description}
             onChange={(e) => setDraft((p) => ({ ...p, [row.id]: { description: e.target.value, amount: p[row.id]?.amount ?? String(row.amount) } }))}
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
