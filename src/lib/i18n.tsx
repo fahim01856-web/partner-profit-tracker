@@ -153,6 +153,10 @@ const dict = {
   mr_duplicated: { bn: "পরের মাসে কপি হয়েছে", en: "Duplicated to next month" },
   mr_nothing_to_copy: { bn: "কপি করার মতো কোনো এন্ট্রি নেই", en: "Nothing to copy" },
   mr_save_all: { bn: "সব সংরক্ষণ", en: "Save All Edits" },
+  mr_load_template: { bn: "টেমপ্লেট লোড করুন (পূর্ববর্তী মাস)", en: "Load Template (Previous Month)" },
+  mr_template_loaded: { bn: "পূর্ববর্তী মাসের বিবরণ লোড হয়েছে — শুধু টাকা বসান", en: "Previous month descriptions loaded — just fill amounts" },
+  mr_no_template: { bn: "পূর্ববর্তী মাসে কোনো বিবরণ পাওয়া যায়নি", en: "No descriptions found in previous months" },
+  mr_auto_template_hint: { bn: "এই মাসটি খালি। পূর্ববর্তী মাসের বিবরণ অটো লোড করতে নিচের বাটনে ক্লিক করুন।", en: "This month is empty. Click below to auto-load descriptions from the previous month." },
   logout: { bn: "লগআউট", en: "Logout" },
 
   // Common

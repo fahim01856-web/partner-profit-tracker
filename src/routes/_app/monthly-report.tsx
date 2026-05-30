@@ -121,6 +121,38 @@ function MonthlyReportPage() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  // Load only descriptions (with amount=0) from the most recent previous month that has entries
+  const loadTemplateMutation = useMutation({
+    mutationFn: async () => {
+      // find the most recent (year, month) before the current selection that has entries
+      const { data, error } = await supabase
+        .from("monthly_report_items")
+        .select("month, year, item_type, sl_no, description")
+        .or(`year.lt.${year},and(year.eq.${year},month.lt.${month})`)
+        .order("year", { ascending: false })
+        .order("month", { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error(t("mr_no_template"));
+      const latestYear = data[0].year;
+      const latestMonth = data[0].month;
+      const source = data.filter((r) => r.year === latestYear && r.month === latestMonth);
+      if (source.length === 0) throw new Error(t("mr_no_template"));
+      const payload = source.map((i) => ({
+        month, year, item_type: i.item_type, sl_no: i.sl_no,
+        description: i.description, amount: 0,
+      }));
+      const { error: insErr } = await supabase.from("monthly_report_items").insert(payload);
+      if (insErr) throw insErr;
+    },
+    onSuccess: () => {
+      toast.success(t("mr_template_loaded"));
+      qc.invalidateQueries({ queryKey: ["mri", year, month] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+
   const years = useMemo(() => {
     const y = now.getFullYear();
     return Array.from({ length: 6 }, (_, i) => y - 2 + i);
@@ -188,6 +220,9 @@ function MonthlyReportPage() {
             <Label className="text-xs">{t("mr_sheet_no")}</Label>
             <Input className="h-9 w-28" value={sheetNo} onChange={(e) => setSheetNo(e.target.value)} placeholder="001" />
           </div>
+          <Button variant="outline" onClick={() => loadTemplateMutation.mutate()} disabled={loadTemplateMutation.isPending}>
+            <Copy className="w-4 h-4 mr-1" /> {t("mr_load_template")}
+          </Button>
           <Button variant="outline" onClick={() => duplicateMutation.mutate()}>
             <Copy className="w-4 h-4 mr-1" /> {t("mr_duplicate")}
           </Button>
@@ -196,6 +231,16 @@ function MonthlyReportPage() {
           </Button>
         </div>
       </div>
+
+      {/* Empty-month template hint */}
+      {items.length === 0 && (
+        <Card className="p-4 no-print border-dashed flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm text-muted-foreground">{t("mr_auto_template_hint")}</div>
+          <Button size="sm" onClick={() => loadTemplateMutation.mutate()} disabled={loadTemplateMutation.isPending}>
+            <Copy className="w-4 h-4 mr-1" /> {t("mr_load_template")}
+          </Button>
+        </Card>
+      )}
 
       {/* Dashboard summary cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 no-print">
