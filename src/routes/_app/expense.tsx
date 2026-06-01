@@ -225,12 +225,14 @@ function ExpensePage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted text-left"><tr>
+              <th className="p-2 w-12">Sl/Day</th>
               <th className="p-2">{t("voucher_no")}</th><th className="p-2">{t("date")}</th><th className="p-2">{t("category")}</th>
               <th className="p-2">{t("paid_to")}</th><th className="p-2 text-right">{t("amount")}</th><th className="p-2 no-print"></th>
             </tr></thead>
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id} className={`border-t ${editingId === r.id ? "bg-primary/5" : ""}`}>
+                  <td className="p-2 text-center font-semibold text-muted-foreground">{fmt.num(dateSerial.get(r.id) ?? 0)}</td>
                   <td className="p-2 font-mono text-xs">{r.voucher_no}</td>
                   <td className="p-2">{fmt.date(r.date)}</td>
                   <td className="p-2">{showCat(r.category)}</td>
@@ -245,7 +247,7 @@ function ExpensePage() {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">{t("no_vouchers")}</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">{t("no_vouchers")}</td></tr>}
             </tbody>
           </table>
         </div>
