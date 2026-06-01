@@ -210,7 +210,7 @@ function ExpensePage() {
 
             <div className="grid grid-cols-3 gap-8 mt-16 text-center text-xs">
               <div><div className="border-t border-black pt-1">{t("receiver_signature")}</div></div>
-              <div><div className="border-t border-black pt-1">{t("preparedBy") ?? "Prepared By"}</div></div>
+              <div><div className="border-t border-black pt-1">Prepared By</div></div>
               <div><div className="border-t border-black pt-1">{t("approvedBy")}</div></div>
             </div>
           </div>
