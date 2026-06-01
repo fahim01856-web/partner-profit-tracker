@@ -742,6 +742,7 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           position: string | null
+          sort_order: number
         }
         Insert: {
           active?: boolean
@@ -754,6 +755,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           position?: string | null
+          sort_order?: number
         }
         Update: {
           active?: boolean
@@ -766,6 +768,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           position?: string | null
+          sort_order?: number
         }
         Relationships: []
       }
