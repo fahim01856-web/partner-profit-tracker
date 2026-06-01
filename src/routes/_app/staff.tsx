@@ -24,7 +24,7 @@ function StaffPage() {
   const { data: rows = [] } = useQuery({
     queryKey: ["staff"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("staff").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("staff").select("*").order("sort_order").order("name");
       if (error) throw error;
       return data;
     },
