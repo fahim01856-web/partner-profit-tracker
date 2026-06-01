@@ -139,25 +139,79 @@ function ExpensePage() {
 
       {printRow && (
         <div className="print-area hidden print:block">
-          <div className="p-8 max-w-2xl mx-auto">
-            <div className="border-b-2 border-primary pb-4 mb-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-primary">{t("bankName")}</div>
-                <div className="text-sm">{t("outlet")}, {t("locationFull")}</div>
-                <div className="text-lg font-bold mt-3 underline">{t("expense_voucher_doc")}</div>
+          <div className="p-8 max-w-3xl mx-auto text-black">
+            {/* Header */}
+            <div className="border-2 border-black p-4 mb-4">
+              <div className="flex items-start gap-4">
+                <div className="w-16 h-16 rounded-full border-2 border-black flex items-center justify-center font-bold shrink-0">IB</div>
+                <div className="flex-1 text-center">
+                  <div className="text-xl font-extrabold tracking-wide">ISLAMI BANK AGENT BANKING</div>
+                  <div className="text-sm font-bold">M/S FEED HOUSE (121/11)</div>
+                  <div className="text-xs">{t("outlet")}, {t("locationFull")}</div>
+                </div>
+              </div>
+              <div className="text-center mt-3">
+                <span className="inline-block border border-black px-4 py-1 text-base font-bold uppercase">
+                  {t("expense_voucher_doc")}
+                </span>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div><strong>{t("voucher_no")}:</strong> {printRow.voucher_no}</div>
-              <div className="text-right"><strong>{t("date")}:</strong> {fmt.date(printRow.date)}</div>
-              <div><strong>{t("category")}:</strong> {showCat(printRow.category)}</div>
-              <div><strong>{t("paid_to")}:</strong> {printRow.paid_to}</div>
-            </div>
-            <div className="border p-4 mb-6"><strong>{t("description")}:</strong><br/>{printRow.description}<br/>{printRow.note}</div>
-            <div className="text-xl font-bold border-t-2 border-b-2 py-3 text-center">{t("amount")}: {fmt.bdt(Number(printRow.amount))}</div>
-            <div className="grid grid-cols-2 gap-8 mt-16 text-center text-sm">
-              <div><div className="border-t pt-1">{t("receiver_signature")}</div></div>
-              <div><div className="border-t pt-1">{t("approvedBy")}</div></div>
+
+            {/* Meta as table */}
+            <table className="w-full border border-black border-collapse text-sm mb-4">
+              <tbody>
+                <tr>
+                  <td className="border border-black p-2 font-semibold bg-gray-100 w-1/4">{t("voucher_no")}</td>
+                  <td className="border border-black p-2 w-1/4">{printRow.voucher_no}</td>
+                  <td className="border border-black p-2 font-semibold bg-gray-100 w-1/4">{t("date")}</td>
+                  <td className="border border-black p-2 w-1/4">{fmt.date(printRow.date)}</td>
+                </tr>
+                <tr>
+                  <td className="border border-black p-2 font-semibold bg-gray-100">{t("category")}</td>
+                  <td className="border border-black p-2">{showCat(printRow.category)}</td>
+                  <td className="border border-black p-2 font-semibold bg-gray-100">{t("paid_to")}</td>
+                  <td className="border border-black p-2">{printRow.paid_to ?? '—'}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            {/* Particulars table */}
+            <table className="w-full border border-black border-collapse text-sm mb-4">
+              <thead>
+                <tr className="bg-gray-100">
+                  <th className="border border-black p-2 w-12">Sl</th>
+                  <th className="border border-black p-2 text-left">{t("description")}</th>
+                  <th className="border border-black p-2 w-32 text-right">{t("amount")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td className="border border-black p-2 text-center">{fmt.num(1)}</td>
+                  <td className="border border-black p-2 align-top">
+                    <div>{printRow.description || '—'}</div>
+                    {printRow.note && <div className="text-xs text-gray-700 mt-1">{printRow.note}</div>}
+                  </td>
+                  <td className="border border-black p-2 text-right font-semibold align-top">{fmt.bdt(Number(printRow.amount))}</td>
+                </tr>
+                {/* Filler rows */}
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i} className="h-7">
+                    <td className="border border-black p-2"></td>
+                    <td className="border border-black p-2"></td>
+                    <td className="border border-black p-2"></td>
+                  </tr>
+                ))}
+                <tr className="bg-gray-100 font-bold">
+                  <td className="border border-black p-2 text-right" colSpan={2}>{t("total")}</td>
+                  <td className="border border-black p-2 text-right">{fmt.bdt(Number(printRow.amount))}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="grid grid-cols-3 gap-8 mt-16 text-center text-xs">
+              <div><div className="border-t border-black pt-1">{t("receiver_signature")}</div></div>
+              <div><div className="border-t border-black pt-1">{t("preparedBy") ?? "Prepared By"}</div></div>
+              <div><div className="border-t border-black pt-1">{t("approvedBy")}</div></div>
             </div>
           </div>
         </div>
