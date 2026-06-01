@@ -80,6 +80,22 @@ function ExpensePage() {
   const onDelete = (id: string) => { if (window.confirm(t("confirm_delete"))) del.mutate(id); };
 
   const total = rows.reduce((s, r) => s + Number(r.amount), 0);
+
+  // Compute date-wise serial: 1,2,3... per date, oldest-first within the day
+  const dateSerial = (() => {
+    const byDate = new Map<string, any[]>();
+    [...rows]
+      .sort((a, b) => (a.created_at ?? "").localeCompare(b.created_at ?? ""))
+      .forEach(r => {
+        const arr = byDate.get(r.date) ?? [];
+        arr.push(r);
+        byDate.set(r.date, arr);
+      });
+    const m = new Map<string, number>();
+    byDate.forEach(arr => arr.forEach((r, i) => m.set(r.id, i + 1)));
+    return m;
+  })();
+
   const showCat = (val: string) =>
     (CATEGORY_KEYS as string[]).includes(val) ? t(val as DictKey) : val;
 
