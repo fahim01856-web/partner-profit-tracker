@@ -26,7 +26,7 @@ function AttendancePage() {
 
   const { data: staff = [] } = useQuery({
     queryKey: ["staff-active"],
-    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("sort_order").order("name")).data ?? [],
   });
 
   const { data: attendance = [] } = useQuery({

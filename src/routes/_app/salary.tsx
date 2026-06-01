@@ -22,7 +22,7 @@ function SalaryPage() {
 
   const { data: staff = [] } = useQuery({
     queryKey: ["staff-all"],
-    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("sort_order").order("name")).data ?? [],
   });
 
   const { data: salaries = [] } = useQuery({

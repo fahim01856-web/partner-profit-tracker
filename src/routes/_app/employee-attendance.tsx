@@ -85,7 +85,7 @@ function DailyTab() {
 
   const { data: staff = [] } = useQuery({
     queryKey: ["staff-active"],
-    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("sort_order").order("name")).data ?? [],
   });
   const { data: attendance = [] } = useQuery({
     queryKey: ["attendance", date],
@@ -223,7 +223,7 @@ function MonthlyTab() {
 
   const { data: staff = [] } = useQuery({
     queryKey: ["staff-active"],
-    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("sort_order").order("name")).data ?? [],
   });
   const { data: rows = [] } = useQuery({
     queryKey: ["attendance-month", start, end],
@@ -321,7 +321,7 @@ function LeaveTab() {
 
   const { data: staff = [] } = useQuery({
     queryKey: ["staff-active"],
-    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("sort_order").order("name")).data ?? [],
   });
   const { data: leaves = [] } = useQuery({
     queryKey: ["leaves"],
@@ -491,7 +491,7 @@ function ReportTab({ lang }: { lang: string }) {
 
   const { data: staff = [] } = useQuery({
     queryKey: ["staff-active"],
-    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("staff").select("*").eq("active", true).order("sort_order").order("name")).data ?? [],
   });
   const { data: monthAtt = [] } = useQuery({
     queryKey: ["att-month", start, end],
@@ -610,7 +610,7 @@ function EmployeeTab() {
 
   const { data: staff = [] } = useQuery({
     queryKey: ["staff-all"],
-    queryFn: async () => (await supabase.from("staff").select("*").order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("staff").select("*").order("sort_order").order("name")).data ?? [],
   });
 
   const save = useMutation({
