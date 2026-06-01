@@ -261,7 +261,12 @@ function MonthlyTab() {
         <Button variant="outline" size="sm" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" /> {t("printPdf")}</Button>
       </Card>
 
-      <Card className="p-0 overflow-hidden">
+      <Card className="p-0 overflow-hidden print-area print:shadow-none print:border-0">
+        <div className="hidden print:block p-4 text-center border-b">
+          <h1 className="text-xl font-bold">{t("bankName")}</h1>
+          <div className="text-sm">{t("outlet")} — {t("locationFull")}</div>
+          <h2 className="text-lg font-semibold mt-2">{t("eatt_title")} — {fmt.months[month - 1]} {fmt.num(year)}</h2>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs border-collapse">
             <thead className="bg-muted/60">
