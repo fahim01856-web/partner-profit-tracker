@@ -109,7 +109,7 @@ function DailyTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="p-4">
+      <Card className="p-4 no-print">
         <div className="flex items-end justify-between gap-3 flex-wrap">
           <div className="flex gap-3 flex-wrap items-end">
             <div>
@@ -134,13 +134,18 @@ function DailyTab() {
         </div>
       </Card>
 
-      <Card className="p-0 overflow-hidden">
+      <Card className="p-0 overflow-hidden print-area print:shadow-none print:border-0">
+        <div className="hidden print:block p-4 text-center border-b">
+          <h1 className="text-xl font-bold">{t("bankName")}</h1>
+          <div className="text-sm">{t("outlet")} — {t("locationFull")}</div>
+          <h2 className="text-lg font-semibold mt-2">{t("eatt_title")} — {fmt.date(date)} ({dayName})</h2>
+        </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted/60 text-left">
               <tr>
                 <th className="p-2.5">#</th>
-                <th className="p-2.5">{t("eatt_photo")}</th>
+                <th className="p-2.5 print:hidden">{t("eatt_photo")}</th>
                 <th className="p-2.5">{t("name")}</th>
                 <th className="p-2.5">{t("eatt_emp_id")}</th>
                 <th className="p-2.5">{t("position")}</th>
@@ -154,10 +159,11 @@ function DailyTab() {
               {filtered.map((s, idx) => {
                 const cur = get(s.id);
                 const meta = statusMeta(cur?.status ?? 'present');
+                const stKey = STATUS_OPTIONS.find(o => o.v === (cur?.status ?? ''))?.key;
                 return (
                   <tr key={s.id} className="border-t hover:bg-muted/30">
                     <td className="p-2.5">{fmt.num(idx + 1)}</td>
-                    <td className="p-2.5">
+                    <td className="p-2.5 print:hidden">
                       {s.photo_url
                         ? <img src={s.photo_url} alt={s.name} className="w-9 h-9 rounded-full object-cover border" />
                         : <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"><UserCircle2 className="w-5 h-5 text-muted-foreground" /></div>}
@@ -166,16 +172,19 @@ function DailyTab() {
                     <td className="p-2.5 text-xs">{s.employee_code ?? '-'}</td>
                     <td className="p-2.5 text-xs">{s.position}</td>
                     <td className="p-2.5">
-                      <Input type="time" defaultValue={cur?.in_time ?? ''} className="h-8 w-28"
+                      <span className="hidden print:inline">{cur?.in_time ?? '-'}</span>
+                      <Input type="time" defaultValue={cur?.in_time ?? ''} className="h-8 w-28 print:hidden"
                         onBlur={(e) => upsert.mutate({ staff_id: s.id, in_time: e.target.value || null })} />
                     </td>
                     <td className="p-2.5">
-                      <Input type="time" defaultValue={cur?.out_time ?? ''} className="h-8 w-28"
+                      <span className="hidden print:inline">{cur?.out_time ?? '-'}</span>
+                      <Input type="time" defaultValue={cur?.out_time ?? ''} className="h-8 w-28 print:hidden"
                         onBlur={(e) => upsert.mutate({ staff_id: s.id, out_time: e.target.value || null })} />
                     </td>
                     <td className="p-2.5">
+                      <span className="hidden print:inline">{stKey ? t(stKey as never) : '-'}</span>
                       <Select value={cur?.status ?? ''} onValueChange={(v) => upsert.mutate({ staff_id: s.id, status: v })}>
-                        <SelectTrigger className={`h-8 w-36 ${cur?.status ? meta.color : ''}`}>
+                        <SelectTrigger className={`h-8 w-36 print:hidden ${cur?.status ? meta.color : ''}`}>
                           <SelectValue placeholder={t("eatt_pick_status")} />
                         </SelectTrigger>
                         <SelectContent>
@@ -186,7 +195,8 @@ function DailyTab() {
                       </Select>
                     </td>
                     <td className="p-2.5">
-                      <Input defaultValue={cur?.note ?? ''} placeholder="-" className="h-8 w-40"
+                      <span className="hidden print:inline">{cur?.note ?? ''}</span>
+                      <Input defaultValue={cur?.note ?? ''} placeholder="-" className="h-8 w-40 print:hidden"
                         onBlur={(e) => upsert.mutate({ staff_id: s.id, note: e.target.value || null })} />
                     </td>
                   </tr>
