@@ -17,14 +17,14 @@ function StaffPage() {
   const { t } = useI18n();
   const fmt = useFmt();
   const qc = useQueryClient();
-  const emptyForm = () => ({ name: "", position: "", phone: "", monthly_salary: "", joining_date: new Date().toISOString().slice(0,10), active: true });
+  const emptyForm = () => ({ name: "", position: "", phone: "", monthly_salary: "", joining_date: new Date().toISOString().slice(0,10), active: true, sort_order: "" });
   const [form, setForm] = useState(emptyForm());
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const { data: rows = [] } = useQuery({
     queryKey: ["staff"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("staff").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("staff").select("*").order("sort_order").order("name");
       if (error) throw error;
       return data;
     },
@@ -37,6 +37,7 @@ function StaffPage() {
       const payload = {
         name: form.name, position: form.position, phone: form.phone,
         monthly_salary: Number(form.monthly_salary || 0), joining_date: form.joining_date, active: form.active,
+        sort_order: Number(form.sort_order || 0),
       };
       if (editingId) {
         const { error } = await supabase.from("staff").update(payload).eq("id", editingId);
@@ -67,7 +68,7 @@ function StaffPage() {
     setForm({
       name: r.name ?? "", position: r.position ?? "", phone: r.phone ?? "",
       monthly_salary: String(r.monthly_salary ?? ""), joining_date: r.joining_date ?? new Date().toISOString().slice(0,10),
-      active: r.active ?? true,
+      active: r.active ?? true, sort_order: String(r.sort_order ?? ""),
     });
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -86,6 +87,7 @@ function StaffPage() {
         </h2>
         <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <div><Label>{t("name")}</Label><Input required value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} /></div>
+          <div><Label>Sort / Serial No</Label><Input type="number" placeholder="1, 2, 3..." value={form.sort_order} onChange={(e) => setForm({...form, sort_order: e.target.value})} /></div>
           <div><Label>{t("position")}</Label><Input value={form.position} onChange={(e) => setForm({...form, position: e.target.value})} /></div>
           <div><Label>{t("phone")}</Label><Input value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} /></div>
           <div><Label>{t("monthly_salary")}</Label><Input type="number" value={form.monthly_salary} onChange={(e) => setForm({...form, monthly_salary: e.target.value})} /></div>
@@ -102,12 +104,14 @@ function StaffPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="bg-muted text-left"><tr>
+              <th className="p-2 w-12">#</th>
               <th className="p-2">{t("name")}</th><th className="p-2">{t("position")}</th><th className="p-2">{t("phone")}</th>
               <th className="p-2">{t("joining")}</th><th className="p-2 text-right">{t("salary_short")}</th><th className="p-2"></th>
             </tr></thead>
             <tbody>
-              {rows.map((r) => (
+              {rows.map((r, idx) => (
                 <tr key={r.id} className={`border-t ${editingId === r.id ? "bg-primary/5" : ""}`}>
+                  <td className="p-2 text-center font-semibold text-muted-foreground">{fmt.num(idx + 1)}</td>
                   <td className="p-2 font-semibold">{r.name}</td>
                   <td className="p-2">{r.position}</td>
                   <td className="p-2">{r.phone}</td>
@@ -121,7 +125,7 @@ function StaffPage() {
                   </td>
                 </tr>
               ))}
-              {rows.length === 0 && <tr><td colSpan={6} className="p-6 text-center text-muted-foreground">{t("no_staff")}</td></tr>}
+              {rows.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">{t("no_staff")}</td></tr>}
             </tbody>
           </table>
         </div>

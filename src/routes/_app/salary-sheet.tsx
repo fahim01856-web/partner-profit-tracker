@@ -64,7 +64,7 @@ function SalarySheetPage() {
     queryKey: ["ss-staff"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("staff").select("*").eq("active", true).order("name");
+        .from("staff").select("*").eq("active", true).order("sort_order").order("name");
       if (error) throw error;
       return data as Staff[];
     },

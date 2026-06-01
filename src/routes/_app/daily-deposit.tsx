@@ -563,8 +563,8 @@ function DailyDepositPage() {
       </Tabs>
 
       {/* Printable section (always rendered for print) */}
-      <Card className="p-0 overflow-hidden print:shadow-none print:border-0">
-        <div className="hidden print:block p-6 text-center border-b">
+      <Card className="p-0 overflow-hidden print:shadow-none print:border-0 print-area hidden print:block">
+        <div className="p-6 text-center border-b">
           <h1 className="text-xl font-bold">{t("bankName")}</h1>
           <div className="text-sm">{t("outlet")} — {t("locationFull")}</div>
           <h2 className="text-lg font-semibold mt-2">{t("dd_title")}</h2>
