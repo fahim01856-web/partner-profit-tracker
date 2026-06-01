@@ -177,10 +177,10 @@ function MonthlyReportPage() {
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
           />
         </td>
-        <td className="p-2 w-40">
+        <td className="p-1 w-24">
           <Input
             type="number" step="0.01"
-            className="h-8 text-right print:border-0 print:shadow-none print:bg-transparent print:p-0"
+            className="h-7 text-right text-xs px-1 print:border-0 print:shadow-none print:bg-transparent print:p-0"
             value={d?.amount ?? String(row.amount)}
             onChange={(e) => setDraft((p) => ({ ...p, [row.id]: { description: p[row.id]?.description ?? row.description, amount: e.target.value } }))}
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
@@ -293,10 +293,10 @@ function MonthlyReportPage() {
               <table className="w-full text-sm border border-black border-collapse">
                 <thead>
                   <tr className="bg-[oklch(0.93_0.04_155)] print:bg-gray-100">
-                    <th className="border border-black p-1 w-10">Sl</th>
+                    <th className="border border-black p-1 w-8">Sl</th>
                     <th className="border border-black p-1 text-left">{t("mr_income_desc")}</th>
-                    <th className="border border-black p-1 w-32 text-right">{t("amount")}</th>
-                    <th className="border border-black p-1 w-10 no-print"></th>
+                    <th className="border border-black p-1 w-24 text-right">{t("amount")}</th>
+                    <th className="border border-black p-1 w-8 no-print"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -334,10 +334,10 @@ function MonthlyReportPage() {
               <table className="w-full text-sm border border-black border-collapse">
                 <thead>
                   <tr className="bg-[oklch(0.93_0.04_155)] print:bg-gray-100">
-                    <th className="border border-black p-1 w-10">Sl</th>
+                    <th className="border border-black p-1 w-8">Sl</th>
                     <th className="border border-black p-1 text-left">{t("mr_expense_desc")}</th>
-                    <th className="border border-black p-1 w-32 text-right">{t("amount")}</th>
-                    <th className="border border-black p-1 w-10 no-print"></th>
+                    <th className="border border-black p-1 w-24 text-right">{t("amount")}</th>
+                    <th className="border border-black p-1 w-8 no-print"></th>
                   </tr>
                 </thead>
                 <tbody>
