@@ -168,19 +168,19 @@ function MonthlyReportPage() {
     return (
       <tr key={row.id} className="border-t">
         <td className="p-2 text-center w-12">{fmt.num(row.sl_no)}</td>
-        <td className="p-2">
+        <td className="p-1">
           <Textarea
-            className="min-h-[32px] h-auto py-1 text-xs print:border-0 print:shadow-none print:bg-transparent print:p-0 print:min-h-0 resize-y"
-            rows={1}
+            className="min-h-[56px] h-auto py-1 text-xs leading-snug print:border-0 print:shadow-none print:bg-transparent print:p-0 print:min-h-0 resize-y w-full"
+            rows={3}
             value={d?.description ?? row.description}
             onChange={(e) => setDraft((p) => ({ ...p, [row.id]: { description: e.target.value, amount: p[row.id]?.amount ?? String(row.amount) } }))}
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
           />
         </td>
-        <td className="p-1 w-24">
+        <td className="p-1 align-top">
           <Input
             type="number" step="0.01"
-            className="h-7 text-right text-xs px-1 print:border-0 print:shadow-none print:bg-transparent print:p-0"
+            className="h-8 text-right text-xs px-1 print:border-0 print:shadow-none print:bg-transparent print:p-0"
             value={d?.amount ?? String(row.amount)}
             onChange={(e) => setDraft((p) => ({ ...p, [row.id]: { description: p[row.id]?.description ?? row.description, amount: e.target.value } }))}
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
@@ -286,17 +286,23 @@ function MonthlyReportPage() {
             </div>
           </div>
 
-          {/* Two-column tables: Income | Expense */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Stacked tables: Income on top, Expense below — full A4 width so descriptions fit 80-90 words */}
+          <div className="space-y-6">
             {/* Income */}
             <div>
-              <table className="w-full text-sm border border-black border-collapse">
+              <table className="w-full text-sm border border-black border-collapse table-fixed">
+                <colgroup>
+                  <col style={{ width: "40px" }} />
+                  <col />
+                  <col style={{ width: "120px" }} />
+                  <col className="no-print" style={{ width: "40px" }} />
+                </colgroup>
                 <thead>
                   <tr className="bg-[oklch(0.93_0.04_155)] print:bg-gray-100">
-                    <th className="border border-black p-1 w-8">Sl</th>
+                    <th className="border border-black p-1">Sl</th>
                     <th className="border border-black p-1 text-left">{t("mr_income_desc")}</th>
-                    <th className="border border-black p-1 w-24 text-right">{t("amount")}</th>
-                    <th className="border border-black p-1 w-8 no-print"></th>
+                    <th className="border border-black p-1 text-right">{t("amount")}</th>
+                    <th className="border border-black p-1 no-print"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -304,8 +310,7 @@ function MonthlyReportPage() {
                     <tr><td colSpan={4} className="border border-black p-3 text-center text-muted-foreground">{t("noEntries")}</td></tr>
                   )}
                   {incomes.map(renderRow)}
-                  {/* Empty filler rows for paper look */}
-                  {Array.from({ length: Math.max(0, 10 - incomes.length) }).map((_, i) => (
+                  {Array.from({ length: Math.max(0, 8 - incomes.length) }).map((_, i) => (
                     <tr key={`fi-${i}`} className="border-t print:h-7">
                       <td className="border border-black p-1">&nbsp;</td>
                       <td className="border border-black p-1"></td>
@@ -331,13 +336,19 @@ function MonthlyReportPage() {
 
             {/* Expense */}
             <div>
-              <table className="w-full text-sm border border-black border-collapse">
+              <table className="w-full text-sm border border-black border-collapse table-fixed">
+                <colgroup>
+                  <col style={{ width: "40px" }} />
+                  <col />
+                  <col style={{ width: "120px" }} />
+                  <col className="no-print" style={{ width: "40px" }} />
+                </colgroup>
                 <thead>
                   <tr className="bg-[oklch(0.93_0.04_155)] print:bg-gray-100">
-                    <th className="border border-black p-1 w-8">Sl</th>
+                    <th className="border border-black p-1">Sl</th>
                     <th className="border border-black p-1 text-left">{t("mr_expense_desc")}</th>
-                    <th className="border border-black p-1 w-24 text-right">{t("amount")}</th>
-                    <th className="border border-black p-1 w-8 no-print"></th>
+                    <th className="border border-black p-1 text-right">{t("amount")}</th>
+                    <th className="border border-black p-1 no-print"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -345,7 +356,7 @@ function MonthlyReportPage() {
                     <tr><td colSpan={4} className="border border-black p-3 text-center text-muted-foreground">{t("noEntries")}</td></tr>
                   )}
                   {expenses.map(renderRow)}
-                  {Array.from({ length: Math.max(0, 10 - expenses.length) }).map((_, i) => (
+                  {Array.from({ length: Math.max(0, 8 - expenses.length) }).map((_, i) => (
                     <tr key={`fe-${i}`} className="border-t print:h-7">
                       <td className="border border-black p-1">&nbsp;</td>
                       <td className="border border-black p-1"></td>
