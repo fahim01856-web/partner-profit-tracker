@@ -286,17 +286,23 @@ function MonthlyReportPage() {
             </div>
           </div>
 
-          {/* Two-column tables: Income | Expense */}
-          <div className="grid grid-cols-2 gap-4">
+          {/* Stacked tables: Income on top, Expense below — full A4 width so descriptions fit 80-90 words */}
+          <div className="space-y-6">
             {/* Income */}
             <div>
-              <table className="w-full text-sm border border-black border-collapse">
+              <table className="w-full text-sm border border-black border-collapse table-fixed">
+                <colgroup>
+                  <col style={{ width: "40px" }} />
+                  <col />
+                  <col style={{ width: "120px" }} />
+                  <col className="no-print" style={{ width: "40px" }} />
+                </colgroup>
                 <thead>
                   <tr className="bg-[oklch(0.93_0.04_155)] print:bg-gray-100">
-                    <th className="border border-black p-1 w-8">Sl</th>
+                    <th className="border border-black p-1">Sl</th>
                     <th className="border border-black p-1 text-left">{t("mr_income_desc")}</th>
-                    <th className="border border-black p-1 w-24 text-right">{t("amount")}</th>
-                    <th className="border border-black p-1 w-8 no-print"></th>
+                    <th className="border border-black p-1 text-right">{t("amount")}</th>
+                    <th className="border border-black p-1 no-print"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -304,8 +310,7 @@ function MonthlyReportPage() {
                     <tr><td colSpan={4} className="border border-black p-3 text-center text-muted-foreground">{t("noEntries")}</td></tr>
                   )}
                   {incomes.map(renderRow)}
-                  {/* Empty filler rows for paper look */}
-                  {Array.from({ length: Math.max(0, 10 - incomes.length) }).map((_, i) => (
+                  {Array.from({ length: Math.max(0, 8 - incomes.length) }).map((_, i) => (
                     <tr key={`fi-${i}`} className="border-t print:h-7">
                       <td className="border border-black p-1">&nbsp;</td>
                       <td className="border border-black p-1"></td>
@@ -331,13 +336,19 @@ function MonthlyReportPage() {
 
             {/* Expense */}
             <div>
-              <table className="w-full text-sm border border-black border-collapse">
+              <table className="w-full text-sm border border-black border-collapse table-fixed">
+                <colgroup>
+                  <col style={{ width: "40px" }} />
+                  <col />
+                  <col style={{ width: "120px" }} />
+                  <col className="no-print" style={{ width: "40px" }} />
+                </colgroup>
                 <thead>
                   <tr className="bg-[oklch(0.93_0.04_155)] print:bg-gray-100">
-                    <th className="border border-black p-1 w-8">Sl</th>
+                    <th className="border border-black p-1">Sl</th>
                     <th className="border border-black p-1 text-left">{t("mr_expense_desc")}</th>
-                    <th className="border border-black p-1 w-24 text-right">{t("amount")}</th>
-                    <th className="border border-black p-1 w-8 no-print"></th>
+                    <th className="border border-black p-1 text-right">{t("amount")}</th>
+                    <th className="border border-black p-1 no-print"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -345,7 +356,7 @@ function MonthlyReportPage() {
                     <tr><td colSpan={4} className="border border-black p-3 text-center text-muted-foreground">{t("noEntries")}</td></tr>
                   )}
                   {expenses.map(renderRow)}
-                  {Array.from({ length: Math.max(0, 10 - expenses.length) }).map((_, i) => (
+                  {Array.from({ length: Math.max(0, 8 - expenses.length) }).map((_, i) => (
                     <tr key={`fe-${i}`} className="border-t print:h-7">
                       <td className="border border-black p-1">&nbsp;</td>
                       <td className="border border-black p-1"></td>
