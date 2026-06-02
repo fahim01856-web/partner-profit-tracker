@@ -168,10 +168,10 @@ function MonthlyReportPage() {
     return (
       <tr key={row.id} className="border-t">
         <td className="p-2 text-center w-12">{fmt.num(row.sl_no)}</td>
-        <td className="p-2">
+        <td className="p-1">
           <Textarea
-            className="min-h-[32px] h-auto py-1 text-xs print:border-0 print:shadow-none print:bg-transparent print:p-0 print:min-h-0 resize-y"
-            rows={1}
+            className="min-h-[56px] h-auto py-1 text-xs leading-snug print:border-0 print:shadow-none print:bg-transparent print:p-0 print:min-h-0 resize-y w-full"
+            rows={3}
             value={d?.description ?? row.description}
             onChange={(e) => setDraft((p) => ({ ...p, [row.id]: { description: e.target.value, amount: p[row.id]?.amount ?? String(row.amount) } }))}
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
