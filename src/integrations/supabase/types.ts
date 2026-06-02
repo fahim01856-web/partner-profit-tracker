@@ -733,12 +733,17 @@ export type Database = {
       staff: {
         Row: {
           active: boolean
+          address: string | null
           created_at: string
+          date_of_birth: string | null
+          email: string | null
+          emergency_contact: string | null
           employee_code: string | null
           id: string
           joining_date: string | null
           monthly_salary: number
           name: string
+          nid: string | null
           phone: string | null
           photo_url: string | null
           position: string | null
@@ -746,12 +751,17 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          address?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          emergency_contact?: string | null
           employee_code?: string | null
           id?: string
           joining_date?: string | null
           monthly_salary?: number
           name: string
+          nid?: string | null
           phone?: string | null
           photo_url?: string | null
           position?: string | null
@@ -759,12 +769,17 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          address?: string | null
           created_at?: string
+          date_of_birth?: string | null
+          email?: string | null
+          emergency_contact?: string | null
           employee_code?: string | null
           id?: string
           joining_date?: string | null
           monthly_salary?: number
           name?: string
+          nid?: string | null
           phone?: string | null
           photo_url?: string | null
           position?: string | null
