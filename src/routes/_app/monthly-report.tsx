@@ -177,10 +177,10 @@ function MonthlyReportPage() {
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
           />
         </td>
-        <td className="p-1 w-24">
+        <td className="p-1 align-top">
           <Input
             type="number" step="0.01"
-            className="h-7 text-right text-xs px-1 print:border-0 print:shadow-none print:bg-transparent print:p-0"
+            className="h-8 text-right text-xs px-1 print:border-0 print:shadow-none print:bg-transparent print:p-0"
             value={d?.amount ?? String(row.amount)}
             onChange={(e) => setDraft((p) => ({ ...p, [row.id]: { description: p[row.id]?.description ?? row.description, amount: e.target.value } }))}
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
