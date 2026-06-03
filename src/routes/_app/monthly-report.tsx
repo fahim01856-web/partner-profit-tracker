@@ -382,16 +382,36 @@ function MonthlyReportPage() {
 
             {/* Expense */}
             <div>
+              {/* Quick-add (expense) */}
+              <div className="no-print mb-2 flex gap-1">
+                <Input
+                  className="h-8 text-xs flex-1"
+                  placeholder={lang === "bn" ? "ব্যয়ের বিবরণ লিখুন…" : "Expense description…"}
+                  value={quickExp.description}
+                  onChange={(e) => setQuickExp((p) => ({ ...p, description: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === "Enter") quickAdd.mutate({ type: "expense", ...quickExp }); }}
+                />
+                <Input
+                  className="h-8 text-xs w-24 text-right"
+                  type="number" step="0.01" placeholder="0"
+                  value={quickExp.amount}
+                  onChange={(e) => setQuickExp((p) => ({ ...p, amount: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === "Enter") quickAdd.mutate({ type: "expense", ...quickExp }); }}
+                />
+                <Button size="sm" onClick={() => quickAdd.mutate({ type: "expense", ...quickExp })} disabled={quickAdd.isPending}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
               <table className="w-full text-sm border border-black border-collapse table-fixed">
                 <colgroup>
-                  <col style={{ width: "40px" }} />
+                  <col style={{ width: "36px" }} />
                   <col />
-                  <col style={{ width: "120px" }} />
-                  <col className="no-print" style={{ width: "40px" }} />
+                  <col style={{ width: "90px" }} />
+                  <col className="no-print" style={{ width: "36px" }} />
                 </colgroup>
                 <thead>
                   <tr className="bg-[oklch(0.93_0.04_155)] print:bg-gray-100">
-                    <th className="border border-black p-1">Sl</th>
+                    <th className="border border-black p-1 text-center">Sl</th>
                     <th className="border border-black p-1 text-left">{t("mr_expense_desc")}</th>
                     <th className="border border-black p-1 text-right">{t("amount")}</th>
                     <th className="border border-black p-1 no-print"></th>
