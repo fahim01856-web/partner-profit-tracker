@@ -71,7 +71,7 @@ function Dashboard() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">{t("nav_dashboard")}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {fmt.months[now.getMonth()]} {fmt.num(now.getFullYear())} — {t("dashboard_summary")}
+            {fmt.months[prev.getMonth()]} {fmt.num(prev.getFullYear())} — {t("dashboard_summary")}
           </p>
         </div>
         <Badge variant="secondary" className="gap-1.5 shrink-0">
