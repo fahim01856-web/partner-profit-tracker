@@ -163,30 +163,55 @@ function MonthlyReportPage() {
   const reportDate = fmt.date(new Date());
   const monthLabel = `${monthNames[month - 1]} ${fmt.num(year)}`;
 
+  // Quick-add buffers (type description + amount → Enter/Add inserts into table below)
+  const [quickInc, setQuickInc] = useState({ description: "", amount: "" });
+  const [quickExp, setQuickExp] = useState({ description: "", amount: "" });
+
+  const quickAdd = useMutation({
+    mutationFn: async ({ type, description, amount }: { type: "income" | "expense"; description: string; amount: string }) => {
+      const desc = description.trim();
+      if (!desc) throw new Error(lang === "bn" ? "বিবরণ লিখুন" : "Enter description");
+      const amt = Number(amount);
+      const rows = type === "income" ? incomes : expenses;
+      const sl = (rows[rows.length - 1]?.sl_no ?? 0) + 1;
+      const { error } = await supabase.from("monthly_report_items").insert({
+        month, year, item_type: type, sl_no: sl, description: desc, amount: Number.isFinite(amt) ? amt : 0,
+      });
+      if (error) throw error;
+      return type;
+    },
+    onSuccess: (type) => {
+      if (type === "income") setQuickInc({ description: "", amount: "" });
+      else setQuickExp({ description: "", amount: "" });
+      qc.invalidateQueries({ queryKey: ["mri", year, month] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   const renderRow = (row: Item) => {
     const d = draft[row.id];
     return (
       <tr key={row.id} className="border-t">
-        <td className="p-2 text-center w-12">{fmt.num(row.sl_no)}</td>
-        <td className="p-1">
+        <td className="border border-black p-1 text-center align-middle w-10">{fmt.num(row.sl_no)}</td>
+        <td className="border border-black p-1 align-middle">
           <Textarea
-            className="min-h-[40px] h-auto py-1 text-[11px] leading-snug print:border-0 print:shadow-none print:bg-transparent print:p-0 print:min-h-0 resize-y w-full"
-            rows={2}
+            className="min-h-[28px] h-auto py-1 text-[11px] leading-snug print:border-0 print:shadow-none print:bg-transparent print:p-0 print:min-h-0 resize-none w-full"
+            rows={1}
             value={d?.description ?? row.description}
             onChange={(e) => setDraft((p) => ({ ...p, [row.id]: { description: e.target.value, amount: p[row.id]?.amount ?? String(row.amount) } }))}
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
           />
         </td>
-        <td className="p-1 align-top">
+        <td className="border border-black p-1 align-middle">
           <Input
             type="number" step="0.01"
-            className="h-8 text-right text-xs px-1 print:border-0 print:shadow-none print:bg-transparent print:p-0"
+            className="h-7 text-right text-xs px-1 print:border-0 print:shadow-none print:bg-transparent print:p-0"
             value={d?.amount ?? String(row.amount)}
             onChange={(e) => setDraft((p) => ({ ...p, [row.id]: { description: p[row.id]?.description ?? row.description, amount: e.target.value } }))}
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
           />
         </td>
-        <td className="p-2 w-10 no-print">
+        <td className="border border-black p-1 w-10 no-print text-center">
           <Button size="sm" variant="ghost" onClick={() => delRow.mutate(row.id)}>
             <Trash2 className="w-4 h-4 text-destructive" />
           </Button>
