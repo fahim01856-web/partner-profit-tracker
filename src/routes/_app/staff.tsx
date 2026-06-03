@@ -30,6 +30,18 @@ function useSignedPhoto(pathOrUrl: string | null | undefined) {
   });
 }
 
+function StaffAvatar({ path, name, size }: { path: string | null | undefined; name: string; size: string }) {
+  const { data: url } = useSignedPhoto(path);
+  const initials = name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+  return (
+    <Avatar className={`${size} ring-2 ring-border`}>
+      <AvatarImage src={url || undefined} alt={name} />
+      <AvatarFallback className="bg-muted">{initials || <UserIcon className="w-6 h-6 text-muted-foreground" />}</AvatarFallback>
+    </Avatar>
+  );
+}
+
+
 
 type StaffForm = {
   name: string; position: string; phone: string; email: string;
