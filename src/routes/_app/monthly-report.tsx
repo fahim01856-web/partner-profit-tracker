@@ -316,16 +316,36 @@ function MonthlyReportPage() {
 
             {/* Income */}
             <div>
+              {/* Quick-add (income) */}
+              <div className="no-print mb-2 flex gap-1">
+                <Input
+                  className="h-8 text-xs flex-1"
+                  placeholder={lang === "bn" ? "আয়ের বিবরণ লিখুন…" : "Income description…"}
+                  value={quickInc.description}
+                  onChange={(e) => setQuickInc((p) => ({ ...p, description: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === "Enter") quickAdd.mutate({ type: "income", ...quickInc }); }}
+                />
+                <Input
+                  className="h-8 text-xs w-24 text-right"
+                  type="number" step="0.01" placeholder="0"
+                  value={quickInc.amount}
+                  onChange={(e) => setQuickInc((p) => ({ ...p, amount: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === "Enter") quickAdd.mutate({ type: "income", ...quickInc }); }}
+                />
+                <Button size="sm" onClick={() => quickAdd.mutate({ type: "income", ...quickInc })} disabled={quickAdd.isPending}>
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
               <table className="w-full text-sm border border-black border-collapse table-fixed">
                 <colgroup>
-                  <col style={{ width: "40px" }} />
+                  <col style={{ width: "36px" }} />
                   <col />
-                  <col style={{ width: "120px" }} />
-                  <col className="no-print" style={{ width: "40px" }} />
+                  <col style={{ width: "90px" }} />
+                  <col className="no-print" style={{ width: "36px" }} />
                 </colgroup>
                 <thead>
                   <tr className="bg-[oklch(0.93_0.04_155)] print:bg-gray-100">
-                    <th className="border border-black p-1">Sl</th>
+                    <th className="border border-black p-1 text-center">Sl</th>
                     <th className="border border-black p-1 text-left">{t("mr_income_desc")}</th>
                     <th className="border border-black p-1 text-right">{t("amount")}</th>
                     <th className="border border-black p-1 no-print"></th>
