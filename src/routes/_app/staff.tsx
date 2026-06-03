@@ -223,10 +223,8 @@ function StaffPage() {
           {rows.map((r: any, idx: number) => (
             <Card key={r.id} className={`p-4 space-y-3 ${editingId === r.id ? "ring-2 ring-primary" : ""}`}>
               <div className="flex items-start gap-3">
-                <Avatar className="w-16 h-16 shrink-0 ring-2 ring-border">
-                  <AvatarImage src={r.photo_url ?? undefined} alt={r.name} />
-                  <AvatarFallback className="bg-muted">{initials(r.name)}</AvatarFallback>
-                </Avatar>
+                <div className="shrink-0"><StaffAvatar path={r.photo_url} name={r.name} size="w-16 h-16" /></div>
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-muted-foreground">#{fmt.num(idx + 1)}</span>
