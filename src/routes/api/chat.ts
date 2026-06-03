@@ -33,6 +33,13 @@ export const Route = createFileRoute("/api/chat")({
         if (userErr || !userData.user) return new Response("Unauthorized", { status: 401 });
         const userId = userData.user.id;
 
+        const { data: isAdmin, error: roleErr } = await supa.rpc("has_role", {
+          _user_id: userId,
+          _role: "admin",
+        });
+        if (roleErr || !isAdmin) return new Response("Forbidden", { status: 403 });
+
+
         const body = (await request.json()) as { messages: UIMessage[] };
         const messages = Array.isArray(body.messages) ? body.messages : [];
 

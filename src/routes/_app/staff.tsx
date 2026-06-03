@@ -16,6 +16,33 @@ import { Plus, Trash2, Pencil, X, Upload, Phone, Mail, MapPin, Calendar, IdCard,
 
 export const Route = createFileRoute("/_app/staff")({ component: StaffPage });
 
+function useSignedPhoto(pathOrUrl: string | null | undefined) {
+  return useQuery({
+    queryKey: ["staff-photo", pathOrUrl],
+    queryFn: async () => {
+      if (!pathOrUrl) return "";
+      if (pathOrUrl.startsWith("http")) return pathOrUrl;
+      const { data } = await supabase.storage.from("documents").createSignedUrl(pathOrUrl, 300);
+      return data?.signedUrl ?? "";
+    },
+    enabled: !!pathOrUrl,
+    staleTime: 4 * 60 * 1000,
+  });
+}
+
+function StaffAvatar({ path, name, size }: { path: string | null | undefined; name: string; size: string }) {
+  const { data: url } = useSignedPhoto(path);
+  const initials = name.split(" ").map((w) => w[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
+  return (
+    <Avatar className={`${size} ring-2 ring-border`}>
+      <AvatarImage src={url || undefined} alt={name} />
+      <AvatarFallback className="bg-muted">{initials || <UserIcon className="w-6 h-6 text-muted-foreground" />}</AvatarFallback>
+    </Avatar>
+  );
+}
+
+
+
 type StaffForm = {
   name: string; position: string; phone: string; email: string;
   monthly_salary: string; joining_date: string; date_of_birth: string;
@@ -58,9 +85,8 @@ function StaffPage() {
       const path = `staff/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { upsert: false });
       if (upErr) throw upErr;
-      const { data } = await supabase.storage.from("documents").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
-      const url = data?.signedUrl ?? "";
-      setForm((f) => ({ ...f, photo_url: url }));
+      // Store only the object path; signed URLs are generated on demand (short-lived)
+      setForm((f) => ({ ...f, photo_url: path }));
       toast.success("ছবি আপলোড হয়েছে");
     } catch (e: any) {
       toast.error(e.message ?? "Upload failed");
@@ -68,6 +94,7 @@ function StaffPage() {
       setUploading(false);
     }
   };
+
 
   const save = useMutation({
     mutationFn: async () => {
@@ -141,10 +168,8 @@ function StaffPage() {
           {/* Photo + basic identity row */}
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             <div className="flex flex-col items-center gap-2">
-              <Avatar className="w-24 h-24 ring-2 ring-border">
-                <AvatarImage src={form.photo_url} alt={form.name} />
-                <AvatarFallback className="text-xl bg-muted">{form.name ? initials(form.name) : <UserIcon className="w-8 h-8 text-muted-foreground" />}</AvatarFallback>
-              </Avatar>
+              <StaffAvatar path={form.photo_url} name={form.name} size="w-24 h-24" />
+
               <input
                 ref={fileInputRef} type="file" accept="image/*" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onPhotoUpload(f); }}
@@ -198,10 +223,8 @@ function StaffPage() {
           {rows.map((r: any, idx: number) => (
             <Card key={r.id} className={`p-4 space-y-3 ${editingId === r.id ? "ring-2 ring-primary" : ""}`}>
               <div className="flex items-start gap-3">
-                <Avatar className="w-16 h-16 shrink-0 ring-2 ring-border">
-                  <AvatarImage src={r.photo_url ?? undefined} alt={r.name} />
-                  <AvatarFallback className="bg-muted">{initials(r.name)}</AvatarFallback>
-                </Avatar>
+                <div className="shrink-0"><StaffAvatar path={r.photo_url} name={r.name} size="w-16 h-16" /></div>
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-muted-foreground">#{fmt.num(idx + 1)}</span>
