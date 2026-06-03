@@ -58,9 +58,8 @@ function StaffPage() {
       const path = `staff/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: upErr } = await supabase.storage.from("documents").upload(path, file, { upsert: false });
       if (upErr) throw upErr;
-      const { data } = await supabase.storage.from("documents").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
-      const url = data?.signedUrl ?? "";
-      setForm((f) => ({ ...f, photo_url: url }));
+      // Store only the object path; signed URLs are generated on demand (short-lived)
+      setForm((f) => ({ ...f, photo_url: path }));
       toast.success("ছবি আপলোড হয়েছে");
     } catch (e: any) {
       toast.error(e.message ?? "Upload failed");
@@ -68,6 +67,7 @@ function StaffPage() {
       setUploading(false);
     }
   };
+
 
   const save = useMutation({
     mutationFn: async () => {
