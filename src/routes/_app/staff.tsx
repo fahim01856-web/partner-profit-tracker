@@ -16,6 +16,21 @@ import { Plus, Trash2, Pencil, X, Upload, Phone, Mail, MapPin, Calendar, IdCard,
 
 export const Route = createFileRoute("/_app/staff")({ component: StaffPage });
 
+function useSignedPhoto(pathOrUrl: string | null | undefined) {
+  return useQuery({
+    queryKey: ["staff-photo", pathOrUrl],
+    queryFn: async () => {
+      if (!pathOrUrl) return "";
+      if (pathOrUrl.startsWith("http")) return pathOrUrl;
+      const { data } = await supabase.storage.from("documents").createSignedUrl(pathOrUrl, 300);
+      return data?.signedUrl ?? "";
+    },
+    enabled: !!pathOrUrl,
+    staleTime: 4 * 60 * 1000,
+  });
+}
+
+
 type StaffForm = {
   name: string; position: string; phone: string; email: string;
   monthly_salary: string; joining_date: string; date_of_birth: string;
