@@ -15,30 +15,27 @@ function Dashboard() {
   const fmt = useFmt();
   const qc = useQueryClient();
   const now = new Date();
-  const year = now.getFullYear();
-  const month = now.getMonth() + 1;
+  // Show PREVIOUS month on dashboard
+  const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const year = prev.getFullYear();
+  const month = prev.getMonth() + 1;
   const { start, end } = monthRange(year, month);
 
   const { data, isFetching, dataUpdatedAt } = useQuery({
     queryKey: ["dashboard", start, end],
     queryFn: async () => {
-      const [inc, exp, partners, mri, mp] = await Promise.all([
-        supabase.from("incomes").select("amount").gte("date", start).lte("date", end),
-        supabase.from("expenses").select("amount").gte("date", start).lte("date", end),
+      const [partners, mri, mp] = await Promise.all([
         supabase.from("partners").select("*").order("share_percent", { ascending: false }),
         supabase.from("monthly_report_items").select("amount,item_type").eq("year", year).eq("month", month),
         supabase.from("monthly_profits").select("*").eq("year", year).eq("month", month).maybeSingle(),
       ]);
-      const incTx = (inc.data ?? []).reduce((s, r) => s + Number(r.amount), 0);
-      const expTx = (exp.data ?? []).reduce((s, r) => s + Number(r.amount), 0);
-      const incReg = (mri.data ?? []).filter((r: any) => r.item_type === "income").reduce((s, r: any) => s + Number(r.amount), 0);
-      const expReg = (mri.data ?? []).filter((r: any) => r.item_type === "expense").reduce((s, r: any) => s + Number(r.amount), 0);
-      const totalInc = incTx + incReg;
-      const totalExp = expTx + expReg;
+      const totalInc = (mri.data ?? []).filter((r: any) => r.item_type === "income").reduce((s, r: any) => s + Number(r.amount), 0);
+      const totalExp = (mri.data ?? []).filter((r: any) => r.item_type === "expense").reduce((s, r: any) => s + Number(r.amount), 0);
       const profit = totalInc - totalExp;
       return { totalInc, totalExp, profit, partners: partners.data ?? [], monthlyProfit: mp.data };
     },
   });
+
 
   // Realtime auto-refresh: any change to relevant tables invalidates the dashboard
   useEffect(() => {
@@ -74,7 +71,7 @@ function Dashboard() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">{t("nav_dashboard")}</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {fmt.months[now.getMonth()]} {fmt.num(now.getFullYear())} — {t("dashboard_summary")}
+            {fmt.months[prev.getMonth()]} {fmt.num(prev.getFullYear())} — {t("dashboard_summary")}
           </p>
         </div>
         <Badge variant="secondary" className="gap-1.5 shrink-0">

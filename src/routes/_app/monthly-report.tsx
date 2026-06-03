@@ -170,8 +170,8 @@ function MonthlyReportPage() {
         <td className="p-2 text-center w-12">{fmt.num(row.sl_no)}</td>
         <td className="p-1">
           <Textarea
-            className="min-h-[56px] h-auto py-1 text-xs leading-snug print:border-0 print:shadow-none print:bg-transparent print:p-0 print:min-h-0 resize-y w-full"
-            rows={3}
+            className="min-h-[40px] h-auto py-1 text-[11px] leading-snug print:border-0 print:shadow-none print:bg-transparent print:p-0 print:min-h-0 resize-y w-full"
+            rows={2}
             value={d?.description ?? row.description}
             onChange={(e) => setDraft((p) => ({ ...p, [row.id]: { description: e.target.value, amount: p[row.id]?.amount ?? String(row.amount) } }))}
             onBlur={() => { if (draft[row.id]) updateRow.mutate(row); }}
@@ -286,8 +286,9 @@ function MonthlyReportPage() {
             </div>
           </div>
 
-          {/* Stacked tables: Income on top, Expense below — full A4 width so descriptions fit 80-90 words */}
-          <div className="space-y-6">
+          {/* Side-by-side: Income | Expense */}
+          <div className="grid grid-cols-2 gap-4">
+
             {/* Income */}
             <div>
               <table className="w-full text-sm border border-black border-collapse table-fixed">
