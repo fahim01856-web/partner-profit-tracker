@@ -168,10 +168,8 @@ function StaffPage() {
           {/* Photo + basic identity row */}
           <div className="flex flex-col sm:flex-row gap-4 items-start">
             <div className="flex flex-col items-center gap-2">
-              <Avatar className="w-24 h-24 ring-2 ring-border">
-                <AvatarImage src={form.photo_url} alt={form.name} />
-                <AvatarFallback className="text-xl bg-muted">{form.name ? initials(form.name) : <UserIcon className="w-8 h-8 text-muted-foreground" />}</AvatarFallback>
-              </Avatar>
+              <StaffAvatar path={form.photo_url} name={form.name} size="w-24 h-24" />
+
               <input
                 ref={fileInputRef} type="file" accept="image/*" className="hidden"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) onPhotoUpload(f); }}
