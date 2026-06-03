@@ -90,48 +90,23 @@ function LoginPage() {
           <h2 className="text-2xl font-bold mb-1">{t("welcome")}</h2>
           <p className="text-sm text-muted-foreground mb-6">{t("admin_login_msg")}</p>
 
-          <Tabs defaultValue="login">
-            <TabsList className="w-full grid grid-cols-2 mb-4">
-              <TabsTrigger value="login">{t("login")}</TabsTrigger>
-              <TabsTrigger value="signup">{t("new_account")}</TabsTrigger>
-            </TabsList>
+          <form onSubmit={onLogin} className="space-y-3">
+            <div>
+              <Label htmlFor="le">{t("email")}</Label>
+              <Input id="le" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" />
+            </div>
+            <div>
+              <Label htmlFor="lp">{t("password")}</Label>
+              <Input id="lp" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            </div>
+            <Button type="submit" disabled={busy} className="w-full">
+              {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} {t("login_btn")}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center pt-2">
+              {lang === "bn" ? "শুধুমাত্র অনুমোদিত অ্যাডমিন অ্যাকাউন্ট। নতুন অ্যাকাউন্টের জন্য ম্যানেজারের সাথে যোগাযোগ করুন।" : "Authorized admin accounts only. Contact the manager for access."}
+            </p>
+          </form>
 
-            <TabsContent value="login">
-              <form onSubmit={onLogin} className="space-y-3">
-                <div>
-                  <Label htmlFor="le">{t("email")}</Label>
-                  <Input id="le" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="admin@example.com" />
-                </div>
-                <div>
-                  <Label htmlFor="lp">{t("password")}</Label>
-                  <Input id="lp" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <Button type="submit" disabled={busy} className="w-full">
-                  {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} {t("login_btn")}
-                </Button>
-              </form>
-            </TabsContent>
-
-            <TabsContent value="signup">
-              <form onSubmit={onSignup} className="space-y-3">
-                <div>
-                  <Label htmlFor="sn">{t("full_name")}</Label>
-                  <Input id="sn" required value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={lang === "bn" ? "মো. ফাহিম" : "Md. Fahim"} />
-                </div>
-                <div>
-                  <Label htmlFor="se">{t("email")}</Label>
-                  <Input id="se" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                </div>
-                <div>
-                  <Label htmlFor="sp">{t("password_min")}</Label>
-                  <Input id="sp" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-                </div>
-                <Button type="submit" disabled={busy} className="w-full">
-                  {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} {t("create_account")}
-                </Button>
-              </form>
-            </TabsContent>
-          </Tabs>
         </Card>
       </div>
     </div>
