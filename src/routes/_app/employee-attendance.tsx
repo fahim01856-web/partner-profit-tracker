@@ -165,9 +165,7 @@ function DailyTab() {
                   <tr key={s.id} className="border-t hover:bg-muted/30">
                     <td className="p-2.5">{fmt.num(idx + 1)}</td>
                     <td className="p-2.5 print:hidden">
-                      {s.photo_url
-                        ? <img src={s.photo_url} alt={s.name} className="w-9 h-9 rounded-full object-cover border" />
-                        : <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"><UserCircle2 className="w-5 h-5 text-muted-foreground" /></div>}
+                      <StaffPhoto path={s.photo_url} name={s.name} className="w-9 h-9 rounded-full object-cover border bg-muted" />
                     </td>
                     <td className="p-2.5 font-semibold">{s.name}</td>
                     <td className="p-2.5 text-xs">{s.employee_code ?? '-'}</td>
