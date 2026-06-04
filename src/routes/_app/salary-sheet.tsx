@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Printer, Save, Search, CheckCircle2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StaffPhoto } from "@/components/StaffPhoto";
 
 export const Route = createFileRoute("/_app/salary-sheet")({ component: SalarySheetPage });
 
