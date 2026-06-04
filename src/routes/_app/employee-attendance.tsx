@@ -16,6 +16,7 @@ import {
   CalendarDays, Users, Plane, PartyPopper, FileBarChart, IdCard,
   Printer, Search, Plus, Trash2, Download, UserCircle2,
 } from "lucide-react";
+import { StaffPhoto } from "@/components/StaffPhoto";
 
 export const Route = createFileRoute("/_app/employee-attendance")({ component: EmpAttPage });
 
