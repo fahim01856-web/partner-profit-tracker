@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useFmt, genVoucherNo } from "@/lib/format";
 import { useI18n, type DictKey } from "@/lib/i18n";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Printer, FileDown, Pencil, X } from "lucide-react";
 
@@ -21,7 +21,7 @@ function ExpensePage() {
   const fmt = useFmt();
   const qc = useQueryClient();
   const emptyForm = () => ({
-    voucher_no: genVoucherNo(), date: new Date().toISOString().slice(0,10),
+    voucher_no: "", date: new Date().toISOString().slice(0,10),
     category: CATEGORY_KEYS[0] as string, description: "", paid_to: "", amount: "", note: "",
   });
   const [form, setForm] = useState(emptyForm());
@@ -106,6 +106,17 @@ function ExpensePage() {
     byDate.forEach(arr => arr.forEach((r, i) => m.set(r.id, i + 1)));
     return m;
   })();
+
+  // Auto-generate voucher_no as SL-N per selected date (only when creating new)
+  useEffect(() => {
+    if (editingId) return;
+    const countForDate = rows.filter(r => r.date === form.date).length;
+    const next = `SL-${countForDate + 1}`;
+    if (form.voucher_no !== next) {
+      setForm(f => ({ ...f, voucher_no: next }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.date, rows, editingId]);
 
   const showCat = (val: string) =>
     (CATEGORY_KEYS as string[]).includes(val) ? t(val as DictKey) : val;
