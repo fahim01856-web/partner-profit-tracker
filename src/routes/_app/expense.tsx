@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useFmt, genVoucherNo } from "@/lib/format";
 import { useI18n, type DictKey } from "@/lib/i18n";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Plus, Trash2, Printer, FileDown, Pencil, X } from "lucide-react";
 
