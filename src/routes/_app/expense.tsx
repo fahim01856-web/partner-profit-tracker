@@ -85,6 +85,13 @@ function ExpensePage() {
 
   const total = rows.reduce((s, r) => s + Number(r.amount), 0);
 
+  // Build unique suggestion lists from previous entries
+  const uniq = (arr: (string | null | undefined)[]) =>
+    Array.from(new Set(arr.map(v => (v ?? "").trim()).filter(Boolean)));
+  const paidToOptions = uniq(rows.map(r => r.paid_to));
+  const descOptions = uniq(rows.map(r => r.description));
+  const noteOptions = uniq(rows.map(r => r.note));
+
   // Compute date-wise serial: 1,2,3... per date, oldest-first within the day
   const dateSerial = (() => {
     const byDate = new Map<string, any[]>();
