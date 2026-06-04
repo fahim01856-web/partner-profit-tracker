@@ -140,7 +140,7 @@ function ExpensePage() {
           <div><Label>{t("paid_to")}</Label><Input list="exp-paid-to-list" value={form.paid_to} onChange={(e) => setForm({...form, paid_to: e.target.value})} /></div>
           <div><Label>{t("amountBDT")}</Label><Input type="number" step="0.01" required value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} /></div>
           <div><Label>{t("description")}</Label><Input list="exp-desc-list" value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} /></div>
-          <div className="sm:col-span-2 lg:col-span-3"><Label>{t("note")}</Label><Textarea list="exp-note-list" value={form.note} onChange={(e) => setForm({...form, note: e.target.value})} /></div>
+          <div className="sm:col-span-2 lg:col-span-3"><Label>{t("note")}</Label><Input list="exp-note-list" value={form.note} onChange={(e) => setForm({...form, note: e.target.value})} /></div>
           <datalist id="exp-paid-to-list">{paidToOptions.map(v => <option key={v} value={v} />)}</datalist>
           <datalist id="exp-desc-list">{descOptions.map(v => <option key={v} value={v} />)}</datalist>
           <datalist id="exp-note-list">{noteOptions.map(v => <option key={v} value={v} />)}</datalist>
