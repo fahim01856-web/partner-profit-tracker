@@ -107,6 +107,17 @@ function ExpensePage() {
     return m;
   })();
 
+  // Auto-generate voucher_no as SL-N per selected date (only when creating new)
+  useEffect(() => {
+    if (editingId) return;
+    const countForDate = rows.filter(r => r.date === form.date).length;
+    const next = `SL-${countForDate + 1}`;
+    if (form.voucher_no !== next) {
+      setForm(f => ({ ...f, voucher_no: next }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.date, rows, editingId]);
+
   const showCat = (val: string) =>
     (CATEGORY_KEYS as string[]).includes(val) ? t(val as DictKey) : val;
 
