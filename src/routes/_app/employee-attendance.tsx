@@ -646,9 +646,7 @@ function EmployeeTab() {
               return (
                 <tr key={s.id} className="border-t">
                   <td className="p-2.5">
-                    {photo
-                      ? <img src={photo} alt={s.name} className="w-12 h-12 rounded-full object-cover border" />
-                      : <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center"><UserCircle2 className="w-6 h-6 text-muted-foreground" /></div>}
+                    <StaffPhoto path={photo} name={s.name} className="w-12 h-12 rounded-full object-cover border bg-muted" />
                   </td>
                   <td className="p-2.5"><Input className="h-8 w-56" placeholder="https://..." defaultValue={s.photo_url ?? ''} onChange={(ev) => setEditing(p => ({ ...p, [s.id]: { ...p[s.id], photo_url: ev.target.value } }))} /></td>
                   <td className="p-2.5 font-semibold">{s.name}</td>
