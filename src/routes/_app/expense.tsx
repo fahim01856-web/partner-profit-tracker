@@ -21,7 +21,7 @@ function ExpensePage() {
   const fmt = useFmt();
   const qc = useQueryClient();
   const emptyForm = () => ({
-    voucher_no: genVoucherNo(), date: new Date().toISOString().slice(0,10),
+    voucher_no: "", date: new Date().toISOString().slice(0,10),
     category: CATEGORY_KEYS[0] as string, description: "", paid_to: "", amount: "", note: "",
   });
   const [form, setForm] = useState(emptyForm());
