@@ -12,6 +12,7 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Printer, Save, Search, CheckCircle2, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { StaffPhoto } from "@/components/StaffPhoto";
 
 export const Route = createFileRoute("/_app/salary-sheet")({ component: SalarySheetPage });
 
@@ -23,6 +24,7 @@ type Staff = {
   monthly_salary: number;
   joining_date: string | null;
   active: boolean;
+  photo_url?: string | null;
 };
 
 type Salary = {
@@ -295,8 +297,8 @@ function SalarySheetPage() {
                     <tr key={s.id} className={cn("border-t hover:bg-muted/40 print:hover:bg-transparent", isDirty && "bg-accent/20")}>
                       <td className="border border-black p-1 text-center">{fmt.num(idx + 1)}</td>
                       <td className="border border-black p-1 text-center">
-                        <div className="w-8 h-8 rounded-full mx-auto flex items-center justify-center text-[10px] font-bold text-white" style={{ background: "var(--gradient-primary)" }}>
-                          {initials(s.name)}
+                        <div className="mx-auto w-8 h-8">
+                          <StaffPhoto path={s.photo_url} name={s.name} className="w-8 h-8 rounded-full object-cover border bg-muted" />
                         </div>
                       </td>
                       <td className="border border-black p-1 font-semibold whitespace-nowrap">{s.name}</td>

@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as AppTargetsRouteImport } from './routes/_app/targets'
 import { Route as AppStaffRouteImport } from './routes/_app/staff'
 import { Route as AppSmsSendingRouteImport } from './routes/_app/sms-sending'
@@ -29,7 +28,6 @@ import { Route as AppDocumentsRouteImport } from './routes/_app/documents'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppDailyDepositRouteImport } from './routes/_app/daily-deposit'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
-import { Route as AppAssistantRouteImport } from './routes/_app/assistant'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -43,11 +41,6 @@ const AppRoute = AppRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiChatRoute = ApiChatRouteImport.update({
-  id: '/api/chat',
-  path: '/api/chat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AppTargetsRoute = AppTargetsRouteImport.update({
@@ -130,16 +123,10 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAssistantRoute = AppAssistantRouteImport.update({
-  id: '/assistant',
-  path: '/assistant',
-  getParentRoute: () => AppRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/assistant': typeof AppAssistantRoute
   '/attendance': typeof AppAttendanceRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -156,12 +143,10 @@ export interface FileRoutesByFullPath {
   '/sms-sending': typeof AppSmsSendingRoute
   '/staff': typeof AppStaffRoute
   '/targets': typeof AppTargetsRoute
-  '/api/chat': typeof ApiChatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/assistant': typeof AppAssistantRoute
   '/attendance': typeof AppAttendanceRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -178,14 +163,12 @@ export interface FileRoutesByTo {
   '/sms-sending': typeof AppSmsSendingRoute
   '/staff': typeof AppStaffRoute
   '/targets': typeof AppTargetsRoute
-  '/api/chat': typeof ApiChatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
-  '/_app/assistant': typeof AppAssistantRoute
   '/_app/attendance': typeof AppAttendanceRoute
   '/_app/daily-deposit': typeof AppDailyDepositRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -202,14 +185,12 @@ export interface FileRoutesById {
   '/_app/sms-sending': typeof AppSmsSendingRoute
   '/_app/staff': typeof AppStaffRoute
   '/_app/targets': typeof AppTargetsRoute
-  '/api/chat': typeof ApiChatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/login'
-    | '/assistant'
     | '/attendance'
     | '/daily-deposit'
     | '/dashboard'
@@ -226,12 +207,10 @@ export interface FileRouteTypes {
     | '/sms-sending'
     | '/staff'
     | '/targets'
-    | '/api/chat'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/login'
-    | '/assistant'
     | '/attendance'
     | '/daily-deposit'
     | '/dashboard'
@@ -248,13 +227,11 @@ export interface FileRouteTypes {
     | '/sms-sending'
     | '/staff'
     | '/targets'
-    | '/api/chat'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/login'
-    | '/_app/assistant'
     | '/_app/attendance'
     | '/_app/daily-deposit'
     | '/_app/dashboard'
@@ -271,14 +248,12 @@ export interface FileRouteTypes {
     | '/_app/sms-sending'
     | '/_app/staff'
     | '/_app/targets'
-    | '/api/chat'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AppRoute: typeof AppRouteWithChildren
   LoginRoute: typeof LoginRoute
-  ApiChatRoute: typeof ApiChatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -302,13 +277,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/chat': {
-      id: '/api/chat'
-      path: '/api/chat'
-      fullPath: '/api/chat'
-      preLoaderRoute: typeof ApiChatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_app/targets': {
@@ -423,18 +391,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/assistant': {
-      id: '/_app/assistant'
-      path: '/assistant'
-      fullPath: '/assistant'
-      preLoaderRoute: typeof AppAssistantRouteImport
-      parentRoute: typeof AppRoute
-    }
   }
 }
 
 interface AppRouteChildren {
-  AppAssistantRoute: typeof AppAssistantRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppDailyDepositRoute: typeof AppDailyDepositRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -454,7 +414,6 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAssistantRoute: AppAssistantRoute,
   AppAttendanceRoute: AppAttendanceRoute,
   AppDailyDepositRoute: AppDailyDepositRoute,
   AppDashboardRoute: AppDashboardRoute,
@@ -479,7 +438,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   LoginRoute: LoginRoute,
-  ApiChatRoute: ApiChatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

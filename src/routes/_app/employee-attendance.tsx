@@ -16,6 +16,7 @@ import {
   CalendarDays, Users, Plane, PartyPopper, FileBarChart, IdCard,
   Printer, Search, Plus, Trash2, Download, UserCircle2,
 } from "lucide-react";
+import { StaffPhoto } from "@/components/StaffPhoto";
 
 export const Route = createFileRoute("/_app/employee-attendance")({ component: EmpAttPage });
 
@@ -164,9 +165,7 @@ function DailyTab() {
                   <tr key={s.id} className="border-t hover:bg-muted/30">
                     <td className="p-2.5">{fmt.num(idx + 1)}</td>
                     <td className="p-2.5 print:hidden">
-                      {s.photo_url
-                        ? <img src={s.photo_url} alt={s.name} className="w-9 h-9 rounded-full object-cover border" />
-                        : <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center"><UserCircle2 className="w-5 h-5 text-muted-foreground" /></div>}
+                      <StaffPhoto path={s.photo_url} name={s.name} className="w-9 h-9 rounded-full object-cover border bg-muted" />
                     </td>
                     <td className="p-2.5 font-semibold">{s.name}</td>
                     <td className="p-2.5 text-xs">{s.employee_code ?? '-'}</td>
@@ -647,9 +646,7 @@ function EmployeeTab() {
               return (
                 <tr key={s.id} className="border-t">
                   <td className="p-2.5">
-                    {photo
-                      ? <img src={photo} alt={s.name} className="w-12 h-12 rounded-full object-cover border" />
-                      : <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center"><UserCircle2 className="w-6 h-6 text-muted-foreground" /></div>}
+                    <StaffPhoto path={photo} name={s.name} className="w-12 h-12 rounded-full object-cover border bg-muted" />
                   </td>
                   <td className="p-2.5"><Input className="h-8 w-56" placeholder="https://..." defaultValue={s.photo_url ?? ''} onChange={(ev) => setEditing(p => ({ ...p, [s.id]: { ...p[s.id], photo_url: ev.target.value } }))} /></td>
                   <td className="p-2.5 font-semibold">{s.name}</td>

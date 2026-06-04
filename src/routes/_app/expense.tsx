@@ -55,7 +55,11 @@ function ExpensePage() {
     },
     onSuccess: () => {
       toast.success(editingId ? t("updated") : t("voucher_created"));
-      resetForm();
+      // Preserve date and category so multiple vouchers can be added quickly for the same day
+      const keepDate = form.date;
+      const keepCat = form.category;
+      setForm({ ...emptyForm(), date: keepDate, category: keepCat });
+      setEditingId(null);
       qc.invalidateQueries({ queryKey: ["expenses"] });
     },
     onError: (e: Error) => toast.error(e.message),
