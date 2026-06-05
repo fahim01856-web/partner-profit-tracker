@@ -1,44 +1,45 @@
-## লক্ষ্য
+## Dashboard-এ নতুন স্ট্যাটস কার্ড যোগ
 
-সাইটের প্রত্যেক মেনু/পেইজে যেখানে ডাটা এন্ট্রি করা হয় (টাকার পরিমাণ, তারিখ, বিবরণ ইত্যাদি), সেখানে **Edit** এবং **Delete** অপশন যুক্ত করব যাতে ভুল হলে সহজেই সংশোধন করা যায়।
+`src/routes/_app/dashboard.tsx`-এ বিদ্যমান ৪টি কার্ডের পাশে আরও ৩টি কার্ড যোগ করব (previous month-এর জন্য, dashboard ইতিমধ্যেই previous month দেখাচ্ছে):
 
-## কোন কোন পেইজে এডিট অপশন যুক্ত হবে
+### নতুন কার্ডসমূহ
 
-বর্তমানে যেসব পেইজে এডিট নাই বা অসম্পূর্ণ:
+1. **ফরেন রেমিটেন্স (গত মাস)** — `remittance_entries` থেকে previous month-এর সব এন্ট্রির:
+   - মোট সংখ্যা: `sum(quantity)` (entries-এর সংখ্যা নয়, quantity ফিল্ডের যোগফল)
+   - মোট অ্যামাউন্ট: `sum(amount)` — `৳` ফরম্যাটে
+   - একটি কার্ডে দুটি লাইনে দেখাব (count + amount)
 
-1. **Income** (`income.tsx`) — আয় এন্ট্রি এডিট/ডিলিট
-2. **Expense** (`expense.tsx`) — ব্যয় ভাউচার এডিট/ডিলিট
-3. **Monthly Report** (`monthly-report.tsx`) — Income/Expense লাইন আইটেম এডিট/ডিলিট
-4. **Salary Sheet** (`salary-sheet.tsx`) — বেতন রেকর্ড এডিট/ডিলিট
-5. **Salary** (`salary.tsx`) — পুরাতন পেমেন্ট এডিট/ডিলিট
-6. **Staff** (`staff.tsx`) — স্টাফ তথ্য এডিট/ডিলিট
-7. **Attendance** (`attendance.tsx`) — হাজিরা এডিট
-8. **Targets** (`targets.tsx`) — মাসিক টার্গেট এডিট/ডিলিট
-9. **SMS Sending** (`sms-sending.tsx`) — টেমপ্লেট/হিস্ট্রি এডিট
-10. **Dashboard** এর নিচে quick edit লিংক (অপশনাল)
+2. **নতুন অ্যাকাউন্ট (গত মাস)** — `account_opening_entries` থেকে previous month-এর `sum(num_accounts)`
 
-যেসব পেইজে এডিট আগেই আছে (verify করে missing field গুলো ঠিক করব):
-- Daily Deposit, Documents, Employee Attendance, Partners, Pending Works, Reports (Remittance, Account Opening)
+3. **গতকালের ডিপোজিট** — `daily_deposits` টেবিল থেকে গতকালের তারিখের (`yesterday = today - 1 day`) `sum(amount)`। যদি গতকাল কোনো এন্ট্রি না থাকে, `৳ 0` দেখাবে।
 
-## UI প্যাটার্ন (সবার জন্য একই থাকবে)
+### Query পরিবর্তন
 
-প্রতিটা row/card-এ ডান পাশে দুটো আইকন বাটন:
-- ✏️ **Pencil** (Edit) → একই form-এ pre-fill হয়ে dialog/modal খুলবে → Save করলে update
-- 🗑️ **Trash** (Delete) → confirmation dialog → confirm করলে delete
+বিদ্যমান `useQuery` এর `queryFn`-এ `Promise.all`-এ আরও তিনটি Supabase কল যোগ করব:
+```ts
+supabase.from("remittance_entries").select("quantity,amount").gte("date", start).lte("date", end)
+supabase.from("account_opening_entries").select("num_accounts").gte("date", start).lte("date", end)
+supabase.from("daily_deposits").select("amount").eq("date", yesterdayISO)
+```
+এবং রিটার্ন অবজেক্টে `remitCount`, `remitAmount`, `accountCount`, `yesterdayDeposit` ফিল্ড যোগ করব।
 
-কারিগরি দিক:
-- Supabase `.update().eq('id', id)` ও `.delete().eq('id', id)` ব্যবহার
-- একই form component reuse করব (insert/update mode টগল)
-- TanStack Query invalidate করে real-time refresh
-- বাংলা/ইংরেজি দুই ভাষায় toast মেসেজ ("সফলভাবে আপডেট হয়েছে" / "Updated successfully")
-- shadcn `AlertDialog` দিয়ে delete confirmation
-- শুধু admin role এর জন্য কাজ করবে (RLS আগেই সেট করা আছে)
+### Realtime
 
-## কাজের ধাপ
+`useEffect`-এর realtime channel-এ আরও তিনটি টেবিল subscribe করব: `remittance_entries`, `account_opening_entries`, `daily_deposits` — যাতে এন্ট্রি যোগ হলে dashboard সাথে সাথে আপডেট হয়।
 
-1. একটি reusable `EditDeleteActions` কম্পোনেন্ট তৈরি (`src/components/EditDeleteActions.tsx`) — যেকোনো row-এ ব্যবহারযোগ্য
-2. উপরের ১০টি পেইজে এই কম্পোনেন্ট যুক্ত করা ও edit dialog wire করা
-3. বিদ্যমান edit ফিচার গুলো verify ও polish করা
-4. Translation keys যোগ ("সম্পাদনা", "মুছে ফেলুন", confirm dialog ইত্যাদি)
+### i18n
 
-কোনো ডাটাবেস migration লাগবে না — শুধু frontend আপডেট।
+`src/lib/i18n.tsx`-এ ৪টি নতুন key যোগ:
+- `foreignRemittance` — "ফরেন রেমিটেন্স" / "Foreign Remittance"
+- `newAccounts` — "নতুন অ্যাকাউন্ট" / "New Accounts"
+- `yesterdayDeposit` — "গতকালের ডিপোজিট" / "Yesterday's Deposit"
+- `count` — "সংখ্যা" / "Count"
+
+### Layout
+
+Grid `grid-cols-2 lg:grid-cols-4` রেখে দিব — ৭টি কার্ড সুন্দরভাবে wrap করবে (mobile: 2 cols, desktop: 4 cols)। আইকন: `Send` (remittance), `UserPlus` (accounts), `PiggyBank` (deposit) — lucide-react থেকে।
+
+### পরিবর্তিত ফাইল
+
+- `src/routes/_app/dashboard.tsx`
+- `src/lib/i18n.tsx`
