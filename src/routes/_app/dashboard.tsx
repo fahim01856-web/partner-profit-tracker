@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { useFmt, monthRange } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
-import { TrendingUp, TrendingDown, Wallet, Handshake, RefreshCw } from "lucide-react";
+import { TrendingUp, TrendingDown, Wallet, Handshake, RefreshCw, Send, UserPlus, PiggyBank } from "lucide-react";
 import { useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 
@@ -20,19 +20,34 @@ function Dashboard() {
   const year = prev.getFullYear();
   const month = prev.getMonth() + 1;
   const { start, end } = monthRange(year, month);
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+    .toISOString()
+    .slice(0, 10);
 
   const { data, isFetching, dataUpdatedAt } = useQuery({
-    queryKey: ["dashboard", start, end],
+    queryKey: ["dashboard", start, end, yesterday],
     queryFn: async () => {
-      const [partners, mri, mp] = await Promise.all([
+      const [partners, mri, mp, remit, accts, dep] = await Promise.all([
         supabase.from("partners").select("*").order("share_percent", { ascending: false }),
         supabase.from("monthly_report_items").select("amount,item_type").eq("year", year).eq("month", month),
         supabase.from("monthly_profits").select("*").eq("year", year).eq("month", month).maybeSingle(),
+        supabase.from("remittance_entries").select("quantity,amount").gte("date", start).lte("date", end),
+        supabase.from("account_opening_entries").select("num_accounts").gte("date", start).lte("date", end),
+        supabase.from("daily_deposits").select("amount").eq("date", yesterday),
       ]);
       const totalInc = (mri.data ?? []).filter((r: any) => r.item_type === "income").reduce((s, r: any) => s + Number(r.amount), 0);
       const totalExp = (mri.data ?? []).filter((r: any) => r.item_type === "expense").reduce((s, r: any) => s + Number(r.amount), 0);
       const profit = totalInc - totalExp;
-      return { totalInc, totalExp, profit, partners: partners.data ?? [], monthlyProfit: mp.data };
+      const remitCount = (remit.data ?? []).reduce((s, r: any) => s + Number(r.quantity ?? 0), 0);
+      const remitAmount = (remit.data ?? []).reduce((s, r: any) => s + Number(r.amount ?? 0), 0);
+      const accountCount = (accts.data ?? []).reduce((s, r: any) => s + Number(r.num_accounts ?? 0), 0);
+      const yesterdayDeposit = (dep.data ?? []).reduce((s, r: any) => s + Number(r.amount ?? 0), 0);
+      return {
+        totalInc, totalExp, profit,
+        partners: partners.data ?? [],
+        monthlyProfit: mp.data,
+        remitCount, remitAmount, accountCount, yesterdayDeposit,
+      };
     },
   });
 
@@ -47,6 +62,9 @@ function Dashboard() {
       .on("postgres_changes", { event: "*", schema: "public", table: "partners" }, invalidate)
       .on("postgres_changes", { event: "*", schema: "public", table: "monthly_profits" }, invalidate)
       .on("postgres_changes", { event: "*", schema: "public", table: "monthly_report_items" }, invalidate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "remittance_entries" }, invalidate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "account_opening_entries" }, invalidate)
+      .on("postgres_changes", { event: "*", schema: "public", table: "daily_deposits" }, invalidate)
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -90,6 +108,33 @@ function Dashboard() {
             <div className="text-xl font-bold mt-1">{s.value}</div>
           </Card>
         ))}
+
+        <Card className="p-5">
+          <div className="w-10 h-10 rounded-lg grid place-items-center bg-primary/10 text-primary mb-3">
+            <Send className="w-5 h-5" />
+          </div>
+          <div className="text-xs text-muted-foreground">{t("foreignRemittance")}</div>
+          <div className="text-xl font-bold mt-1">{fmt.bdt(data?.remitAmount ?? 0)}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {t("count")}: {fmt.num(data?.remitCount ?? 0)}
+          </div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="w-10 h-10 rounded-lg grid place-items-center bg-success/10 text-success mb-3">
+            <UserPlus className="w-5 h-5" />
+          </div>
+          <div className="text-xs text-muted-foreground">{t("newAccounts")}</div>
+          <div className="text-xl font-bold mt-1">{fmt.num(data?.accountCount ?? 0)}</div>
+        </Card>
+
+        <Card className="p-5">
+          <div className="w-10 h-10 rounded-lg grid place-items-center bg-gold/20 text-gold-foreground mb-3">
+            <PiggyBank className="w-5 h-5" />
+          </div>
+          <div className="text-xs text-muted-foreground">{t("yesterdayDeposit")}</div>
+          <div className="text-xl font-bold mt-1">{fmt.bdt(data?.yesterdayDeposit ?? 0)}</div>
+        </Card>
       </div>
 
       <Card className="p-6">
