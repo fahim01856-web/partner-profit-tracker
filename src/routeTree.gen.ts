@@ -15,18 +15,21 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppTargetsRouteImport } from './routes/_app/targets'
 import { Route as AppStaffRouteImport } from './routes/_app/staff'
 import { Route as AppSmsSendingRouteImport } from './routes/_app/sms-sending'
+import { Route as AppSignatureCardsRouteImport } from './routes/_app/signature-cards'
 import { Route as AppSalarySheetRouteImport } from './routes/_app/salary-sheet'
 import { Route as AppSalaryRouteImport } from './routes/_app/salary'
 import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppPendingWorksRouteImport } from './routes/_app/pending-works'
 import { Route as AppPartnersRouteImport } from './routes/_app/partners'
 import { Route as AppMonthlyReportRouteImport } from './routes/_app/monthly-report'
+import { Route as AppInventoryRouteImport } from './routes/_app/inventory'
 import { Route as AppIncomeRouteImport } from './routes/_app/income'
 import { Route as AppExpenseRouteImport } from './routes/_app/expense'
 import { Route as AppEmployeeAttendanceRouteImport } from './routes/_app/employee-attendance'
 import { Route as AppDocumentsRouteImport } from './routes/_app/documents'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppDailyDepositRouteImport } from './routes/_app/daily-deposit'
+import { Route as AppCashBookRouteImport } from './routes/_app/cash-book'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 
 const LoginRoute = LoginRouteImport.update({
@@ -56,6 +59,11 @@ const AppStaffRoute = AppStaffRouteImport.update({
 const AppSmsSendingRoute = AppSmsSendingRouteImport.update({
   id: '/sms-sending',
   path: '/sms-sending',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSignatureCardsRoute = AppSignatureCardsRouteImport.update({
+  id: '/signature-cards',
+  path: '/signature-cards',
   getParentRoute: () => AppRoute,
 } as any)
 const AppSalarySheetRoute = AppSalarySheetRouteImport.update({
@@ -88,6 +96,11 @@ const AppMonthlyReportRoute = AppMonthlyReportRouteImport.update({
   path: '/monthly-report',
   getParentRoute: () => AppRoute,
 } as any)
+const AppInventoryRoute = AppInventoryRouteImport.update({
+  id: '/inventory',
+  path: '/inventory',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppIncomeRoute = AppIncomeRouteImport.update({
   id: '/income',
   path: '/income',
@@ -118,6 +131,11 @@ const AppDailyDepositRoute = AppDailyDepositRouteImport.update({
   path: '/daily-deposit',
   getParentRoute: () => AppRoute,
 } as any)
+const AppCashBookRoute = AppCashBookRouteImport.update({
+  id: '/cash-book',
+  path: '/cash-book',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAttendanceRoute = AppAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -128,18 +146,21 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/attendance': typeof AppAttendanceRoute
+  '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
   '/documents': typeof AppDocumentsRoute
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
+  '/inventory': typeof AppInventoryRoute
   '/monthly-report': typeof AppMonthlyReportRoute
   '/partners': typeof AppPartnersRoute
   '/pending-works': typeof AppPendingWorksRoute
   '/reports': typeof AppReportsRoute
   '/salary': typeof AppSalaryRoute
   '/salary-sheet': typeof AppSalarySheetRoute
+  '/signature-cards': typeof AppSignatureCardsRoute
   '/sms-sending': typeof AppSmsSendingRoute
   '/staff': typeof AppStaffRoute
   '/targets': typeof AppTargetsRoute
@@ -148,18 +169,21 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/attendance': typeof AppAttendanceRoute
+  '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
   '/documents': typeof AppDocumentsRoute
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
+  '/inventory': typeof AppInventoryRoute
   '/monthly-report': typeof AppMonthlyReportRoute
   '/partners': typeof AppPartnersRoute
   '/pending-works': typeof AppPendingWorksRoute
   '/reports': typeof AppReportsRoute
   '/salary': typeof AppSalaryRoute
   '/salary-sheet': typeof AppSalarySheetRoute
+  '/signature-cards': typeof AppSignatureCardsRoute
   '/sms-sending': typeof AppSmsSendingRoute
   '/staff': typeof AppStaffRoute
   '/targets': typeof AppTargetsRoute
@@ -170,18 +194,21 @@ export interface FileRoutesById {
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
   '/_app/attendance': typeof AppAttendanceRoute
+  '/_app/cash-book': typeof AppCashBookRoute
   '/_app/daily-deposit': typeof AppDailyDepositRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/documents': typeof AppDocumentsRoute
   '/_app/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/_app/expense': typeof AppExpenseRoute
   '/_app/income': typeof AppIncomeRoute
+  '/_app/inventory': typeof AppInventoryRoute
   '/_app/monthly-report': typeof AppMonthlyReportRoute
   '/_app/partners': typeof AppPartnersRoute
   '/_app/pending-works': typeof AppPendingWorksRoute
   '/_app/reports': typeof AppReportsRoute
   '/_app/salary': typeof AppSalaryRoute
   '/_app/salary-sheet': typeof AppSalarySheetRoute
+  '/_app/signature-cards': typeof AppSignatureCardsRoute
   '/_app/sms-sending': typeof AppSmsSendingRoute
   '/_app/staff': typeof AppStaffRoute
   '/_app/targets': typeof AppTargetsRoute
@@ -192,18 +219,21 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/attendance'
+    | '/cash-book'
     | '/daily-deposit'
     | '/dashboard'
     | '/documents'
     | '/employee-attendance'
     | '/expense'
     | '/income'
+    | '/inventory'
     | '/monthly-report'
     | '/partners'
     | '/pending-works'
     | '/reports'
     | '/salary'
     | '/salary-sheet'
+    | '/signature-cards'
     | '/sms-sending'
     | '/staff'
     | '/targets'
@@ -212,18 +242,21 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/attendance'
+    | '/cash-book'
     | '/daily-deposit'
     | '/dashboard'
     | '/documents'
     | '/employee-attendance'
     | '/expense'
     | '/income'
+    | '/inventory'
     | '/monthly-report'
     | '/partners'
     | '/pending-works'
     | '/reports'
     | '/salary'
     | '/salary-sheet'
+    | '/signature-cards'
     | '/sms-sending'
     | '/staff'
     | '/targets'
@@ -233,18 +266,21 @@ export interface FileRouteTypes {
     | '/_app'
     | '/login'
     | '/_app/attendance'
+    | '/_app/cash-book'
     | '/_app/daily-deposit'
     | '/_app/dashboard'
     | '/_app/documents'
     | '/_app/employee-attendance'
     | '/_app/expense'
     | '/_app/income'
+    | '/_app/inventory'
     | '/_app/monthly-report'
     | '/_app/partners'
     | '/_app/pending-works'
     | '/_app/reports'
     | '/_app/salary'
     | '/_app/salary-sheet'
+    | '/_app/signature-cards'
     | '/_app/sms-sending'
     | '/_app/staff'
     | '/_app/targets'
@@ -300,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppSmsSendingRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/signature-cards': {
+      id: '/_app/signature-cards'
+      path: '/signature-cards'
+      fullPath: '/signature-cards'
+      preLoaderRoute: typeof AppSignatureCardsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/salary-sheet': {
       id: '/_app/salary-sheet'
       path: '/salary-sheet'
@@ -340,6 +383,13 @@ declare module '@tanstack/react-router' {
       path: '/monthly-report'
       fullPath: '/monthly-report'
       preLoaderRoute: typeof AppMonthlyReportRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/inventory': {
+      id: '/_app/inventory'
+      path: '/inventory'
+      fullPath: '/inventory'
+      preLoaderRoute: typeof AppInventoryRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/income': {
@@ -384,6 +434,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppDailyDepositRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/cash-book': {
+      id: '/_app/cash-book'
+      path: '/cash-book'
+      fullPath: '/cash-book'
+      preLoaderRoute: typeof AppCashBookRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/attendance': {
       id: '/_app/attendance'
       path: '/attendance'
@@ -396,18 +453,21 @@ declare module '@tanstack/react-router' {
 
 interface AppRouteChildren {
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppCashBookRoute: typeof AppCashBookRoute
   AppDailyDepositRoute: typeof AppDailyDepositRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppEmployeeAttendanceRoute: typeof AppEmployeeAttendanceRoute
   AppExpenseRoute: typeof AppExpenseRoute
   AppIncomeRoute: typeof AppIncomeRoute
+  AppInventoryRoute: typeof AppInventoryRoute
   AppMonthlyReportRoute: typeof AppMonthlyReportRoute
   AppPartnersRoute: typeof AppPartnersRoute
   AppPendingWorksRoute: typeof AppPendingWorksRoute
   AppReportsRoute: typeof AppReportsRoute
   AppSalaryRoute: typeof AppSalaryRoute
   AppSalarySheetRoute: typeof AppSalarySheetRoute
+  AppSignatureCardsRoute: typeof AppSignatureCardsRoute
   AppSmsSendingRoute: typeof AppSmsSendingRoute
   AppStaffRoute: typeof AppStaffRoute
   AppTargetsRoute: typeof AppTargetsRoute
@@ -415,18 +475,21 @@ interface AppRouteChildren {
 
 const AppRouteChildren: AppRouteChildren = {
   AppAttendanceRoute: AppAttendanceRoute,
+  AppCashBookRoute: AppCashBookRoute,
   AppDailyDepositRoute: AppDailyDepositRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppDocumentsRoute: AppDocumentsRoute,
   AppEmployeeAttendanceRoute: AppEmployeeAttendanceRoute,
   AppExpenseRoute: AppExpenseRoute,
   AppIncomeRoute: AppIncomeRoute,
+  AppInventoryRoute: AppInventoryRoute,
   AppMonthlyReportRoute: AppMonthlyReportRoute,
   AppPartnersRoute: AppPartnersRoute,
   AppPendingWorksRoute: AppPendingWorksRoute,
   AppReportsRoute: AppReportsRoute,
   AppSalaryRoute: AppSalaryRoute,
   AppSalarySheetRoute: AppSalarySheetRoute,
+  AppSignatureCardsRoute: AppSignatureCardsRoute,
   AppSmsSendingRoute: AppSmsSendingRoute,
   AppStaffRoute: AppStaffRoute,
   AppTargetsRoute: AppTargetsRoute,
