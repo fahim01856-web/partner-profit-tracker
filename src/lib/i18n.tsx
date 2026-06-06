@@ -29,6 +29,9 @@ const dict = {
   nav_sms: { bn: "SMS পাঠানো", en: "SMS Sending" },
   nav_targets: { bn: "মাসিক টার্গেট", en: "Monthly Targets" },
   nav_documents: { bn: "ডকুমেন্ট", en: "Documents" },
+  nav_cash_book: { bn: "দৈনিক ক্যাশ বুক", en: "Daily Cash Book" },
+  nav_signature: { bn: "সিগনেচার কার্ড", en: "Signature Cards" },
+  nav_inventory: { bn: "ইনভেন্টরি", en: "Inventory" },
 
 
 

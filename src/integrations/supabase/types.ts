@@ -133,6 +133,57 @@ export type Database = {
           },
         ]
       }
+      cash_book_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          description: string
+          entry_type: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date: string
+          description: string
+          entry_type: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          description?: string
+          entry_type?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      cash_book_opening: {
+        Row: {
+          created_at: string
+          date: string
+          opening_balance: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          opening_balance?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          opening_balance?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       chat_messages: {
         Row: {
           content: string
@@ -316,6 +367,75 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+        }
+        Relationships: []
+      }
+      inventory_distributions: {
+        Row: {
+          account_number: string
+          created_at: string
+          customer_name: string
+          date: string
+          id: string
+          item_type: string
+          note: string | null
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          created_at?: string
+          customer_name: string
+          date: string
+          id?: string
+          item_type: string
+          note?: string | null
+          quantity: number
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          created_at?: string
+          customer_name?: string
+          date?: string
+          id?: string
+          item_type?: string
+          note?: string | null
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_receipts: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          item_type: string
+          note: string | null
+          quantity: number
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          item_type: string
+          note?: string | null
+          quantity: number
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          item_type?: string
+          note?: string | null
+          quantity?: number
+          source?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -690,6 +810,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      signature_cards: {
+        Row: {
+          account_number: string
+          created_at: string
+          customer_name: string
+          id: string
+          image_path: string
+          mobile: string | null
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          created_at?: string
+          customer_name: string
+          id?: string
+          image_path: string
+          mobile?: string | null
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          created_at?: string
+          customer_name?: string
+          id?: string
+          image_path?: string
+          mobile?: string | null
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       sms_logs: {
         Row: {
