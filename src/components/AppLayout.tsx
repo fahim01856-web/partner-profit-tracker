@@ -4,7 +4,8 @@ import { useI18n } from "@/lib/i18n";
 import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
-  ClipboardList, MessageSquare, Target, FileText, Banknote
+  ClipboardList, MessageSquare, Target, FileText, Banknote,
+  BookOpen, FileSignature, Boxes
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -22,7 +23,10 @@ export function AppLayout() {
     { to: "/monthly-report", label: t("nav_monthly_report"), icon: FileBarChart },
     { to: "/income", label: t("nav_income"), icon: TrendingUp },
     { to: "/daily-deposit", label: t("nav_daily_deposit"), icon: Banknote },
+    { to: "/cash-book", label: t("nav_cash_book"), icon: BookOpen },
     { to: "/expense", label: t("nav_expense"), icon: Receipt },
+    { to: "/signature-cards", label: t("nav_signature"), icon: FileSignature },
+    { to: "/inventory", label: t("nav_inventory"), icon: Boxes },
     { to: "/staff", label: t("nav_staff"), icon: Users },
     { to: "/employee-attendance", label: t("nav_emp_att"), icon: ClipboardCheck },
     { to: "/salary", label: t("nav_salary"), icon: Wallet },
