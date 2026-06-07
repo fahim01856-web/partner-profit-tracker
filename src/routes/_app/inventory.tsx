@@ -242,6 +242,12 @@ function InventoryPage() {
           <TabsTrigger value="distribute">{lang === "bn" ? "বিতরণ" : "Distribute"}</TabsTrigger>
           <TabsTrigger value="receipts">{lang === "bn" ? "প্রাপ্ত তালিকা" : "Receipts"}</TabsTrigger>
           <TabsTrigger value="distributions">{lang === "bn" ? "বিতরণ তালিকা" : "Distributions"}</TabsTrigger>
+          <TabsTrigger value="pending">
+            <ClipboardList className="w-3.5 h-3.5 mr-1" /> {lang === "bn" ? "পেন্ডিং কাস্টমার" : "Pending Customers"}
+            {pendings.filter((p) => p.status === "pending").length > 0 && (
+              <Badge variant="destructive" className="ml-1.5 h-4 px-1.5 text-[10px]">{fmt.num(pendings.filter((p) => p.status === "pending").length)}</Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-4">
