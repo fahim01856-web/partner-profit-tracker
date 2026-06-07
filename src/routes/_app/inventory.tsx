@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useFmt } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Boxes, Plus, Trash2, Pencil, Printer, Save, AlertTriangle, PackageCheck, PackageMinus, Package } from "lucide-react";
+import { Boxes, Plus, Trash2, Pencil, Printer, Save, AlertTriangle, PackageCheck, PackageMinus, Package, ClipboardList, Check, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_app/inventory")({ component: InventoryPage });
 
@@ -21,6 +22,7 @@ type ItemType = "mtdr" | "mmpdsa" | "cheque_book";
 
 type Receipt = { id: string; date: string; item_type: ItemType; quantity: number; source: string | null; note: string | null };
 type Distribution = { id: string; date: string; item_type: ItemType; quantity: number; customer_name: string; account_number: string; note: string | null };
+type Pending = { id: string; item_type: ItemType; customer_name: string; mobile: string | null; account_number: string; quantity: number; note: string | null; status: "pending" | "delivered"; requested_date: string; delivered_date: string | null };
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const LOW_STOCK = 10;
@@ -39,6 +41,8 @@ function InventoryPage() {
 
   const [rForm, setRForm] = useState({ id: null as string | null, date: todayStr(), item_type: "mtdr" as ItemType, quantity: "", source: "", note: "" });
   const [dForm, setDForm] = useState({ id: null as string | null, date: todayStr(), item_type: "mtdr" as ItemType, quantity: "", customer_name: "", account_number: "", note: "" });
+  const [pForm, setPForm] = useState({ id: null as string | null, item_type: "mtdr" as ItemType, customer_name: "", mobile: "", account_number: "", quantity: "1", note: "" });
+  const [pStatusFilter, setPStatusFilter] = useState<"pending" | "delivered" | "all">("pending");
 
   // Filters for history
   const [fType, setFType] = useState<string>("all");
@@ -62,6 +66,17 @@ function InventoryPage() {
       return (data ?? []) as Distribution[];
     },
   });
+
+  const { data: pendings = [] } = useQuery({
+    queryKey: ["inventory_pending"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("inventory_pending_requests").select("*").order("requested_date", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Pending[];
+    },
+  });
+
+  const pendingCount = (it: ItemType) => pendings.filter((p) => p.item_type === it && p.status === "pending").reduce((s, p) => s + Number(p.quantity), 0);
 
   const sumBy = (rows: { item_type: ItemType; quantity: number }[], it: ItemType) =>
     rows.filter((r) => r.item_type === it).reduce((s, r) => s + Number(r.quantity), 0);
@@ -128,6 +143,58 @@ function InventoryPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["inventory_distributions"] }); toast.success(t("deleted")); },
   });
 
+  const savePending = useMutation({
+    mutationFn: async () => {
+      const qty = Number(pForm.quantity || 0);
+      if (!pForm.customer_name.trim() || !pForm.account_number.trim()) throw new Error(lang === "bn" ? "নাম ও অ্যাকাউন্ট নং দিন" : "Name & account required");
+      if (qty <= 0) throw new Error(lang === "bn" ? "পরিমাণ দিন" : "Quantity required");
+      const payload = {
+        item_type: pForm.item_type,
+        customer_name: pForm.customer_name.trim(),
+        mobile: pForm.mobile.trim() || null,
+        account_number: pForm.account_number.trim(),
+        quantity: qty,
+        note: pForm.note.trim() || null,
+      };
+      if (pForm.id) {
+        const { error } = await supabase.from("inventory_pending_requests").update(payload).eq("id", pForm.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("inventory_pending_requests").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["inventory_pending"] });
+      toast.success(t("save") + " ✓");
+      setPForm({ id: null, item_type: pForm.item_type, customer_name: "", mobile: "", account_number: "", quantity: "1", note: "" });
+    },
+    onError: (e: any) => toast.error(e.message || "Error"),
+  });
+
+  const markDelivered = useMutation({
+    mutationFn: async (p: Pending) => {
+      const { error } = await supabase.from("inventory_pending_requests").update({ status: "delivered", delivered_date: todayStr() }).eq("id", p.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["inventory_pending"] }); toast.success(lang === "bn" ? "বিতরণ সম্পন্ন" : "Marked delivered"); },
+  });
+
+  const markPending = useMutation({
+    mutationFn: async (p: Pending) => {
+      const { error } = await supabase.from("inventory_pending_requests").update({ status: "pending", delivered_date: null }).eq("id", p.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["inventory_pending"] }); },
+  });
+
+  const delPending = useMutation({
+    mutationFn: async (id: string) => { const { error } = await supabase.from("inventory_pending_requests").delete().eq("id", id); if (error) throw error; },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["inventory_pending"] }); toast.success(t("deleted")); },
+  });
+
+  const filteredPendings = pendings.filter((p) => (fType === "all" || p.item_type === fType) && (pStatusFilter === "all" || p.status === pStatusFilter));
+
   const inDateRange = (d: string) => {
     if (fFrom && d < fFrom) return false;
     if (fTo && d > fTo) return false;
@@ -158,9 +225,10 @@ function InventoryPage() {
                 {low && <span className="inline-flex items-center gap-1 text-[11px] text-red-600 font-medium"><AlertTriangle className="w-3 h-3" /> {lang === "bn" ? "স্টক কম" : "Low Stock"}</span>}
               </div>
               <div className={`text-3xl font-bold mt-2 ${low ? "text-red-600" : "text-primary"}`}>{fmt.num(s)}</div>
-              <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                <div className="text-emerald-700"><PackageCheck className="w-3 h-3 inline" /> {lang === "bn" ? "প্রাপ্ত" : "Received"}: <b>{fmt.num(sumBy(receipts, it))}</b></div>
-                <div className="text-red-700"><PackageMinus className="w-3 h-3 inline" /> {lang === "bn" ? "বিতরণ" : "Distributed"}: <b>{fmt.num(sumBy(distributions, it))}</b></div>
+              <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
+                <div className="text-emerald-700"><PackageCheck className="w-3 h-3 inline" /> {lang === "bn" ? "প্রাপ্ত" : "Recv"}: <b>{fmt.num(sumBy(receipts, it))}</b></div>
+                <div className="text-red-700"><PackageMinus className="w-3 h-3 inline" /> {lang === "bn" ? "বিতরণ" : "Dist"}: <b>{fmt.num(sumBy(distributions, it))}</b></div>
+                <div className="text-amber-700"><ClipboardList className="w-3 h-3 inline" /> {lang === "bn" ? "পেন্ডিং" : "Pend"}: <b>{fmt.num(pendingCount(it))}</b></div>
               </div>
             </Card>
           );
@@ -174,6 +242,12 @@ function InventoryPage() {
           <TabsTrigger value="distribute">{lang === "bn" ? "বিতরণ" : "Distribute"}</TabsTrigger>
           <TabsTrigger value="receipts">{lang === "bn" ? "প্রাপ্ত তালিকা" : "Receipts"}</TabsTrigger>
           <TabsTrigger value="distributions">{lang === "bn" ? "বিতরণ তালিকা" : "Distributions"}</TabsTrigger>
+          <TabsTrigger value="pending">
+            <ClipboardList className="w-3.5 h-3.5 mr-1" /> {lang === "bn" ? "পেন্ডিং কাস্টমার" : "Pending Customers"}
+            {pendings.filter((p) => p.status === "pending").length > 0 && (
+              <Badge variant="destructive" className="ml-1.5 h-4 px-1.5 text-[10px]">{fmt.num(pendings.filter((p) => p.status === "pending").length)}</Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-4">
@@ -348,6 +422,130 @@ function InventoryPage() {
                         <div className="inline-flex gap-1">
                           <Button size="sm" variant="ghost" onClick={() => { setDForm({ id: d.id, date: d.date, item_type: d.item_type, quantity: String(d.quantity), customer_name: d.customer_name, account_number: d.account_number, note: d.note ?? "" }); setTab("distribute"); }}><Pencil className="w-3.5 h-3.5" /></Button>
                           <Button size="sm" variant="ghost" onClick={() => { if (confirm(t("confirm_delete"))) delDist.mutate(d.id); }}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="pending" className="mt-4 space-y-3">
+          {/* Entry form */}
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-primary" />
+              {pForm.id ? t("edit") : (lang === "bn" ? "পেন্ডিং কাস্টমার এন্ট্রি (যাদের দেওয়ার বাকি)" : "Add Pending Customer (yet to deliver)")}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <Label>{lang === "bn" ? "আইটেম" : "Item"}</Label>
+                <Select value={pForm.item_type} onValueChange={(v: any) => setPForm({ ...pForm, item_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{items.map((it) => <SelectItem key={it} value={it}>{itemLabel(it)}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "কাস্টমার নাম" : "Customer Name"} *</Label>
+                <Input value={pForm.customer_name} onChange={(e) => setPForm({ ...pForm, customer_name: e.target.value })} />
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "মোবাইল নম্বর" : "Mobile Number"}</Label>
+                <Input value={pForm.mobile} onChange={(e) => setPForm({ ...pForm, mobile: e.target.value })} />
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "অ্যাকাউন্ট নম্বর" : "Account Number"} *</Label>
+                <Input value={pForm.account_number} onChange={(e) => setPForm({ ...pForm, account_number: e.target.value })} />
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "পরিমাণ" : "Quantity"}</Label>
+                <Input type="number" value={pForm.quantity} onChange={(e) => setPForm({ ...pForm, quantity: e.target.value })} />
+              </div>
+              <div>
+                <Label>{t("note")}</Label>
+                <Input value={pForm.note} onChange={(e) => setPForm({ ...pForm, note: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-3">
+              {pForm.id && <Button variant="outline" onClick={() => setPForm({ id: null, item_type: pForm.item_type, customer_name: "", mobile: "", account_number: "", quantity: "1", note: "" })}>{t("cancel_edit")}</Button>}
+              <Button onClick={() => savePending.mutate()} disabled={savePending.isPending}><Save className="w-4 h-4" /> {pForm.id ? t("update") : t("save")}</Button>
+            </div>
+          </Card>
+
+          {/* Filters */}
+          <Card className="p-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "আইটেম" : "Item"}</Label>
+                <Select value={fType} onValueChange={setFType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{lang === "bn" ? "সব" : "All"}</SelectItem>
+                    {items.map((it) => <SelectItem key={it} value={it}>{itemLabel(it)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "স্ট্যাটাস" : "Status"}</Label>
+                <Select value={pStatusFilter} onValueChange={(v: any) => setPStatusFilter(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">{lang === "bn" ? "পেন্ডিং" : "Pending"}</SelectItem>
+                    <SelectItem value="delivered">{lang === "bn" ? "বিতরণ সম্পন্ন" : "Delivered"}</SelectItem>
+                    <SelectItem value="all">{lang === "bn" ? "সব" : "All"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end">
+                <Button variant="outline" className="w-full" onClick={() => { setFType("all"); setPStatusFilter("pending"); }}>{lang === "bn" ? "ক্লিয়ার" : "Clear"}</Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* List */}
+          <Card className="p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead>
+                    <TableHead>{lang === "bn" ? "আইটেম" : "Item"}</TableHead>
+                    <TableHead>{lang === "bn" ? "কাস্টমার" : "Customer"}</TableHead>
+                    <TableHead>{lang === "bn" ? "মোবাইল" : "Mobile"}</TableHead>
+                    <TableHead>A/C</TableHead>
+                    <TableHead className="text-right">{lang === "bn" ? "পরিমাণ" : "Qty"}</TableHead>
+                    <TableHead>{lang === "bn" ? "স্ট্যাটাস" : "Status"}</TableHead>
+                    <TableHead className="text-right no-print">{lang === "bn" ? "অ্যাকশন" : "Action"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPendings.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noEntries")}</TableCell></TableRow>}
+                  {filteredPendings.map((p) => (
+                    <TableRow key={p.id} className={p.status === "pending" ? "" : "opacity-60"}>
+                      <TableCell className="text-xs">{fmt.date(p.requested_date)}</TableCell>
+                      <TableCell>{itemLabel(p.item_type)}</TableCell>
+                      <TableCell className="font-medium">{p.customer_name}</TableCell>
+                      <TableCell className="font-mono text-xs">{p.mobile || "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">{p.account_number}</TableCell>
+                      <TableCell className="text-right font-semibold">{fmt.num(p.quantity)}</TableCell>
+                      <TableCell>
+                        {p.status === "pending" ? (
+                          <Badge variant="destructive" className="text-[10px]">{lang === "bn" ? "পেন্ডিং" : "Pending"}</Badge>
+                        ) : (
+                          <Badge className="bg-emerald-600 hover:bg-emerald-700 text-[10px]">{lang === "bn" ? "সম্পন্ন" : "Delivered"}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right no-print">
+                        <div className="inline-flex gap-1">
+                          {p.status === "pending" ? (
+                            <Button size="sm" variant="ghost" title={lang === "bn" ? "বিতরণ সম্পন্ন" : "Mark delivered"} onClick={() => markDelivered.mutate(p)}><Check className="w-3.5 h-3.5 text-emerald-600" /></Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" title={lang === "bn" ? "পেন্ডিংয়ে ফিরিয়ে নিন" : "Mark pending"} onClick={() => markPending.mutate(p)}><X className="w-3.5 h-3.5 text-amber-600" /></Button>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => setPForm({ id: p.id, item_type: p.item_type, customer_name: p.customer_name, mobile: p.mobile ?? "", account_number: p.account_number, quantity: String(p.quantity), note: p.note ?? "" })}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => { if (confirm(t("confirm_delete"))) delPending.mutate(p.id); }}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>

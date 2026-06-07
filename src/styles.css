@@ -96,14 +96,18 @@
   html { scroll-behavior: smooth; }
 }
 
-/* Print styles for vouchers */
+/* Print styles */
 @media print {
-  body * { visibility: hidden; }
-  .print-area, .print-area * { visibility: visible; }
-  .print-area {
+  .no-print { display: none !important; }
+  /* When a .print-area exists, isolate it; otherwise print the whole page */
+  body:has(.print-area) * { visibility: hidden; }
+  body:has(.print-area) .print-area,
+  body:has(.print-area) .print-area * { visibility: visible; }
+  body:has(.print-area) .print-area {
     position: absolute;
     left: 0; top: 0;
     width: 100%;
   }
-  .no-print { display: none !important; }
+  @page { margin: 12mm; }
+  body { background: white !important; }
 }
