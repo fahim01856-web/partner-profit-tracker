@@ -38,6 +38,7 @@ function CashBookPage() {
     amount: "",
   });
   const [openingInput, setOpeningInput] = useState("");
+  const [cashInHand, setCashInHand] = useState("");
 
   const { data: entries = [] } = useQuery({
     queryKey: ["cash_book_entries", date],
