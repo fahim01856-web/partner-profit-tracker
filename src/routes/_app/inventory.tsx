@@ -143,6 +143,58 @@ function InventoryPage() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["inventory_distributions"] }); toast.success(t("deleted")); },
   });
 
+  const savePending = useMutation({
+    mutationFn: async () => {
+      const qty = Number(pForm.quantity || 0);
+      if (!pForm.customer_name.trim() || !pForm.account_number.trim()) throw new Error(lang === "bn" ? "নাম ও অ্যাকাউন্ট নং দিন" : "Name & account required");
+      if (qty <= 0) throw new Error(lang === "bn" ? "পরিমাণ দিন" : "Quantity required");
+      const payload = {
+        item_type: pForm.item_type,
+        customer_name: pForm.customer_name.trim(),
+        mobile: pForm.mobile.trim() || null,
+        account_number: pForm.account_number.trim(),
+        quantity: qty,
+        note: pForm.note.trim() || null,
+      };
+      if (pForm.id) {
+        const { error } = await supabase.from("inventory_pending_requests").update(payload).eq("id", pForm.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("inventory_pending_requests").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["inventory_pending"] });
+      toast.success(t("save") + " ✓");
+      setPForm({ id: null, item_type: pForm.item_type, customer_name: "", mobile: "", account_number: "", quantity: "1", note: "" });
+    },
+    onError: (e: any) => toast.error(e.message || "Error"),
+  });
+
+  const markDelivered = useMutation({
+    mutationFn: async (p: Pending) => {
+      const { error } = await supabase.from("inventory_pending_requests").update({ status: "delivered", delivered_date: todayStr() }).eq("id", p.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["inventory_pending"] }); toast.success(lang === "bn" ? "বিতরণ সম্পন্ন" : "Marked delivered"); },
+  });
+
+  const markPending = useMutation({
+    mutationFn: async (p: Pending) => {
+      const { error } = await supabase.from("inventory_pending_requests").update({ status: "pending", delivered_date: null }).eq("id", p.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["inventory_pending"] }); },
+  });
+
+  const delPending = useMutation({
+    mutationFn: async (id: string) => { const { error } = await supabase.from("inventory_pending_requests").delete().eq("id", id); if (error) throw error; },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["inventory_pending"] }); toast.success(t("deleted")); },
+  });
+
+  const filteredPendings = pendings.filter((p) => (fType === "all" || p.item_type === fType) && (pStatusFilter === "all" || p.status === pStatusFilter));
+
   const inDateRange = (d: string) => {
     if (fFrom && d < fFrom) return false;
     if (fTo && d > fTo) return false;
