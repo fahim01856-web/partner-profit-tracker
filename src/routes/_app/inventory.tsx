@@ -22,6 +22,7 @@ type ItemType = "mtdr" | "mmpdsa" | "cheque_book";
 
 type Receipt = { id: string; date: string; item_type: ItemType; quantity: number; source: string | null; note: string | null };
 type Distribution = { id: string; date: string; item_type: ItemType; quantity: number; customer_name: string; account_number: string; note: string | null };
+type Pending = { id: string; item_type: ItemType; customer_name: string; mobile: string | null; account_number: string; quantity: number; note: string | null; status: "pending" | "delivered"; requested_date: string; delivered_date: string | null };
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const LOW_STOCK = 10;
