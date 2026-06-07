@@ -113,7 +113,7 @@ function Dashboard() {
           <div className="w-10 h-10 rounded-lg grid place-items-center bg-primary/10 text-primary mb-3">
             <Send className="w-5 h-5" />
           </div>
-          <div className="text-xs text-muted-foreground">{t("foreignRemittance")}</div>
+          <div className="text-xs text-muted-foreground">{t("foreignRemittance")} <span className="text-[10px] text-primary/80">({fmt.months[prev.getMonth()]})</span></div>
           <div className="text-xl font-bold mt-1">{fmt.bdt(data?.remitAmount ?? 0)}</div>
           <div className="text-xs text-muted-foreground mt-1">
             {t("count")}: {fmt.num(data?.remitCount ?? 0)}
@@ -124,7 +124,7 @@ function Dashboard() {
           <div className="w-10 h-10 rounded-lg grid place-items-center bg-success/10 text-success mb-3">
             <UserPlus className="w-5 h-5" />
           </div>
-          <div className="text-xs text-muted-foreground">{t("newAccounts")}</div>
+          <div className="text-xs text-muted-foreground">{t("newAccounts")} <span className="text-[10px] text-success/80">({fmt.months[prev.getMonth()]})</span></div>
           <div className="text-xl font-bold mt-1">{fmt.num(data?.accountCount ?? 0)}</div>
         </Card>
 
