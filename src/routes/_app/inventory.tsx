@@ -431,6 +431,130 @@ function InventoryPage() {
             </div>
           </Card>
         </TabsContent>
+
+        <TabsContent value="pending" className="mt-4 space-y-3">
+          {/* Entry form */}
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2">
+              <ClipboardList className="w-4 h-4 text-primary" />
+              {pForm.id ? t("edit") : (lang === "bn" ? "পেন্ডিং কাস্টমার এন্ট্রি (যাদের দেওয়ার বাকি)" : "Add Pending Customer (yet to deliver)")}
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div>
+                <Label>{lang === "bn" ? "আইটেম" : "Item"}</Label>
+                <Select value={pForm.item_type} onValueChange={(v: any) => setPForm({ ...pForm, item_type: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{items.map((it) => <SelectItem key={it} value={it}>{itemLabel(it)}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "কাস্টমার নাম" : "Customer Name"} *</Label>
+                <Input value={pForm.customer_name} onChange={(e) => setPForm({ ...pForm, customer_name: e.target.value })} />
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "মোবাইল নম্বর" : "Mobile Number"}</Label>
+                <Input value={pForm.mobile} onChange={(e) => setPForm({ ...pForm, mobile: e.target.value })} />
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "অ্যাকাউন্ট নম্বর" : "Account Number"} *</Label>
+                <Input value={pForm.account_number} onChange={(e) => setPForm({ ...pForm, account_number: e.target.value })} />
+              </div>
+              <div>
+                <Label>{lang === "bn" ? "পরিমাণ" : "Quantity"}</Label>
+                <Input type="number" value={pForm.quantity} onChange={(e) => setPForm({ ...pForm, quantity: e.target.value })} />
+              </div>
+              <div>
+                <Label>{t("note")}</Label>
+                <Input value={pForm.note} onChange={(e) => setPForm({ ...pForm, note: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-3">
+              {pForm.id && <Button variant="outline" onClick={() => setPForm({ id: null, item_type: pForm.item_type, customer_name: "", mobile: "", account_number: "", quantity: "1", note: "" })}>{t("cancel_edit")}</Button>}
+              <Button onClick={() => savePending.mutate()} disabled={savePending.isPending}><Save className="w-4 h-4" /> {pForm.id ? t("update") : t("save")}</Button>
+            </div>
+          </Card>
+
+          {/* Filters */}
+          <Card className="p-3">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "আইটেম" : "Item"}</Label>
+                <Select value={fType} onValueChange={setFType}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{lang === "bn" ? "সব" : "All"}</SelectItem>
+                    {items.map((it) => <SelectItem key={it} value={it}>{itemLabel(it)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "স্ট্যাটাস" : "Status"}</Label>
+                <Select value={pStatusFilter} onValueChange={(v: any) => setPStatusFilter(v)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">{lang === "bn" ? "পেন্ডিং" : "Pending"}</SelectItem>
+                    <SelectItem value="delivered">{lang === "bn" ? "বিতরণ সম্পন্ন" : "Delivered"}</SelectItem>
+                    <SelectItem value="all">{lang === "bn" ? "সব" : "All"}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-end">
+                <Button variant="outline" className="w-full" onClick={() => { setFType("all"); setPStatusFilter("pending"); }}>{lang === "bn" ? "ক্লিয়ার" : "Clear"}</Button>
+              </div>
+            </div>
+          </Card>
+
+          {/* List */}
+          <Card className="p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead>
+                    <TableHead>{lang === "bn" ? "আইটেম" : "Item"}</TableHead>
+                    <TableHead>{lang === "bn" ? "কাস্টমার" : "Customer"}</TableHead>
+                    <TableHead>{lang === "bn" ? "মোবাইল" : "Mobile"}</TableHead>
+                    <TableHead>A/C</TableHead>
+                    <TableHead className="text-right">{lang === "bn" ? "পরিমাণ" : "Qty"}</TableHead>
+                    <TableHead>{lang === "bn" ? "স্ট্যাটাস" : "Status"}</TableHead>
+                    <TableHead className="text-right no-print">{lang === "bn" ? "অ্যাকশন" : "Action"}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPendings.length === 0 && <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-6">{t("noEntries")}</TableCell></TableRow>}
+                  {filteredPendings.map((p) => (
+                    <TableRow key={p.id} className={p.status === "pending" ? "" : "opacity-60"}>
+                      <TableCell className="text-xs">{fmt.date(p.requested_date)}</TableCell>
+                      <TableCell>{itemLabel(p.item_type)}</TableCell>
+                      <TableCell className="font-medium">{p.customer_name}</TableCell>
+                      <TableCell className="font-mono text-xs">{p.mobile || "—"}</TableCell>
+                      <TableCell className="font-mono text-xs">{p.account_number}</TableCell>
+                      <TableCell className="text-right font-semibold">{fmt.num(p.quantity)}</TableCell>
+                      <TableCell>
+                        {p.status === "pending" ? (
+                          <Badge variant="destructive" className="text-[10px]">{lang === "bn" ? "পেন্ডিং" : "Pending"}</Badge>
+                        ) : (
+                          <Badge className="bg-emerald-600 hover:bg-emerald-700 text-[10px]">{lang === "bn" ? "সম্পন্ন" : "Delivered"}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right no-print">
+                        <div className="inline-flex gap-1">
+                          {p.status === "pending" ? (
+                            <Button size="sm" variant="ghost" title={lang === "bn" ? "বিতরণ সম্পন্ন" : "Mark delivered"} onClick={() => markDelivered.mutate(p)}><Check className="w-3.5 h-3.5 text-emerald-600" /></Button>
+                          ) : (
+                            <Button size="sm" variant="ghost" title={lang === "bn" ? "পেন্ডিংয়ে ফিরিয়ে নিন" : "Mark pending"} onClick={() => markPending.mutate(p)}><X className="w-3.5 h-3.5 text-amber-600" /></Button>
+                          )}
+                          <Button size="sm" variant="ghost" onClick={() => setPForm({ id: p.id, item_type: p.item_type, customer_name: p.customer_name, mobile: p.mobile ?? "", account_number: p.account_number, quantity: String(p.quantity), note: p.note ?? "" })}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => { if (confirm(t("confirm_delete"))) delPending.mutate(p.id); }}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        </TabsContent>
       </Tabs>
     </div>
   );
