@@ -53,10 +53,10 @@ export function AppLayout() {
   return (
     <div className="min-h-screen flex bg-background">
       <aside className={cn(
-        "fixed lg:static inset-y-0 left-0 z-40 w-72 bg-sidebar text-sidebar-foreground transform transition-transform lg:translate-x-0 no-print",
+        "fixed lg:sticky lg:top-0 inset-y-0 left-0 z-40 w-72 max-w-[85vw] bg-sidebar text-sidebar-foreground transform transition-transform lg:translate-x-0 no-print flex flex-col h-screen",
         open ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-5 border-b border-sidebar-border">
+        <div className="p-5 border-b border-sidebar-border shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-lg flex items-center justify-center text-xl font-bold shrink-0" style={{ background: 'var(--gradient-gold)', color: 'var(--gold-foreground)' }}>
               {lang === "bn" ? "ইব" : "IB"}
@@ -69,7 +69,7 @@ export function AppLayout() {
             <LangToggle />
           </div>
         </div>
-        <nav className="p-3 space-y-1">
+        <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1 overscroll-contain">
           {nav.map(({ to, label, icon: Icon }) => {
             const active = path === to;
             return (
@@ -78,19 +78,19 @@ export function AppLayout() {
                 to={to}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors",
+                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors w-full",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
                     : "hover:bg-sidebar-accent/60"
                 )}
               >
-                <Icon className="w-4 h-4" />
-                {label}
+                <Icon className="w-4 h-4 shrink-0" />
+                <span className="truncate">{label}</span>
               </Link>
             );
           })}
         </nav>
-        <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-sidebar-border">
+        <div className="shrink-0 p-3 border-t border-sidebar-border">
           <div className="text-xs opacity-80 px-2 mb-2 truncate">{user?.email}</div>
           <button
             onClick={() => signOut()}
