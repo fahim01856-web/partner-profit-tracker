@@ -176,6 +176,29 @@ function CashBookPage() {
       </div>
 
       <Card className="p-4 no-print">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+          <div>
+            <Label className="flex items-center gap-1.5"><Wallet className="w-4 h-4 text-primary" /> {lang === "bn" ? "হাতে নগদ (ফিজিক্যাল)" : "Cash in Hand (Physical)"}</Label>
+            <Input type="number" step="0.01" placeholder={lang === "bn" ? "গণনাকৃত নগদ লিখুন" : "Enter counted cash"} value={cashInHand} onChange={(e) => setCashInHand(e.target.value)} />
+          </div>
+          <div>
+            <Label>{lang === "bn" ? "সিস্টেম ক্লোজিং" : "System Closing"}</Label>
+            <div className="h-9 px-3 rounded-md border bg-muted/50 flex items-center font-semibold text-primary">{fmt.bdt(closing)}</div>
+          </div>
+          <div>
+            <Label>{lang === "bn" ? "পার্থক্য (হাতে − সিস্টেম)" : "Difference (Hand − System)"}</Label>
+            {(() => {
+              const hand = Number(cashInHand || 0);
+              const diff = hand - closing;
+              const color = !cashInHand ? "text-muted-foreground" : diff === 0 ? "text-emerald-600" : diff > 0 ? "text-amber-600" : "text-red-600";
+              const label = !cashInHand ? "—" : diff === 0 ? (lang === "bn" ? "মিলেছে ✓" : "Matched ✓") : `${diff > 0 ? "+" : ""}${fmt.bdt(diff)}`;
+              return <div className={`h-9 px-3 rounded-md border bg-muted/50 flex items-center font-bold ${color}`}>{label}</div>;
+            })()}
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-4 no-print">
         <h3 className="font-semibold mb-3 flex items-center gap-2"><Plus className="w-4 h-4 text-primary" /> {form.id ? t("edit") : (lang === "bn" ? "নতুন এন্ট্রি" : "New Entry")}</h3>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
           <div>
