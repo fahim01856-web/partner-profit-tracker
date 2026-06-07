@@ -67,6 +67,17 @@ function InventoryPage() {
     },
   });
 
+  const { data: pendings = [] } = useQuery({
+    queryKey: ["inventory_pending"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("inventory_pending_requests").select("*").order("requested_date", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as Pending[];
+    },
+  });
+
+  const pendingCount = (it: ItemType) => pendings.filter((p) => p.item_type === it && p.status === "pending").reduce((s, p) => s + Number(p.quantity), 0);
+
   const sumBy = (rows: { item_type: ItemType; quantity: number }[], it: ItemType) =>
     rows.filter((r) => r.item_type === it).reduce((s, r) => s + Number(r.quantity), 0);
 
