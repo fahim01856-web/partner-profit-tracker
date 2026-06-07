@@ -41,6 +41,8 @@ function InventoryPage() {
 
   const [rForm, setRForm] = useState({ id: null as string | null, date: todayStr(), item_type: "mtdr" as ItemType, quantity: "", source: "", note: "" });
   const [dForm, setDForm] = useState({ id: null as string | null, date: todayStr(), item_type: "mtdr" as ItemType, quantity: "", customer_name: "", account_number: "", note: "" });
+  const [pForm, setPForm] = useState({ id: null as string | null, item_type: "mtdr" as ItemType, customer_name: "", mobile: "", account_number: "", quantity: "1", note: "" });
+  const [pStatusFilter, setPStatusFilter] = useState<"pending" | "delivered" | "all">("pending");
 
   // Filters for history
   const [fType, setFType] = useState<string>("all");
