@@ -225,9 +225,10 @@ function InventoryPage() {
                 {low && <span className="inline-flex items-center gap-1 text-[11px] text-red-600 font-medium"><AlertTriangle className="w-3 h-3" /> {lang === "bn" ? "স্টক কম" : "Low Stock"}</span>}
               </div>
               <div className={`text-3xl font-bold mt-2 ${low ? "text-red-600" : "text-primary"}`}>{fmt.num(s)}</div>
-              <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
-                <div className="text-emerald-700"><PackageCheck className="w-3 h-3 inline" /> {lang === "bn" ? "প্রাপ্ত" : "Received"}: <b>{fmt.num(sumBy(receipts, it))}</b></div>
-                <div className="text-red-700"><PackageMinus className="w-3 h-3 inline" /> {lang === "bn" ? "বিতরণ" : "Distributed"}: <b>{fmt.num(sumBy(distributions, it))}</b></div>
+              <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
+                <div className="text-emerald-700"><PackageCheck className="w-3 h-3 inline" /> {lang === "bn" ? "প্রাপ্ত" : "Recv"}: <b>{fmt.num(sumBy(receipts, it))}</b></div>
+                <div className="text-red-700"><PackageMinus className="w-3 h-3 inline" /> {lang === "bn" ? "বিতরণ" : "Dist"}: <b>{fmt.num(sumBy(distributions, it))}</b></div>
+                <div className="text-amber-700"><ClipboardList className="w-3 h-3 inline" /> {lang === "bn" ? "পেন্ডিং" : "Pend"}: <b>{fmt.num(pendingCount(it))}</b></div>
               </div>
             </Card>
           );
