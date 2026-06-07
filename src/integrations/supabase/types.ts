@@ -406,6 +406,51 @@ export type Database = {
         }
         Relationships: []
       }
+      inventory_pending_requests: {
+        Row: {
+          account_number: string
+          created_at: string
+          customer_name: string
+          delivered_date: string | null
+          id: string
+          item_type: string
+          mobile: string | null
+          note: string | null
+          quantity: number
+          requested_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          created_at?: string
+          customer_name: string
+          delivered_date?: string | null
+          id?: string
+          item_type: string
+          mobile?: string | null
+          note?: string | null
+          quantity?: number
+          requested_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          created_at?: string
+          customer_name?: string
+          delivered_date?: string | null
+          id?: string
+          item_type?: string
+          mobile?: string | null
+          note?: string | null
+          quantity?: number
+          requested_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory_receipts: {
         Row: {
           created_at: string
