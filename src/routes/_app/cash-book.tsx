@@ -392,7 +392,7 @@ function Stat({ label, value, icon, accent }: { label: string; value: string; ic
 /* ===================== Daily History ===================== */
 
 function DailyHistory({ investment, exportCSV }: { investment: number; exportCSV: (rows: any[], f: string) => void }) {
-  const { lang } = useI18n();
+  const { lang, t } = useI18n();
   const fmt = useFmt();
   const [from, setFrom] = useState(() => {
     const d = new Date(); d.setDate(d.getDate() - 30);
