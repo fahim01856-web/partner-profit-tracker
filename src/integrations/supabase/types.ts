@@ -92,6 +92,24 @@ export type Database = {
         }
         Relationships: []
       }
+      app_settings: {
+        Row: {
+          key: string
+          updated_at: string
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          value: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          value?: Json
+        }
+        Relationships: []
+      }
       attendance: {
         Row: {
           created_at: string
@@ -167,18 +185,21 @@ export type Database = {
         Row: {
           created_at: string
           date: string
+          is_manual: boolean
           opening_balance: number
           updated_at: string
         }
         Insert: {
           created_at?: string
           date: string
+          is_manual?: boolean
           opening_balance?: number
           updated_at?: string
         }
         Update: {
           created_at?: string
           date?: string
+          is_manual?: boolean
           opening_balance?: number
           updated_at?: string
         }
