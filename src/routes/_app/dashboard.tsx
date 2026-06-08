@@ -62,6 +62,7 @@ function Dashboard() {
         partners: partners.data ?? [],
         monthlyProfit: mp.data,
         remitCount, remitAmount, accountCount, yesterdayDeposit,
+        remitMonthIdx, accountMonthIdx,
       };
     },
   });
