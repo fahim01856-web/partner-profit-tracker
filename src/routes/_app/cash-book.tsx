@@ -466,7 +466,7 @@ function DailyHistory({ investment, exportCSV }: { investment: number; exportCSV
           <div><Label>{lang === "bn" ? "পর্যন্ত" : "To"}</Label><Input type="date" value={to} onChange={(e) => setTo(e.target.value)} /></div>
           <div className="md:col-span-2 flex justify-end gap-2">
             <Button variant="outline" onClick={handleExport}><FileSpreadsheet className="w-4 h-4" /> CSV</Button>
-            <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4" /> {useI18n().t("print")}</Button>
+            <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4" /> {t("print")}</Button>
           </div>
         </div>
       </Card>
