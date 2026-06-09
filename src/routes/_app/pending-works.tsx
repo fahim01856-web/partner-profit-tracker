@@ -252,6 +252,8 @@ function PendingWorksPage() {
           </p>
         </div>
         <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => setManageOpen(true)}><Settings2 className="w-4 h-4 mr-1" />{lang === "bn" ? "ক্যাটাগরি" : "Categories"}</Button>
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
           <Button onClick={() => { setForm(empty(activeCat)); setShowForm(true); }}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "নতুন পেন্ডিং" : "New Pending"}</Button>
         </div>
@@ -259,10 +261,10 @@ function PendingWorksPage() {
 
       <Tabs value={activeCat} onValueChange={(v) => { setActiveCat(v); setForm(empty(v)); }} className="no-print">
         <TabsList className="flex flex-wrap h-auto justify-start">
-          {CATEGORIES.map((c) => (
-            <TabsTrigger key={c.id} value={c.id} className="text-xs">
+          {categories.map((c) => (
+            <TabsTrigger key={c.slug} value={c.slug} className="text-xs">
               {lbl(c)}
-              {counts[c.id]?.p > 0 && <Badge variant="destructive" className="ml-1.5 h-4 px-1.5 text-[10px]">{counts[c.id].p}</Badge>}
+              {counts[c.slug]?.p > 0 && <Badge variant="destructive" className="ml-1.5 h-4 px-1.5 text-[10px]">{counts[c.slug].p}</Badge>}
             </TabsTrigger>
           ))}
         </TabsList>
