@@ -272,7 +272,7 @@ function PendingWorksPage() {
       {showForm && (
         <Card className="p-4 sm:p-6 no-print border-primary/30">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg">{form.id ? (lang === "bn" ? "এডিট" : "Edit") : (lang === "bn" ? "নতুন এন্ট্রি" : "New Entry")} — {lbl(currentCat)}</h3>
+            <h3 className="font-bold text-lg">{form.id ? (lang === "bn" ? "এডিট" : "Edit") : (lang === "bn" ? "নতুন এন্ট্রি" : "New Entry")}{currentCat ? ` — ${lbl(currentCat)}` : ""}</h3>
             <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><X className="w-4 h-4" /></Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
