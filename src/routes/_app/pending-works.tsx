@@ -251,7 +251,6 @@ function PendingWorksPage() {
             {lang === "bn" ? "প্রতিদিনের পেন্ডিং কাজ ট্র্যাক, এডিট, কমপ্লিট ও প্রিন্ট করুন" : "Track, edit, complete and print daily pending works"}
           </p>
         </div>
-        <div className="flex gap-2">
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setManageOpen(true)}><Settings2 className="w-4 h-4 mr-1" />{lang === "bn" ? "ক্যাটাগরি" : "Categories"}</Button>
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
