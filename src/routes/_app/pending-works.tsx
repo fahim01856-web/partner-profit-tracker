@@ -200,8 +200,44 @@ function PendingWorksPage() {
     setShowForm(true);
   };
 
-  const currentCat = CATEGORIES.find((c) => c.id === activeCat)!;
-  const lbl = (c: typeof CATEGORIES[number]) => (lang === "bn" ? c.bn : c.en);
+  const currentCat = categories.find((c) => c.slug === activeCat);
+  const lbl = (c: Category) => (lang === "bn" ? c.name_bn : c.name_en);
+
+  const saveCat = useMutation({
+    mutationFn: async (c: Partial<Category>) => {
+      const payload = {
+        slug: c.slug || slugify(c.name_en || c.name_bn || ""),
+        name_bn: c.name_bn || c.name_en || "",
+        name_en: c.name_en || c.name_bn || "",
+        sort_order: c.sort_order ?? (categories.length + 1) * 10,
+      };
+      if (c.id) {
+        const { error } = await supabase.from("pending_categories" as any).update(payload).eq("id", c.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("pending_categories" as any).insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending_categories"] });
+      toast.success(lang === "bn" ? "সংরক্ষণ হয়েছে" : "Saved");
+      setEditingCat(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const delCat = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("pending_categories" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending_categories"] });
+      toast.success(lang === "bn" ? "মুছে ফেলা হয়েছে" : "Deleted");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
     <div className="space-y-6">
