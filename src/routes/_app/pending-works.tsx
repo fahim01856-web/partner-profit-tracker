@@ -13,24 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList } from "lucide-react";
+import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList, Settings2 } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_app/pending-works")({ component: PendingWorksPage });
 
-const CATEGORIES = [
-  { id: "account", bn: "অ্যাকাউন্ট পেন্ডিং", en: "Account Pending" },
-  { id: "remittance", bn: "রেমিট্যান্স পেন্ডিং", en: "Remittance Pending" },
-  { id: "cheque_book", bn: "চেক বই পেন্ডিং", en: "Cheque Book Pending" },
-  { id: "mmp_cheque", bn: "MMP/DSA চেক পেন্ডিং", en: "MMP/DSA Cheque Pending" },
-  { id: "mtdr_cheque", bn: "MTDR চেক পেন্ডিং", en: "MTDR Cheque Pending" },
-  { id: "atm_card", bn: "ATM কার্ড পেন্ডিং", en: "ATM Card Pending" },
-  { id: "dps_fdr", bn: "DPS/FDR পেন্ডিং", en: "DPS/FDR Pending" },
-  { id: "mobile_banking", bn: "মোবাইল ব্যাংকিং পেন্ডিং", en: "Mobile Banking Pending" },
-  { id: "complaint", bn: "কাস্টমার অভিযোগ পেন্ডিং", en: "Customer Complaint Pending" },
-  { id: "document", bn: "ডকুমেন্ট পেন্ডিং", en: "Document Pending" },
-  { id: "follow_up", bn: "ফলোআপ পেন্ডিং", en: "Follow Up Pending" },
-  { id: "other", bn: "অন্যান্য পেন্ডিং", en: "Other Pending Works" },
-];
+type Category = { id: string; slug: string; name_bn: string; name_en: string; sort_order: number };
 
 type Row = {
   id: string;
@@ -64,14 +52,38 @@ const empty = (cat: string) => ({
   remarks: "",
 });
 
+function slugify(s: string) {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || `cat_${Date.now()}`;
+}
+
 function PendingWorksPage() {
   const { t, lang } = useI18n();
   const qc = useQueryClient();
-  const [activeCat, setActiveCat] = useState(CATEGORIES[0].id);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["pending_categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pending_categories" as any)
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data || []) as unknown as Category[];
+    },
+  });
+
+  const [activeCat, setActiveCat] = useState<string>("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [form, setForm] = useState(empty(CATEGORIES[0].id));
+  const [form, setForm] = useState(empty(""));
   const [showForm, setShowForm] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [editingCat, setEditingCat] = useState<Partial<Category> | null>(null);
+
+  // Pick first category when loaded
+  if (!activeCat && categories.length > 0) {
+    setActiveCat(categories[0].slug);
+  }
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["pending_works"],
