@@ -23,9 +23,7 @@ function Dashboard() {
   const curYear = now.getFullYear();
   const curMonth = now.getMonth() + 1;
   const { start: curStart, end: curEnd } = monthRange(curYear, curMonth);
-  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
-    .toISOString()
-    .slice(0, 10);
+  const yesterday = localISO(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
 
   const { data, isFetching, dataUpdatedAt } = useQuery({
     queryKey: ["dashboard", start, end, curStart, curEnd, yesterday],
