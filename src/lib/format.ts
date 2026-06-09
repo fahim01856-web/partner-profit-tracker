@@ -38,14 +38,19 @@ export const fmtBnDate = (d: string | Date, lang: Lang = "bn") => {
 export const monthKey = (d: Date = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
 
+const toLocalISO = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 export const monthRange = (year: number, month: number) => {
   const start = new Date(year, month - 1, 1);
   const end = new Date(year, month, 0);
   return {
-    start: start.toISOString().slice(0, 10),
-    end: end.toISOString().slice(0, 10),
+    start: toLocalISO(start),
+    end: toLocalISO(end),
   };
 };
+
+export const localISO = toLocalISO;
 
 export const genVoucherNo = () => {
   const d = new Date();

@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,24 +13,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList } from "lucide-react";
+import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList, Settings2 } from "lucide-react";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Route = createFileRoute("/_app/pending-works")({ component: PendingWorksPage });
 
-const CATEGORIES = [
-  { id: "account", bn: "অ্যাকাউন্ট পেন্ডিং", en: "Account Pending" },
-  { id: "remittance", bn: "রেমিট্যান্স পেন্ডিং", en: "Remittance Pending" },
-  { id: "cheque_book", bn: "চেক বই পেন্ডিং", en: "Cheque Book Pending" },
-  { id: "mmp_cheque", bn: "MMP/DSA চেক পেন্ডিং", en: "MMP/DSA Cheque Pending" },
-  { id: "mtdr_cheque", bn: "MTDR চেক পেন্ডিং", en: "MTDR Cheque Pending" },
-  { id: "atm_card", bn: "ATM কার্ড পেন্ডিং", en: "ATM Card Pending" },
-  { id: "dps_fdr", bn: "DPS/FDR পেন্ডিং", en: "DPS/FDR Pending" },
-  { id: "mobile_banking", bn: "মোবাইল ব্যাংকিং পেন্ডিং", en: "Mobile Banking Pending" },
-  { id: "complaint", bn: "কাস্টমার অভিযোগ পেন্ডিং", en: "Customer Complaint Pending" },
-  { id: "document", bn: "ডকুমেন্ট পেন্ডিং", en: "Document Pending" },
-  { id: "follow_up", bn: "ফলোআপ পেন্ডিং", en: "Follow Up Pending" },
-  { id: "other", bn: "অন্যান্য পেন্ডিং", en: "Other Pending Works" },
-];
+type Category = { id: string; slug: string; name_bn: string; name_en: string; sort_order: number };
 
 type Row = {
   id: string;
@@ -64,14 +52,37 @@ const empty = (cat: string) => ({
   remarks: "",
 });
 
+function slugify(s: string) {
+  return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || `cat_${Date.now()}`;
+}
+
 function PendingWorksPage() {
   const { t, lang } = useI18n();
   const qc = useQueryClient();
-  const [activeCat, setActiveCat] = useState(CATEGORIES[0].id);
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ["pending_categories"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("pending_categories" as any)
+        .select("*")
+        .order("sort_order", { ascending: true });
+      if (error) throw error;
+      return (data || []) as unknown as Category[];
+    },
+  });
+
+  const [activeCat, setActiveCat] = useState<string>("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [form, setForm] = useState(empty(CATEGORIES[0].id));
+  const [form, setForm] = useState(empty(""));
   const [showForm, setShowForm] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
+  const [editingCat, setEditingCat] = useState<Partial<Category> | null>(null);
+
+  useEffect(() => {
+    if (!activeCat && categories.length > 0) setActiveCat(categories[0].slug);
+  }, [activeCat, categories]);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["pending_works"],
@@ -160,14 +171,14 @@ function PendingWorksPage() {
 
   const counts = useMemo(() => {
     const map: Record<string, { p: number; c: number }> = {};
-    for (const c of CATEGORIES) map[c.id] = { p: 0, c: 0 };
+    for (const c of categories) map[c.slug] = { p: 0, c: 0 };
     for (const r of rows) {
       if (!map[r.category]) map[r.category] = { p: 0, c: 0 };
       if (r.status === "completed") map[r.category].c++;
       else map[r.category].p++;
     }
     return map;
-  }, [rows]);
+  }, [rows, categories]);
 
   const startEdit = (r: Row) => {
     setForm({
@@ -188,8 +199,44 @@ function PendingWorksPage() {
     setShowForm(true);
   };
 
-  const currentCat = CATEGORIES.find((c) => c.id === activeCat)!;
-  const lbl = (c: typeof CATEGORIES[number]) => (lang === "bn" ? c.bn : c.en);
+  const currentCat = categories.find((c) => c.slug === activeCat);
+  const lbl = (c: Category) => (lang === "bn" ? c.name_bn : c.name_en);
+
+  const saveCat = useMutation({
+    mutationFn: async (c: Partial<Category>) => {
+      const payload = {
+        slug: c.slug || slugify(c.name_en || c.name_bn || ""),
+        name_bn: c.name_bn || c.name_en || "",
+        name_en: c.name_en || c.name_bn || "",
+        sort_order: c.sort_order ?? (categories.length + 1) * 10,
+      };
+      if (c.id) {
+        const { error } = await supabase.from("pending_categories" as any).update(payload).eq("id", c.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("pending_categories" as any).insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending_categories"] });
+      toast.success(lang === "bn" ? "সংরক্ষণ হয়েছে" : "Saved");
+      setEditingCat(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const delCat = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("pending_categories" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending_categories"] });
+      toast.success(lang === "bn" ? "মুছে ফেলা হয়েছে" : "Deleted");
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
 
   return (
     <div className="space-y-6">
@@ -203,7 +250,8 @@ function PendingWorksPage() {
             {lang === "bn" ? "প্রতিদিনের পেন্ডিং কাজ ট্র্যাক, এডিট, কমপ্লিট ও প্রিন্ট করুন" : "Track, edit, complete and print daily pending works"}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={() => setManageOpen(true)}><Settings2 className="w-4 h-4 mr-1" />{lang === "bn" ? "ক্যাটাগরি" : "Categories"}</Button>
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
           <Button onClick={() => { setForm(empty(activeCat)); setShowForm(true); }}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "নতুন পেন্ডিং" : "New Pending"}</Button>
         </div>
@@ -211,10 +259,10 @@ function PendingWorksPage() {
 
       <Tabs value={activeCat} onValueChange={(v) => { setActiveCat(v); setForm(empty(v)); }} className="no-print">
         <TabsList className="flex flex-wrap h-auto justify-start">
-          {CATEGORIES.map((c) => (
-            <TabsTrigger key={c.id} value={c.id} className="text-xs">
+          {categories.map((c) => (
+            <TabsTrigger key={c.slug} value={c.slug} className="text-xs">
               {lbl(c)}
-              {counts[c.id]?.p > 0 && <Badge variant="destructive" className="ml-1.5 h-4 px-1.5 text-[10px]">{counts[c.id].p}</Badge>}
+              {counts[c.slug]?.p > 0 && <Badge variant="destructive" className="ml-1.5 h-4 px-1.5 text-[10px]">{counts[c.slug].p}</Badge>}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -223,7 +271,7 @@ function PendingWorksPage() {
       {showForm && (
         <Card className="p-4 sm:p-6 no-print border-primary/30">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg">{form.id ? (lang === "bn" ? "এডিট" : "Edit") : (lang === "bn" ? "নতুন এন্ট্রি" : "New Entry")} — {lbl(currentCat)}</h3>
+            <h3 className="font-bold text-lg">{form.id ? (lang === "bn" ? "এডিট" : "Edit") : (lang === "bn" ? "নতুন এন্ট্রি" : "New Entry")}{currentCat ? ` — ${lbl(currentCat)}` : ""}</h3>
             <Button variant="ghost" size="icon" onClick={() => setShowForm(false)}><X className="w-4 h-4" /></Button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -284,7 +332,7 @@ function PendingWorksPage() {
         <div className="hidden print:block p-4 text-center border-b">
           <div className="font-bold text-lg">{t("bankName")}</div>
           <div className="text-sm">{t("outlet")} — {t("locationFull")}</div>
-          <div className="font-semibold mt-2">{lbl(currentCat)}</div>
+          <div className="font-semibold mt-2">{currentCat ? lbl(currentCat) : ""}</div>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -331,6 +379,56 @@ function PendingWorksPage() {
           </Table>
         </div>
       </Card>
+
+      <Dialog open={manageOpen} onOpenChange={(o) => { setManageOpen(o); if (!o) setEditingCat(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{lang === "bn" ? "ক্যাটাগরি ব্যবস্থাপনা" : "Manage Categories"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {categories.map((c) => (
+              <div key={c.id} className="flex items-center gap-2 p-2 border rounded">
+                <div className="flex-1 text-sm">
+                  <div className="font-medium">{c.name_bn}</div>
+                  <div className="text-xs text-muted-foreground">{c.name_en}</div>
+                </div>
+                <Button size="icon" variant="ghost" onClick={() => setEditingCat(c)}><Pencil className="w-4 h-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => {
+                  if (confirm(lang === "bn" ? "এই ক্যাটাগরি মুছবেন? (এতে থাকা পেন্ডিং কাজগুলো থেকে যাবে)" : "Delete this category? (Existing pending works remain)")) {
+                    delCat.mutate(c.id);
+                  }
+                }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+              </div>
+            ))}
+          </div>
+          <div className="border-t pt-3 space-y-2">
+            <div className="font-semibold text-sm">{editingCat?.id ? (lang === "bn" ? "এডিট" : "Edit") : (lang === "bn" ? "নতুন ক্যাটাগরি" : "New Category")}</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "বাংলা নাম" : "Bangla Name"}</Label>
+                <Input value={editingCat?.name_bn || ""} onChange={(e) => setEditingCat({ ...(editingCat || {}), name_bn: e.target.value })} />
+              </div>
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "ইংরেজি নাম" : "English Name"}</Label>
+                <Input value={editingCat?.name_en || ""} onChange={(e) => setEditingCat({ ...(editingCat || {}), name_en: e.target.value })} />
+              </div>
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "ক্রম" : "Sort Order"}</Label>
+                <Input type="number" value={editingCat?.sort_order ?? ""} onChange={(e) => setEditingCat({ ...(editingCat || {}), sort_order: Number(e.target.value) })} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            {editingCat && <Button variant="outline" onClick={() => setEditingCat(null)}>{lang === "bn" ? "বাতিল" : "Cancel"}</Button>}
+            <Button onClick={() => {
+              if (!editingCat?.name_bn && !editingCat?.name_en) { toast.error(lang === "bn" ? "নাম লিখুন" : "Enter name"); return; }
+              saveCat.mutate(editingCat || {});
+            }} disabled={saveCat.isPending}>
+              {editingCat?.id ? (lang === "bn" ? "আপডেট" : "Update") : (lang === "bn" ? "যোগ" : "Add")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

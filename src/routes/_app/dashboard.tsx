@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { useFmt, monthRange } from "@/lib/format";
+import { useFmt, monthRange, localISO } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { TrendingUp, TrendingDown, Wallet, Handshake, RefreshCw, Send, UserPlus, PiggyBank } from "lucide-react";
 import { useEffect } from "react";
@@ -20,42 +20,27 @@ function Dashboard() {
   const year = prev.getFullYear();
   const month = prev.getMonth() + 1;
   const { start, end } = monthRange(year, month);
-  const curYear = now.getFullYear();
-  const curMonth = now.getMonth() + 1;
-  const { start: curStart, end: curEnd } = monthRange(curYear, curMonth);
-  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
-    .toISOString()
-    .slice(0, 10);
+  const yesterday = localISO(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
 
   const { data, isFetching, dataUpdatedAt } = useQuery({
-    queryKey: ["dashboard", start, end, curStart, curEnd, yesterday],
+    queryKey: ["dashboard", start, end, yesterday],
     queryFn: async () => {
-      const [partners, mri, mp, remitPrev, acctsPrev, remitCur, acctsCur, dep] = await Promise.all([
+      const [partners, mri, mp, remitPrev, acctsPrev, dep] = await Promise.all([
         supabase.from("partners").select("*").order("share_percent", { ascending: false }),
         supabase.from("monthly_report_items").select("amount,item_type").eq("year", year).eq("month", month),
         supabase.from("monthly_profits").select("*").eq("year", year).eq("month", month).maybeSingle(),
         supabase.from("remittance_entries").select("quantity,amount").gte("date", start).lte("date", end),
         supabase.from("account_opening_entries").select("num_accounts").eq("year", year).eq("month", month),
-        supabase.from("remittance_entries").select("quantity,amount").gte("date", curStart).lte("date", curEnd),
-        supabase.from("account_opening_entries").select("num_accounts").eq("year", curYear).eq("month", curMonth),
         supabase.from("daily_deposits").select("amount").eq("date", yesterday),
       ]);
       const totalInc = (mri.data ?? []).filter((r: any) => r.item_type === "income").reduce((s, r: any) => s + Number(r.amount), 0);
       const totalExp = (mri.data ?? []).filter((r: any) => r.item_type === "expense").reduce((s, r: any) => s + Number(r.amount), 0);
       const profit = totalInc - totalExp;
-      const prevRC = (remitPrev.data ?? []).reduce((s, r: any) => s + Number(r.quantity ?? 0), 0);
-      const prevRA = (remitPrev.data ?? []).reduce((s, r: any) => s + Number(r.amount ?? 0), 0);
-      const prevAC = (acctsPrev.data ?? []).reduce((s, r: any) => s + Number(r.num_accounts ?? 0), 0);
-      const curRC = (remitCur.data ?? []).reduce((s, r: any) => s + Number(r.quantity ?? 0), 0);
-      const curRA = (remitCur.data ?? []).reduce((s, r: any) => s + Number(r.amount ?? 0), 0);
-      const curAC = (acctsCur.data ?? []).reduce((s, r: any) => s + Number(r.num_accounts ?? 0), 0);
-      const remitUseCur = prevRC === 0 && prevRA === 0 && (curRC > 0 || curRA > 0);
-      const acctUseCur = prevAC === 0 && curAC > 0;
-      const remitCount = remitUseCur ? curRC : prevRC;
-      const remitAmount = remitUseCur ? curRA : prevRA;
-      const accountCount = acctUseCur ? curAC : prevAC;
-      const remitMonthIdx = remitUseCur ? now.getMonth() : prev.getMonth();
-      const accountMonthIdx = acctUseCur ? now.getMonth() : prev.getMonth();
+      const remitCount = (remitPrev.data ?? []).reduce((s, r: any) => s + Number(r.quantity ?? 0), 0);
+      const remitAmount = (remitPrev.data ?? []).reduce((s, r: any) => s + Number(r.amount ?? 0), 0);
+      const accountCount = (acctsPrev.data ?? []).reduce((s, r: any) => s + Number(r.num_accounts ?? 0), 0);
+      const remitMonthIdx = prev.getMonth();
+      const accountMonthIdx = prev.getMonth();
       const yesterdayDeposit = (dep.data ?? []).reduce((s, r: any) => s + Number(r.amount ?? 0), 0);
       return {
         totalInc, totalExp, profit,
