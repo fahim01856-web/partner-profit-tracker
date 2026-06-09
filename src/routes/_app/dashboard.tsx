@@ -20,13 +20,10 @@ function Dashboard() {
   const year = prev.getFullYear();
   const month = prev.getMonth() + 1;
   const { start, end } = monthRange(year, month);
-  const curYear = now.getFullYear();
-  const curMonth = now.getMonth() + 1;
-  const { start: curStart, end: curEnd } = monthRange(curYear, curMonth);
   const yesterday = localISO(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
 
   const { data, isFetching, dataUpdatedAt } = useQuery({
-    queryKey: ["dashboard", start, end, curStart, curEnd, yesterday],
+    queryKey: ["dashboard", start, end, yesterday],
     queryFn: async () => {
       const [partners, mri, mp, remitPrev, acctsPrev, dep] = await Promise.all([
         supabase.from("partners").select("*").order("share_percent", { ascending: false }),
