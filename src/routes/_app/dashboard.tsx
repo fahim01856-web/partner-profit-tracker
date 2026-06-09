@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
-import { useFmt, monthRange } from "@/lib/format";
+import { useFmt, monthRange, localISO } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { TrendingUp, TrendingDown, Wallet, Handshake, RefreshCw, Send, UserPlus, PiggyBank } from "lucide-react";
 import { useEffect } from "react";
