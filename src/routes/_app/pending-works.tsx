@@ -172,14 +172,14 @@ function PendingWorksPage() {
 
   const counts = useMemo(() => {
     const map: Record<string, { p: number; c: number }> = {};
-    for (const c of CATEGORIES) map[c.id] = { p: 0, c: 0 };
+    for (const c of categories) map[c.slug] = { p: 0, c: 0 };
     for (const r of rows) {
       if (!map[r.category]) map[r.category] = { p: 0, c: 0 };
       if (r.status === "completed") map[r.category].c++;
       else map[r.category].p++;
     }
     return map;
-  }, [rows]);
+  }, [rows, categories]);
 
   const startEdit = (r: Row) => {
     setForm({
