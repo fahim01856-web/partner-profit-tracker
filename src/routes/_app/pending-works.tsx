@@ -333,7 +333,7 @@ function PendingWorksPage() {
         <div className="hidden print:block p-4 text-center border-b">
           <div className="font-bold text-lg">{t("bankName")}</div>
           <div className="text-sm">{t("outlet")} — {t("locationFull")}</div>
-          <div className="font-semibold mt-2">{lbl(currentCat)}</div>
+          <div className="font-semibold mt-2">{currentCat ? lbl(currentCat) : ""}</div>
         </div>
         <div className="overflow-x-auto">
           <Table>
