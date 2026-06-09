@@ -80,10 +80,9 @@ function PendingWorksPage() {
   const [manageOpen, setManageOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Partial<Category> | null>(null);
 
-  // Pick first category when loaded
-  if (!activeCat && categories.length > 0) {
-    setActiveCat(categories[0].slug);
-  }
+  useEffect(() => {
+    if (!activeCat && categories.length > 0) setActiveCat(categories[0].slug);
+  }, [activeCat, categories]);
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["pending_works"],
