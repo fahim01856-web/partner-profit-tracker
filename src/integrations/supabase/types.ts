@@ -722,6 +722,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name_bn: string
+          name_en: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name_bn: string
+          name_en: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name_bn?: string
+          name_en?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pending_works: {
         Row: {
           account_number: string | null
