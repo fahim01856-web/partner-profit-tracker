@@ -380,6 +380,56 @@ function PendingWorksPage() {
           </Table>
         </div>
       </Card>
+
+      <Dialog open={manageOpen} onOpenChange={(o) => { setManageOpen(o); if (!o) setEditingCat(null); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{lang === "bn" ? "ক্যাটাগরি ব্যবস্থাপনা" : "Manage Categories"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[50vh] overflow-y-auto">
+            {categories.map((c) => (
+              <div key={c.id} className="flex items-center gap-2 p-2 border rounded">
+                <div className="flex-1 text-sm">
+                  <div className="font-medium">{c.name_bn}</div>
+                  <div className="text-xs text-muted-foreground">{c.name_en}</div>
+                </div>
+                <Button size="icon" variant="ghost" onClick={() => setEditingCat(c)}><Pencil className="w-4 h-4" /></Button>
+                <Button size="icon" variant="ghost" onClick={() => {
+                  if (confirm(lang === "bn" ? "এই ক্যাটাগরি মুছবেন? (এতে থাকা পেন্ডিং কাজগুলো থেকে যাবে)" : "Delete this category? (Existing pending works remain)")) {
+                    delCat.mutate(c.id);
+                  }
+                }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+              </div>
+            ))}
+          </div>
+          <div className="border-t pt-3 space-y-2">
+            <div className="font-semibold text-sm">{editingCat?.id ? (lang === "bn" ? "এডিট" : "Edit") : (lang === "bn" ? "নতুন ক্যাটাগরি" : "New Category")}</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "বাংলা নাম" : "Bangla Name"}</Label>
+                <Input value={editingCat?.name_bn || ""} onChange={(e) => setEditingCat({ ...(editingCat || {}), name_bn: e.target.value })} />
+              </div>
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "ইংরেজি নাম" : "English Name"}</Label>
+                <Input value={editingCat?.name_en || ""} onChange={(e) => setEditingCat({ ...(editingCat || {}), name_en: e.target.value })} />
+              </div>
+              <div>
+                <Label className="text-xs">{lang === "bn" ? "ক্রম" : "Sort Order"}</Label>
+                <Input type="number" value={editingCat?.sort_order ?? ""} onChange={(e) => setEditingCat({ ...(editingCat || {}), sort_order: Number(e.target.value) })} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            {editingCat && <Button variant="outline" onClick={() => setEditingCat(null)}>{lang === "bn" ? "বাতিল" : "Cancel"}</Button>}
+            <Button onClick={() => {
+              if (!editingCat?.name_bn && !editingCat?.name_en) { toast.error(lang === "bn" ? "নাম লিখুন" : "Enter name"); return; }
+              saveCat.mutate(editingCat || {});
+            }} disabled={saveCat.isPending}>
+              {editingCat?.id ? (lang === "bn" ? "আপডেট" : "Update") : (lang === "bn" ? "যোগ" : "Add")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
