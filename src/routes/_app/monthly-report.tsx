@@ -52,6 +52,19 @@ function MonthlyReportPage() {
     },
   });
 
+  // All items for current + previous year for analytics
+  const { data: allItems = [] } = useQuery({
+    queryKey: ["mri-all", year],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("monthly_report_items")
+        .select("month, year, item_type, amount")
+        .in("year", [year, year - 1]);
+      if (error) throw error;
+      return data as Pick<Item, "month" | "year" | "item_type" | "amount">[];
+    },
+  });
+
   // Local edit buffer (so admins can type freely and save)
   const [draft, setDraft] = useState<Record<string, { description: string; amount: string }>>({});
 
