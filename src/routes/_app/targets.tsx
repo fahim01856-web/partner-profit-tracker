@@ -96,9 +96,9 @@ function TargetsPage() {
   const onDelTarget = (id: string) => { if (window.confirm(t("confirm_delete"))) delTarget.mutate(id); };
 
   // -- Achievement form (insert + edit)
-  const [af, setAf] = useState({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, amount: 0, quantity: 0, remarks: "" });
+  const [af, setAf] = useState({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, account_type: "", amount: 0, quantity: 0, remarks: "" });
   const [editAchId, setEditAchId] = useState<string | null>(null);
-  const resetAf = () => { setAf({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, amount: 0, quantity: 0, remarks: "" }); setEditAchId(null); };
+  const resetAf = () => { setAf({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, account_type: "", amount: 0, quantity: 0, remarks: "" }); setEditAchId(null); };
   const saveAch = useMutation({
     mutationFn: async () => {
       if (!af.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
