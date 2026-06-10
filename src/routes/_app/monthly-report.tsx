@@ -10,7 +10,9 @@ import { useFmt, monthsOf } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Printer, Save, Copy } from "lucide-react";
+import { Plus, Trash2, Printer, Save, Copy, TrendingUp, TrendingDown } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { ClientOnly } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/monthly-report")({ component: MonthlyReportPage });
 
@@ -47,6 +49,19 @@ function MonthlyReportPage() {
         .order("sl_no", { ascending: true });
       if (error) throw error;
       return data as Item[];
+    },
+  });
+
+  // All items for current + previous year for analytics
+  const { data: allItems = [] } = useQuery({
+    queryKey: ["mri-all", year],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("monthly_report_items")
+        .select("month, year, item_type, amount")
+        .in("year", [year, year - 1]);
+      if (error) throw error;
+      return data as Pick<Item, "month" | "year" | "item_type" | "amount">[];
     },
   });
 
@@ -284,6 +299,69 @@ function MonthlyReportPage() {
           <div className={`text-2xl font-bold ${netProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(netProfit)}</div>
         </Card>
       </div>
+
+      {/* Profit Analytics */}
+      {(() => {
+        const profitByMonth = (yr: number) => {
+          const arr = Array.from({ length: 12 }, () => ({ inc: 0, exp: 0 }));
+          for (const it of allItems) {
+            if (it.year !== yr) continue;
+            const idx = it.month - 1;
+            if (idx < 0 || idx > 11) continue;
+            if (it.item_type === "income") arr[idx].inc += Number(it.amount);
+            else arr[idx].exp += Number(it.amount);
+          }
+          return arr.map((v) => v.inc - v.exp);
+        };
+        const cur = profitByMonth(year);
+        const prev = profitByMonth(year - 1);
+        const thisMonthProfit = cur[month - 1];
+        const lastMonthIdx = month === 1 ? 11 : month - 2;
+        const lastMonthYearArr = month === 1 ? prev : cur;
+        const lastMonthProfit = lastMonthYearArr[lastMonthIdx];
+        const change = lastMonthProfit === 0 ? 0 : ((thisMonthProfit - lastMonthProfit) / Math.abs(lastMonthProfit)) * 100;
+        const yearlyTotal = cur.reduce((s, v) => s + v, 0);
+        let maxIdx = 0, minIdx = 0;
+        for (let i = 1; i < 12; i++) {
+          if (cur[i] > cur[maxIdx]) maxIdx = i;
+          if (cur[i] < cur[minIdx]) minIdx = i;
+        }
+        const chartData = cur.map((v, i) => ({ month: monthNames[i], thisYear: v, lastYear: prev[i] }));
+        const hasAny = cur.some((v) => v !== 0) || prev.some((v) => v !== 0);
+        return (
+          <div className="space-y-3 no-print">
+            <h2 className="text-lg font-bold flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary" />{lang === "bn" ? "লাভ বিশ্লেষণ" : "Profit Analytics"}</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "এই মাসের লাভ" : "This Month"}</div><div className={`text-lg font-bold ${thisMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(thisMonthProfit)}</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "গত মাসের লাভ" : "Last Month"}</div><div className={`text-lg font-bold ${lastMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(lastMonthProfit)}</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "পরিবর্তন" : "Change"}</div><div className={`text-lg font-bold flex items-center gap-1 ${change >= 0 ? "text-success" : "text-destructive"}`}>{change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{change.toFixed(1)}%</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "বার্ষিক মোট" : "Yearly Total"} ({fmt.num(year)})</div><div className={`text-lg font-bold ${yearlyTotal >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(yearlyTotal)}</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "সর্বোচ্চ মাস" : "Best Month"}</div><div className="text-sm font-bold">{monthNames[maxIdx]}</div><div className="text-xs text-success">{fmt.bdt(cur[maxIdx])}</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "সর্বনিম্ন মাস" : "Worst Month"}</div><div className="text-sm font-bold">{monthNames[minIdx]}</div><div className="text-xs text-destructive">{fmt.bdt(cur[minIdx])}</div></Card>
+            </div>
+            {hasAny && (
+              <Card className="p-4">
+                <h3 className="font-semibold mb-3 text-sm">{lang === "bn" ? "বার্ষিক তুলনা" : "Yearly Comparison"} — {fmt.num(year - 1)} vs {fmt.num(year)}</h3>
+                <ClientOnly fallback={<div className="h-64" />}>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip formatter={(v: number) => fmt.bdt(v)} />
+                        <Legend />
+                        <Bar dataKey="lastYear" fill="#94a3b8" name={String(year - 1)} />
+                        <Bar dataKey="thisYear" fill="#10b981" name={String(year)} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </ClientOnly>
+              </Card>
+            )}
+          </div>
+        );
+      })()}
 
       {/* A4 Print Sheet */}
       <div className="print-area">

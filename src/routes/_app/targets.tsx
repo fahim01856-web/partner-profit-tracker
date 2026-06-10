@@ -33,11 +33,13 @@ const CATEGORIES = [
   { id: "mobile_banking", bn: "মোবাইল ব্যাংকিং রেজি.", en: "Mobile Banking Reg." },
 ];
 
+const ACCOUNT_TYPES = ["AWCA", "MSA", "MSSA", "MTDR", "MMPDSA", "SMS", "Farmers", "MHSA"];
+
 const MONTHS_BN = ["জানু", "ফেব্রু", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগ", "সেপ্ট", "অক্টো", "নভে", "ডিসে"];
 const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-type TargetRow = { id: string; month: number; year: number; staff_name: string; target_category: string; target_amount: number; target_quantity: number; notes: string | null };
-type Achievement = { id: string; date: string; staff_name: string; achievement_category: string; amount: number; quantity: number; remarks: string | null };
+type TargetRow = { id: string; month: number; year: number; staff_name: string; target_category: string; account_type: string | null; target_amount: number; target_quantity: number; notes: string | null };
+type Achievement = { id: string; date: string; staff_name: string; achievement_category: string; account_type: string | null; amount: number; quantity: number; remarks: string | null };
 
 function TargetsPage() {
   const { t, lang } = useI18n();
@@ -65,17 +67,18 @@ function TargetsPage() {
   });
 
   // -- Target form (insert + edit)
-  const [tf, setTf] = useState({ month, year, staff_name: "", target_category: CATEGORIES[0].id, target_amount: 0, target_quantity: 0, notes: "" });
+  const [tf, setTf] = useState({ month, year, staff_name: "", target_category: CATEGORIES[0].id, account_type: "", target_amount: 0, target_quantity: 0, notes: "" });
   const [editTargetId, setEditTargetId] = useState<string | null>(null);
-  const resetTf = () => { setTf({ month, year, staff_name: "", target_category: CATEGORIES[0].id, target_amount: 0, target_quantity: 0, notes: "" }); setEditTargetId(null); };
+  const resetTf = () => { setTf({ month, year, staff_name: "", target_category: CATEGORIES[0].id, account_type: "", target_amount: 0, target_quantity: 0, notes: "" }); setEditTargetId(null); };
   const saveTarget = useMutation({
     mutationFn: async () => {
       if (!tf.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
+      const payload = { ...tf, account_type: tf.target_category === "new_account" ? (tf.account_type || null) : null };
       if (editTargetId) {
-        const { error } = await supabase.from("monthly_targets" as any).update(tf).eq("id", editTargetId);
+        const { error } = await supabase.from("monthly_targets" as any).update(payload).eq("id", editTargetId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("monthly_targets" as any).insert(tf);
+        const { error } = await supabase.from("monthly_targets" as any).insert(payload);
         if (error) throw error;
       }
     },
@@ -88,23 +91,24 @@ function TargetsPage() {
   });
   const startEditTarget = (r: TargetRow) => {
     setEditTargetId(r.id);
-    setTf({ month: r.month, year: r.year, staff_name: r.staff_name, target_category: r.target_category, target_amount: Number(r.target_amount), target_quantity: Number(r.target_quantity), notes: r.notes ?? "" });
+    setTf({ month: r.month, year: r.year, staff_name: r.staff_name, target_category: r.target_category, account_type: r.account_type ?? "", target_amount: Number(r.target_amount), target_quantity: Number(r.target_quantity), notes: r.notes ?? "" });
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const onDelTarget = (id: string) => { if (window.confirm(t("confirm_delete"))) delTarget.mutate(id); };
 
   // -- Achievement form (insert + edit)
-  const [af, setAf] = useState({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, amount: 0, quantity: 0, remarks: "" });
+  const [af, setAf] = useState({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, account_type: "", amount: 0, quantity: 0, remarks: "" });
   const [editAchId, setEditAchId] = useState<string | null>(null);
-  const resetAf = () => { setAf({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, amount: 0, quantity: 0, remarks: "" }); setEditAchId(null); };
+  const resetAf = () => { setAf({ date: new Date().toISOString().slice(0, 10), staff_name: "", achievement_category: CATEGORIES[0].id, account_type: "", amount: 0, quantity: 0, remarks: "" }); setEditAchId(null); };
   const saveAch = useMutation({
     mutationFn: async () => {
       if (!af.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
+      const payload = { ...af, account_type: af.achievement_category === "new_account" ? (af.account_type || null) : null };
       if (editAchId) {
-        const { error } = await supabase.from("achievements" as any).update(af).eq("id", editAchId);
+        const { error } = await supabase.from("achievements" as any).update(payload).eq("id", editAchId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("achievements" as any).insert(af);
+        const { error } = await supabase.from("achievements" as any).insert(payload);
         if (error) throw error;
       }
     },
@@ -117,7 +121,7 @@ function TargetsPage() {
   });
   const startEditAch = (r: Achievement) => {
     setEditAchId(r.id);
-    setAf({ date: r.date, staff_name: r.staff_name, achievement_category: r.achievement_category, amount: Number(r.amount), quantity: Number(r.quantity), remarks: r.remarks ?? "" });
+    setAf({ date: r.date, staff_name: r.staff_name, achievement_category: r.achievement_category, account_type: r.account_type ?? "", amount: Number(r.amount), quantity: Number(r.quantity), remarks: r.remarks ?? "" });
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const onDelAch = (id: string) => { if (window.confirm(t("confirm_delete"))) delAch.mutate(id); };
@@ -200,7 +204,10 @@ function TargetsPage() {
               <div><Label>{lang === "bn" ? "মাস" : "Month"}</Label><Select value={String(tf.month)} onValueChange={(v) => setTf({ ...tf, month: Number(v) })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{MONTHS_EN.map((m, i) => <SelectItem key={i} value={String(i + 1)}>{lang === "bn" ? MONTHS_BN[i] : m}</SelectItem>)}</SelectContent></Select></div>
               <div><Label>{lang === "bn" ? "বছর" : "Year"}</Label><Input type="number" value={tf.year} onChange={(e) => setTf({ ...tf, year: Number(e.target.value) })} /></div>
               <div><Label>{lang === "bn" ? "স্টাফ নাম *" : "Staff Name *"}</Label><Input value={tf.staff_name} onChange={(e) => setTf({ ...tf, staff_name: e.target.value })} /></div>
-              <div><Label>{lang === "bn" ? "টার্গেট ক্যাটাগরি" : "Target Category"}</Label><Select value={tf.target_category} onValueChange={(v) => setTf({ ...tf, target_category: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map((c) => <SelectItem key={c.id} value={c.id}>{lbl(c)}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>{lang === "bn" ? "টার্গেট ক্যাটাগরি" : "Target Category"}</Label><Select value={tf.target_category} onValueChange={(v) => setTf({ ...tf, target_category: v, account_type: v === "new_account" ? tf.account_type : "" })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map((c) => <SelectItem key={c.id} value={c.id}>{lbl(c)}</SelectItem>)}</SelectContent></Select></div>
+              {tf.target_category === "new_account" && (
+                <div><Label>{lang === "bn" ? "অ্যাকাউন্ট টাইপ" : "Account Type"}</Label><Select value={tf.account_type || "__all"} onValueChange={(v) => setTf({ ...tf, account_type: v === "__all" ? "" : v })}><SelectTrigger><SelectValue placeholder={lang === "bn" ? "সব" : "All"} /></SelectTrigger><SelectContent><SelectItem value="__all">{lang === "bn" ? "সব টাইপ (সাধারণ)" : "All types (general)"}</SelectItem>{ACCOUNT_TYPES.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div>
+              )}
               <div><Label>{lang === "bn" ? "টার্গেট পরিমাণ (৳)" : "Target Amount (৳)"}</Label><Input type="number" value={tf.target_amount} onChange={(e) => setTf({ ...tf, target_amount: Number(e.target.value) })} /></div>
               <div><Label>{lang === "bn" ? "টার্গেট সংখ্যা" : "Target Quantity"}</Label><Input type="number" value={tf.target_quantity} onChange={(e) => setTf({ ...tf, target_quantity: Number(e.target.value) })} /></div>
               <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "মন্তব্য" : "Notes"}</Label><Textarea rows={2} value={tf.notes} onChange={(e) => setTf({ ...tf, notes: e.target.value })} /></div>
@@ -212,9 +219,9 @@ function TargetsPage() {
           </Card>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto"><Table>
-              <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "মাস/বছর" : "Month/Year"}</TableHead><TableHead>{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead><TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead><TableHead>{lang === "bn" ? "পরিমাণ" : "Amount"}</TableHead><TableHead>{lang === "bn" ? "সংখ্যা" : "Quantity"}</TableHead><TableHead></TableHead></TableRow></TableHeader>
-              <TableBody>{targets.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো টার্গেট নেই" : "No targets"}</TableCell></TableRow>}
-                {targets.map((tr, i) => (<TableRow key={tr.id} className={editTargetId === tr.id ? "bg-primary/5" : ""}><TableCell>{i + 1}</TableCell><TableCell>{MONTHS_EN[tr.month - 1]} {tr.year}</TableCell><TableCell>{tr.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === tr.target_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt.num(tr.target_amount)}</TableCell><TableCell>{tr.target_quantity}</TableCell><TableCell><div className="flex gap-1 justify-end"><Button size="icon" variant="ghost" onClick={() => startEditTarget(tr)}><Pencil className="w-4 h-4 text-primary" /></Button><Button size="icon" variant="ghost" onClick={() => onDelTarget(tr.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div></TableCell></TableRow>))}
+              <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "মাস/বছর" : "Month/Year"}</TableHead><TableHead>{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead><TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead><TableHead>{lang === "bn" ? "টাইপ" : "Type"}</TableHead><TableHead>{lang === "bn" ? "পরিমাণ" : "Amount"}</TableHead><TableHead>{lang === "bn" ? "সংখ্যা" : "Quantity"}</TableHead><TableHead></TableHead></TableRow></TableHeader>
+              <TableBody>{targets.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো টার্গেট নেই" : "No targets"}</TableCell></TableRow>}
+                {targets.map((tr, i) => (<TableRow key={tr.id} className={editTargetId === tr.id ? "bg-primary/5" : ""}><TableCell>{i + 1}</TableCell><TableCell>{MONTHS_EN[tr.month - 1]} {tr.year}</TableCell><TableCell>{tr.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === tr.target_category) || CATEGORIES[0])}</TableCell><TableCell>{tr.account_type || "-"}</TableCell><TableCell>{fmt.num(tr.target_amount)}</TableCell><TableCell>{tr.target_quantity}</TableCell><TableCell><div className="flex gap-1 justify-end"><Button size="icon" variant="ghost" onClick={() => startEditTarget(tr)}><Pencil className="w-4 h-4 text-primary" /></Button><Button size="icon" variant="ghost" onClick={() => onDelTarget(tr.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div></TableCell></TableRow>))}
               </TableBody>
             </Table></div>
           </Card>
@@ -226,7 +233,10 @@ function TargetsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div><Label>{lang === "bn" ? "তারিখ" : "Date"}</Label><Input type="date" value={af.date} onChange={(e) => setAf({ ...af, date: e.target.value })} /></div>
               <div><Label>{lang === "bn" ? "স্টাফ *" : "Staff *"}</Label><Input value={af.staff_name} onChange={(e) => setAf({ ...af, staff_name: e.target.value })} /></div>
-              <div><Label>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</Label><Select value={af.achievement_category} onValueChange={(v) => setAf({ ...af, achievement_category: v })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map((c) => <SelectItem key={c.id} value={c.id}>{lbl(c)}</SelectItem>)}</SelectContent></Select></div>
+              <div><Label>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</Label><Select value={af.achievement_category} onValueChange={(v) => setAf({ ...af, achievement_category: v, account_type: v === "new_account" ? af.account_type : "" })}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{CATEGORIES.map((c) => <SelectItem key={c.id} value={c.id}>{lbl(c)}</SelectItem>)}</SelectContent></Select></div>
+              {af.achievement_category === "new_account" && (
+                <div><Label>{lang === "bn" ? "অ্যাকাউন্ট টাইপ" : "Account Type"}</Label><Select value={af.account_type || "__all"} onValueChange={(v) => setAf({ ...af, account_type: v === "__all" ? "" : v })}><SelectTrigger><SelectValue placeholder={lang === "bn" ? "সব" : "All"} /></SelectTrigger><SelectContent><SelectItem value="__all">{lang === "bn" ? "সব টাইপ" : "All types"}</SelectItem>{ACCOUNT_TYPES.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent></Select></div>
+              )}
               <div><Label>{lang === "bn" ? "পরিমাণ (৳)" : "Amount (৳)"}</Label><Input type="number" value={af.amount} onChange={(e) => setAf({ ...af, amount: Number(e.target.value) })} /></div>
               <div><Label>{lang === "bn" ? "সংখ্যা" : "Quantity"}</Label><Input type="number" value={af.quantity} onChange={(e) => setAf({ ...af, quantity: Number(e.target.value) })} /></div>
               <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "মন্তব্য" : "Remarks"}</Label><Textarea rows={2} value={af.remarks} onChange={(e) => setAf({ ...af, remarks: e.target.value })} /></div>
@@ -238,9 +248,9 @@ function TargetsPage() {
           </Card>
           <Card className="overflow-hidden">
             <div className="overflow-x-auto"><Table>
-              <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead><TableHead>{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead><TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead><TableHead>{lang === "bn" ? "পরিমাণ" : "Amount"}</TableHead><TableHead>{lang === "bn" ? "সংখ্যা" : "Qty"}</TableHead><TableHead></TableHead></TableRow></TableHeader>
-              <TableBody>{achievements.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো অর্জন নেই" : "No achievements"}</TableCell></TableRow>}
-                {achievements.slice(0, 50).map((a, i) => (<TableRow key={a.id} className={editAchId === a.id ? "bg-primary/5" : ""}><TableCell>{i + 1}</TableCell><TableCell>{a.date}</TableCell><TableCell>{a.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === a.achievement_category) || CATEGORIES[0])}</TableCell><TableCell>{fmt.num(a.amount)}</TableCell><TableCell>{a.quantity}</TableCell><TableCell><div className="flex gap-1 justify-end"><Button size="icon" variant="ghost" onClick={() => startEditAch(a)}><Pencil className="w-4 h-4 text-primary" /></Button><Button size="icon" variant="ghost" onClick={() => onDelAch(a.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div></TableCell></TableRow>))}
+              <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead><TableHead>{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead><TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead><TableHead>{lang === "bn" ? "টাইপ" : "Type"}</TableHead><TableHead>{lang === "bn" ? "পরিমাণ" : "Amount"}</TableHead><TableHead>{lang === "bn" ? "সংখ্যা" : "Qty"}</TableHead><TableHead></TableHead></TableRow></TableHeader>
+              <TableBody>{achievements.length === 0 && <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো অর্জন নেই" : "No achievements"}</TableCell></TableRow>}
+                {achievements.slice(0, 50).map((a, i) => (<TableRow key={a.id} className={editAchId === a.id ? "bg-primary/5" : ""}><TableCell>{i + 1}</TableCell><TableCell>{a.date}</TableCell><TableCell>{a.staff_name}</TableCell><TableCell>{lbl(CATEGORIES.find((c) => c.id === a.achievement_category) || CATEGORIES[0])}</TableCell><TableCell>{a.account_type || "-"}</TableCell><TableCell>{fmt.num(a.amount)}</TableCell><TableCell>{a.quantity}</TableCell><TableCell><div className="flex gap-1 justify-end"><Button size="icon" variant="ghost" onClick={() => startEditAch(a)}><Pencil className="w-4 h-4 text-primary" /></Button><Button size="icon" variant="ghost" onClick={() => onDelAch(a.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></div></TableCell></TableRow>))}
               </TableBody>
             </Table></div>
           </Card>
@@ -253,16 +263,69 @@ function TargetsPage() {
             <Card className="p-4"><div className="text-xs text-muted-foreground">{lang === "bn" ? "অর্জন %" : "Achievement %"}</div><div className="text-2xl font-bold text-primary">{totalTarget > 0 ? Math.round((totalAch / totalTarget) * 100) : 0}%</div></Card>
           </div>
           <Card className="p-4 space-y-4">
-            {progress.map((p) => (
-              <div key={p.id} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{lbl(p)}</span>
-                  <span className="text-muted-foreground">৳ {fmt.num(p.ac.amount)} / ৳ {fmt.num(p.tg.amount)} ({Math.round(p.pct)}%)</span>
+            {progress.map((p) => {
+              const qtyPct = p.tg.qty > 0 ? Math.min(100, (p.ac.qty / p.tg.qty) * 100) : 0;
+              return (
+                <div key={p.id} className="space-y-2 border-b last:border-b-0 pb-3 last:pb-0">
+                  <div className="font-semibold text-sm">{lbl(p)}</div>
+                  {p.tg.amount > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{lang === "bn" ? "পরিমাণ" : "Amount"}</span>
+                        <span>৳ {fmt.num(p.ac.amount)} / ৳ {fmt.num(p.tg.amount)} <strong className="text-primary">({Math.round(p.pct)}%)</strong></span>
+                      </div>
+                      <Progress value={p.pct} />
+                    </div>
+                  )}
+                  {p.tg.qty > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{lang === "bn" ? "সংখ্যা" : "Quantity"}</span>
+                        <span>{fmt.num(p.ac.qty)} / {fmt.num(p.tg.qty)} <strong className="text-primary">({Math.round(qtyPct)}%)</strong></span>
+                      </div>
+                      <Progress value={qtyPct} />
+                    </div>
+                  )}
                 </div>
-                <Progress value={p.pct} />
-              </div>
-            ))}
+              );
+            })}
           </Card>
+
+          {/* New Account: Account-type breakdown */}
+          {(() => {
+            const monthTargets = targets.filter((tr) => tr.year === year && tr.month === month && tr.target_category === "new_account");
+            const monthAch = achievements.filter((a) => { const d = new Date(a.date); return d.getFullYear() === year && d.getMonth() + 1 === month && a.achievement_category === "new_account"; });
+            if (monthTargets.length === 0 && monthAch.length === 0) return null;
+            const rows = ACCOUNT_TYPES.map((typ) => {
+              const tg = monthTargets.filter((tr) => (tr.account_type || "") === typ).reduce((s, tr) => ({ amount: s.amount + Number(tr.target_amount), qty: s.qty + Number(tr.target_quantity) }), { amount: 0, qty: 0 });
+              const ac = monthAch.filter((a) => (a.account_type || "") === typ).reduce((s, a) => ({ amount: s.amount + Number(a.amount), qty: s.qty + Number(a.quantity) }), { amount: 0, qty: 0 });
+              return { typ, tg, ac };
+            }).filter((r) => r.tg.qty > 0 || r.tg.amount > 0 || r.ac.qty > 0 || r.ac.amount > 0);
+            if (rows.length === 0) return null;
+            return (
+              <Card className="p-4">
+                <h3 className="font-bold mb-3 text-sm">{lang === "bn" ? "নতুন অ্যাকাউন্ট — টাইপ অনুযায়ী" : "New Account — by Type"}</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader><TableRow><TableHead>{lang === "bn" ? "টাইপ" : "Type"}</TableHead><TableHead className="text-right">{lang === "bn" ? "টার্গেট সংখ্যা" : "Target Qty"}</TableHead><TableHead className="text-right">{lang === "bn" ? "অর্জন সংখ্যা" : "Achieved Qty"}</TableHead><TableHead className="text-right">%</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {rows.map((r) => {
+                        const pct = r.tg.qty > 0 ? Math.min(100, (r.ac.qty / r.tg.qty) * 100) : 0;
+                        return (
+                          <TableRow key={r.typ}>
+                            <TableCell className="font-medium">{r.typ}</TableCell>
+                            <TableCell className="text-right">{fmt.num(r.tg.qty)}</TableCell>
+                            <TableCell className="text-right">{fmt.num(r.ac.qty)}</TableCell>
+                            <TableCell className="text-right"><Badge variant={pct >= 100 ? "default" : "outline"} className={pct >= 100 ? "bg-green-600" : ""}>{Math.round(pct)}%</Badge></TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            );
+          })()}
         </TabsContent>
 
         <TabsContent value="report" className="space-y-4">
