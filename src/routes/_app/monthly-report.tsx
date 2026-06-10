@@ -10,7 +10,9 @@ import { useFmt, monthsOf } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Printer, Save, Copy } from "lucide-react";
+import { Plus, Trash2, Printer, Save, Copy, TrendingUp, TrendingDown } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { ClientOnly } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/monthly-report")({ component: MonthlyReportPage });
 
