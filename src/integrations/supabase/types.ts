@@ -61,6 +61,7 @@ export type Database = {
       }
       achievements: {
         Row: {
+          account_type: string | null
           achievement_category: string
           amount: number
           created_at: string
@@ -71,6 +72,7 @@ export type Database = {
           staff_name: string
         }
         Insert: {
+          account_type?: string | null
           achievement_category: string
           amount?: number
           created_at?: string
@@ -81,6 +83,7 @@ export type Database = {
           staff_name: string
         }
         Update: {
+          account_type?: string | null
           achievement_category?: string
           amount?: number
           created_at?: string
@@ -255,6 +258,36 @@ export type Database = {
           id?: string
           note?: string | null
           submitted_by?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      document_categories: {
+        Row: {
+          created_at: string
+          id: string
+          name_bn: string
+          name_en: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name_bn: string
+          name_en: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name_bn?: string
+          name_en?: string
+          slug?: string
+          sort_order?: number
           updated_at?: string
         }
         Relationships: []
@@ -629,6 +662,7 @@ export type Database = {
       }
       monthly_targets: {
         Row: {
+          account_type: string | null
           created_at: string
           id: string
           month: number
@@ -641,6 +675,7 @@ export type Database = {
           year: number
         }
         Insert: {
+          account_type?: string | null
           created_at?: string
           id?: string
           month: number
@@ -653,6 +688,7 @@ export type Database = {
           year: number
         }
         Update: {
+          account_type?: string | null
           created_at?: string
           id?: string
           month?: number
