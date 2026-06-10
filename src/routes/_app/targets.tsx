@@ -103,11 +103,12 @@ function TargetsPage() {
   const saveAch = useMutation({
     mutationFn: async () => {
       if (!af.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
+      const payload = { ...af, account_type: af.achievement_category === "new_account" ? (af.account_type || null) : null };
       if (editAchId) {
-        const { error } = await supabase.from("achievements" as any).update(af).eq("id", editAchId);
+        const { error } = await supabase.from("achievements" as any).update(payload).eq("id", editAchId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("achievements" as any).insert(af);
+        const { error } = await supabase.from("achievements" as any).insert(payload);
         if (error) throw error;
       }
     },
