@@ -73,11 +73,12 @@ function TargetsPage() {
   const saveTarget = useMutation({
     mutationFn: async () => {
       if (!tf.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
+      const payload = { ...tf, account_type: tf.target_category === "new_account" ? (tf.account_type || null) : null };
       if (editTargetId) {
-        const { error } = await supabase.from("monthly_targets" as any).update(tf).eq("id", editTargetId);
+        const { error } = await supabase.from("monthly_targets" as any).update(payload).eq("id", editTargetId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("monthly_targets" as any).insert(tf);
+        const { error } = await supabase.from("monthly_targets" as any).insert(payload);
         if (error) throw error;
       }
     },
