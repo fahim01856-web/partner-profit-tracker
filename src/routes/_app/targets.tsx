@@ -263,16 +263,69 @@ function TargetsPage() {
             <Card className="p-4"><div className="text-xs text-muted-foreground">{lang === "bn" ? "অর্জন %" : "Achievement %"}</div><div className="text-2xl font-bold text-primary">{totalTarget > 0 ? Math.round((totalAch / totalTarget) * 100) : 0}%</div></Card>
           </div>
           <Card className="p-4 space-y-4">
-            {progress.map((p) => (
-              <div key={p.id} className="space-y-1">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{lbl(p)}</span>
-                  <span className="text-muted-foreground">৳ {fmt.num(p.ac.amount)} / ৳ {fmt.num(p.tg.amount)} ({Math.round(p.pct)}%)</span>
+            {progress.map((p) => {
+              const qtyPct = p.tg.qty > 0 ? Math.min(100, (p.ac.qty / p.tg.qty) * 100) : 0;
+              return (
+                <div key={p.id} className="space-y-2 border-b last:border-b-0 pb-3 last:pb-0">
+                  <div className="font-semibold text-sm">{lbl(p)}</div>
+                  {p.tg.amount > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{lang === "bn" ? "পরিমাণ" : "Amount"}</span>
+                        <span>৳ {fmt.num(p.ac.amount)} / ৳ {fmt.num(p.tg.amount)} <strong className="text-primary">({Math.round(p.pct)}%)</strong></span>
+                      </div>
+                      <Progress value={p.pct} />
+                    </div>
+                  )}
+                  {p.tg.qty > 0 && (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-muted-foreground">{lang === "bn" ? "সংখ্যা" : "Quantity"}</span>
+                        <span>{fmt.num(p.ac.qty)} / {fmt.num(p.tg.qty)} <strong className="text-primary">({Math.round(qtyPct)}%)</strong></span>
+                      </div>
+                      <Progress value={qtyPct} />
+                    </div>
+                  )}
                 </div>
-                <Progress value={p.pct} />
-              </div>
-            ))}
+              );
+            })}
           </Card>
+
+          {/* New Account: Account-type breakdown */}
+          {(() => {
+            const monthTargets = targets.filter((tr) => tr.year === year && tr.month === month && tr.target_category === "new_account");
+            const monthAch = achievements.filter((a) => { const d = new Date(a.date); return d.getFullYear() === year && d.getMonth() + 1 === month && a.achievement_category === "new_account"; });
+            if (monthTargets.length === 0 && monthAch.length === 0) return null;
+            const rows = ACCOUNT_TYPES.map((typ) => {
+              const tg = monthTargets.filter((tr) => (tr.account_type || "") === typ).reduce((s, tr) => ({ amount: s.amount + Number(tr.target_amount), qty: s.qty + Number(tr.target_quantity) }), { amount: 0, qty: 0 });
+              const ac = monthAch.filter((a) => (a.account_type || "") === typ).reduce((s, a) => ({ amount: s.amount + Number(a.amount), qty: s.qty + Number(a.quantity) }), { amount: 0, qty: 0 });
+              return { typ, tg, ac };
+            }).filter((r) => r.tg.qty > 0 || r.tg.amount > 0 || r.ac.qty > 0 || r.ac.amount > 0);
+            if (rows.length === 0) return null;
+            return (
+              <Card className="p-4">
+                <h3 className="font-bold mb-3 text-sm">{lang === "bn" ? "নতুন অ্যাকাউন্ট — টাইপ অনুযায়ী" : "New Account — by Type"}</h3>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader><TableRow><TableHead>{lang === "bn" ? "টাইপ" : "Type"}</TableHead><TableHead className="text-right">{lang === "bn" ? "টার্গেট সংখ্যা" : "Target Qty"}</TableHead><TableHead className="text-right">{lang === "bn" ? "অর্জন সংখ্যা" : "Achieved Qty"}</TableHead><TableHead className="text-right">%</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {rows.map((r) => {
+                        const pct = r.tg.qty > 0 ? Math.min(100, (r.ac.qty / r.tg.qty) * 100) : 0;
+                        return (
+                          <TableRow key={r.typ}>
+                            <TableCell className="font-medium">{r.typ}</TableCell>
+                            <TableCell className="text-right">{fmt.num(r.tg.qty)}</TableCell>
+                            <TableCell className="text-right">{fmt.num(r.ac.qty)}</TableCell>
+                            <TableCell className="text-right"><Badge variant={pct >= 100 ? "default" : "outline"} className={pct >= 100 ? "bg-green-600" : ""}>{Math.round(pct)}%</Badge></TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            );
+          })()}
         </TabsContent>
 
         <TabsContent value="report" className="space-y-4">
