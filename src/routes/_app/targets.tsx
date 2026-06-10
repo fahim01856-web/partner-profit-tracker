@@ -67,9 +67,9 @@ function TargetsPage() {
   });
 
   // -- Target form (insert + edit)
-  const [tf, setTf] = useState({ month, year, staff_name: "", target_category: CATEGORIES[0].id, target_amount: 0, target_quantity: 0, notes: "" });
+  const [tf, setTf] = useState({ month, year, staff_name: "", target_category: CATEGORIES[0].id, account_type: "", target_amount: 0, target_quantity: 0, notes: "" });
   const [editTargetId, setEditTargetId] = useState<string | null>(null);
-  const resetTf = () => { setTf({ month, year, staff_name: "", target_category: CATEGORIES[0].id, target_amount: 0, target_quantity: 0, notes: "" }); setEditTargetId(null); };
+  const resetTf = () => { setTf({ month, year, staff_name: "", target_category: CATEGORIES[0].id, account_type: "", target_amount: 0, target_quantity: 0, notes: "" }); setEditTargetId(null); };
   const saveTarget = useMutation({
     mutationFn: async () => {
       if (!tf.staff_name) throw new Error(lang === "bn" ? "স্টাফ নাম দিন" : "Staff name required");
