@@ -90,7 +90,7 @@ function TargetsPage() {
   });
   const startEditTarget = (r: TargetRow) => {
     setEditTargetId(r.id);
-    setTf({ month: r.month, year: r.year, staff_name: r.staff_name, target_category: r.target_category, target_amount: Number(r.target_amount), target_quantity: Number(r.target_quantity), notes: r.notes ?? "" });
+    setTf({ month: r.month, year: r.year, staff_name: r.staff_name, target_category: r.target_category, account_type: r.account_type ?? "", target_amount: Number(r.target_amount), target_quantity: Number(r.target_quantity), notes: r.notes ?? "" });
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const onDelTarget = (id: string) => { if (window.confirm(t("confirm_delete"))) delTarget.mutate(id); };
