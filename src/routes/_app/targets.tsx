@@ -119,7 +119,7 @@ function TargetsPage() {
   });
   const startEditAch = (r: Achievement) => {
     setEditAchId(r.id);
-    setAf({ date: r.date, staff_name: r.staff_name, achievement_category: r.achievement_category, amount: Number(r.amount), quantity: Number(r.quantity), remarks: r.remarks ?? "" });
+    setAf({ date: r.date, staff_name: r.staff_name, achievement_category: r.achievement_category, account_type: r.account_type ?? "", amount: Number(r.amount), quantity: Number(r.quantity), remarks: r.remarks ?? "" });
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const onDelAch = (id: string) => { if (window.confirm(t("confirm_delete"))) delAch.mutate(id); };
