@@ -33,11 +33,13 @@ const CATEGORIES = [
   { id: "mobile_banking", bn: "মোবাইল ব্যাংকিং রেজি.", en: "Mobile Banking Reg." },
 ];
 
+const ACCOUNT_TYPES = ["AWCA", "MSA", "MSSA", "MTDR", "MMPDSA", "SMS", "Farmers", "MHSA"];
+
 const MONTHS_BN = ["জানু", "ফেব্রু", "মার্চ", "এপ্রিল", "মে", "জুন", "জুলাই", "আগ", "সেপ্ট", "অক্টো", "নভে", "ডিসে"];
 const MONTHS_EN = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-type TargetRow = { id: string; month: number; year: number; staff_name: string; target_category: string; target_amount: number; target_quantity: number; notes: string | null };
-type Achievement = { id: string; date: string; staff_name: string; achievement_category: string; amount: number; quantity: number; remarks: string | null };
+type TargetRow = { id: string; month: number; year: number; staff_name: string; target_category: string; account_type: string | null; target_amount: number; target_quantity: number; notes: string | null };
+type Achievement = { id: string; date: string; staff_name: string; achievement_category: string; account_type: string | null; amount: number; quantity: number; remarks: string | null };
 
 function TargetsPage() {
   const { t, lang } = useI18n();
