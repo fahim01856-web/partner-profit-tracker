@@ -87,7 +87,8 @@ function LoanLedgerPage() {
   const savePerson = useMutation({
     mutationFn: async (p: Partial<Person> & { id?: string }) => {
       const payload = {
-        name: p.name, phone: p.phone || null, address: p.address || null,
+        name: p.name ?? "",
+        phone: p.phone || null, address: p.address || null,
         opening_balance: Number(p.opening_balance) || 0, notes: p.notes || null,
       };
       if (p.id) {

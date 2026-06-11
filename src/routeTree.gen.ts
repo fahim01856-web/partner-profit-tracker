@@ -22,6 +22,7 @@ import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppPendingWorksRouteImport } from './routes/_app/pending-works'
 import { Route as AppPartnersRouteImport } from './routes/_app/partners'
 import { Route as AppMonthlyReportRouteImport } from './routes/_app/monthly-report'
+import { Route as AppLoanLedgerRouteImport } from './routes/_app/loan-ledger'
 import { Route as AppInventoryRouteImport } from './routes/_app/inventory'
 import { Route as AppIncomeRouteImport } from './routes/_app/income'
 import { Route as AppExpenseRouteImport } from './routes/_app/expense'
@@ -96,6 +97,11 @@ const AppMonthlyReportRoute = AppMonthlyReportRouteImport.update({
   path: '/monthly-report',
   getParentRoute: () => AppRoute,
 } as any)
+const AppLoanLedgerRoute = AppLoanLedgerRouteImport.update({
+  id: '/loan-ledger',
+  path: '/loan-ledger',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppInventoryRoute = AppInventoryRouteImport.update({
   id: '/inventory',
   path: '/inventory',
@@ -154,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
   '/inventory': typeof AppInventoryRoute
+  '/loan-ledger': typeof AppLoanLedgerRoute
   '/monthly-report': typeof AppMonthlyReportRoute
   '/partners': typeof AppPartnersRoute
   '/pending-works': typeof AppPendingWorksRoute
@@ -177,6 +184,7 @@ export interface FileRoutesByTo {
   '/expense': typeof AppExpenseRoute
   '/income': typeof AppIncomeRoute
   '/inventory': typeof AppInventoryRoute
+  '/loan-ledger': typeof AppLoanLedgerRoute
   '/monthly-report': typeof AppMonthlyReportRoute
   '/partners': typeof AppPartnersRoute
   '/pending-works': typeof AppPendingWorksRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/_app/expense': typeof AppExpenseRoute
   '/_app/income': typeof AppIncomeRoute
   '/_app/inventory': typeof AppInventoryRoute
+  '/_app/loan-ledger': typeof AppLoanLedgerRoute
   '/_app/monthly-report': typeof AppMonthlyReportRoute
   '/_app/partners': typeof AppPartnersRoute
   '/_app/pending-works': typeof AppPendingWorksRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/expense'
     | '/income'
     | '/inventory'
+    | '/loan-ledger'
     | '/monthly-report'
     | '/partners'
     | '/pending-works'
@@ -250,6 +260,7 @@ export interface FileRouteTypes {
     | '/expense'
     | '/income'
     | '/inventory'
+    | '/loan-ledger'
     | '/monthly-report'
     | '/partners'
     | '/pending-works'
@@ -274,6 +285,7 @@ export interface FileRouteTypes {
     | '/_app/expense'
     | '/_app/income'
     | '/_app/inventory'
+    | '/_app/loan-ledger'
     | '/_app/monthly-report'
     | '/_app/partners'
     | '/_app/pending-works'
@@ -385,6 +397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMonthlyReportRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/loan-ledger': {
+      id: '/_app/loan-ledger'
+      path: '/loan-ledger'
+      fullPath: '/loan-ledger'
+      preLoaderRoute: typeof AppLoanLedgerRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/inventory': {
       id: '/_app/inventory'
       path: '/inventory'
@@ -461,6 +480,7 @@ interface AppRouteChildren {
   AppExpenseRoute: typeof AppExpenseRoute
   AppIncomeRoute: typeof AppIncomeRoute
   AppInventoryRoute: typeof AppInventoryRoute
+  AppLoanLedgerRoute: typeof AppLoanLedgerRoute
   AppMonthlyReportRoute: typeof AppMonthlyReportRoute
   AppPartnersRoute: typeof AppPartnersRoute
   AppPendingWorksRoute: typeof AppPendingWorksRoute
@@ -483,6 +503,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppExpenseRoute: AppExpenseRoute,
   AppIncomeRoute: AppIncomeRoute,
   AppInventoryRoute: AppInventoryRoute,
+  AppLoanLedgerRoute: AppLoanLedgerRoute,
   AppMonthlyReportRoute: AppMonthlyReportRoute,
   AppPartnersRoute: AppPartnersRoute,
   AppPendingWorksRoute: AppPendingWorksRoute,
