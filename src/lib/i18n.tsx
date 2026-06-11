@@ -15,7 +15,7 @@ const dict = {
 
   // Nav
   nav_dashboard: { bn: "ড্যাশবোর্ড", en: "Dashboard" },
-  nav_income: { bn: "আয় এন্ট্রি", en: "Income" },
+  nav_investment: { bn: "এজেন্ট ব্যাংক বিনিয়োগ", en: "Agent Bank Investment" },
   nav_expense: { bn: "খরচ ভাউচার", en: "Expense Voucher" },
   nav_staff: { bn: "স্টাফ", en: "Staff" },
   nav_attendance: { bn: "হাজিরা", en: "Attendance" },
