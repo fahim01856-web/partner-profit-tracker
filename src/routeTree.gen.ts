@@ -24,7 +24,6 @@ import { Route as AppPartnersRouteImport } from './routes/_app/partners'
 import { Route as AppMonthlyReportRouteImport } from './routes/_app/monthly-report'
 import { Route as AppLoanLedgerRouteImport } from './routes/_app/loan-ledger'
 import { Route as AppInventoryRouteImport } from './routes/_app/inventory'
-import { Route as AppIncomeRouteImport } from './routes/_app/income'
 import { Route as AppExpenseRouteImport } from './routes/_app/expense'
 import { Route as AppEmployeeAttendanceRouteImport } from './routes/_app/employee-attendance'
 import { Route as AppDocumentsRouteImport } from './routes/_app/documents'
@@ -32,6 +31,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppDailyDepositRouteImport } from './routes/_app/daily-deposit'
 import { Route as AppCashBookRouteImport } from './routes/_app/cash-book'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
+import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -107,11 +107,6 @@ const AppInventoryRoute = AppInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => AppRoute,
 } as any)
-const AppIncomeRoute = AppIncomeRouteImport.update({
-  id: '/income',
-  path: '/income',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppExpenseRoute = AppExpenseRouteImport.update({
   id: '/expense',
   path: '/expense',
@@ -147,10 +142,16 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAgentBankInvestmentRoute = AppAgentBankInvestmentRouteImport.update({
+  id: '/agent-bank-investment',
+  path: '/agent-bank-investment',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
@@ -158,7 +159,6 @@ export interface FileRoutesByFullPath {
   '/documents': typeof AppDocumentsRoute
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
-  '/income': typeof AppIncomeRoute
   '/inventory': typeof AppInventoryRoute
   '/loan-ledger': typeof AppLoanLedgerRoute
   '/monthly-report': typeof AppMonthlyReportRoute
@@ -175,6 +175,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
@@ -182,7 +183,6 @@ export interface FileRoutesByTo {
   '/documents': typeof AppDocumentsRoute
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
-  '/income': typeof AppIncomeRoute
   '/inventory': typeof AppInventoryRoute
   '/loan-ledger': typeof AppLoanLedgerRoute
   '/monthly-report': typeof AppMonthlyReportRoute
@@ -201,6 +201,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/_app/attendance': typeof AppAttendanceRoute
   '/_app/cash-book': typeof AppCashBookRoute
   '/_app/daily-deposit': typeof AppDailyDepositRoute
@@ -208,7 +209,6 @@ export interface FileRoutesById {
   '/_app/documents': typeof AppDocumentsRoute
   '/_app/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/_app/expense': typeof AppExpenseRoute
-  '/_app/income': typeof AppIncomeRoute
   '/_app/inventory': typeof AppInventoryRoute
   '/_app/loan-ledger': typeof AppLoanLedgerRoute
   '/_app/monthly-report': typeof AppMonthlyReportRoute
@@ -227,6 +227,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/agent-bank-investment'
     | '/attendance'
     | '/cash-book'
     | '/daily-deposit'
@@ -234,7 +235,6 @@ export interface FileRouteTypes {
     | '/documents'
     | '/employee-attendance'
     | '/expense'
-    | '/income'
     | '/inventory'
     | '/loan-ledger'
     | '/monthly-report'
@@ -251,6 +251,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/agent-bank-investment'
     | '/attendance'
     | '/cash-book'
     | '/daily-deposit'
@@ -258,7 +259,6 @@ export interface FileRouteTypes {
     | '/documents'
     | '/employee-attendance'
     | '/expense'
-    | '/income'
     | '/inventory'
     | '/loan-ledger'
     | '/monthly-report'
@@ -276,6 +276,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/agent-bank-investment'
     | '/_app/attendance'
     | '/_app/cash-book'
     | '/_app/daily-deposit'
@@ -283,7 +284,6 @@ export interface FileRouteTypes {
     | '/_app/documents'
     | '/_app/employee-attendance'
     | '/_app/expense'
-    | '/_app/income'
     | '/_app/inventory'
     | '/_app/loan-ledger'
     | '/_app/monthly-report'
@@ -411,13 +411,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInventoryRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/income': {
-      id: '/_app/income'
-      path: '/income'
-      fullPath: '/income'
-      preLoaderRoute: typeof AppIncomeRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/expense': {
       id: '/_app/expense'
       path: '/expense'
@@ -467,10 +460,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/agent-bank-investment': {
+      id: '/_app/agent-bank-investment'
+      path: '/agent-bank-investment'
+      fullPath: '/agent-bank-investment'
+      preLoaderRoute: typeof AppAgentBankInvestmentRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAgentBankInvestmentRoute: typeof AppAgentBankInvestmentRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppCashBookRoute: typeof AppCashBookRoute
   AppDailyDepositRoute: typeof AppDailyDepositRoute
@@ -478,7 +479,6 @@ interface AppRouteChildren {
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppEmployeeAttendanceRoute: typeof AppEmployeeAttendanceRoute
   AppExpenseRoute: typeof AppExpenseRoute
-  AppIncomeRoute: typeof AppIncomeRoute
   AppInventoryRoute: typeof AppInventoryRoute
   AppLoanLedgerRoute: typeof AppLoanLedgerRoute
   AppMonthlyReportRoute: typeof AppMonthlyReportRoute
@@ -494,6 +494,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAgentBankInvestmentRoute: AppAgentBankInvestmentRoute,
   AppAttendanceRoute: AppAttendanceRoute,
   AppCashBookRoute: AppCashBookRoute,
   AppDailyDepositRoute: AppDailyDepositRoute,
@@ -501,7 +502,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppDocumentsRoute: AppDocumentsRoute,
   AppEmployeeAttendanceRoute: AppEmployeeAttendanceRoute,
   AppExpenseRoute: AppExpenseRoute,
-  AppIncomeRoute: AppIncomeRoute,
   AppInventoryRoute: AppInventoryRoute,
   AppLoanLedgerRoute: AppLoanLedgerRoute,
   AppMonthlyReportRoute: AppMonthlyReportRoute,

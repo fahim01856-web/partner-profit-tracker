@@ -873,7 +873,7 @@ function ReportCenterTab() {
   const items = [
     { to: "/monthly-report" as const, label: lang === "bn" ? "মাসিক আয়-ব্যয় রিপোর্ট" : "Monthly Income & Expense", icon: FileBarChart },
     { to: "/partners" as const, label: t("nav_partners"), desc: lang === "bn" ? "পার্টনার শেয়ার / প্রফিট ডিস্ট্রিবিউশন" : "Partner share & profit distribution", icon: Handshake },
-    { to: "/income" as const, label: t("nav_income"), desc: lang === "bn" ? "মাসিক আয়ের তালিকা" : "Monthly income list", icon: TrendingUp },
+    { to: "/agent-bank-investment" as const, label: t("nav_investment"), desc: lang === "bn" ? "এজেন্ট ব্যাংকে বিনিয়োগের তালিকা" : "Agent bank investments list", icon: TrendingUp },
     { to: "/expense" as const, label: t("nav_expense"), desc: lang === "bn" ? "ভাউচার তালিকা ও প্রিন্ট" : "Voucher list & print", icon: Receipt },
     { to: "/salary" as const, label: t("nav_salary"), desc: lang === "bn" ? "মাসিক বেতন প্রদান রিপোর্ট" : "Monthly salary report", icon: Wallet },
     { to: "/salary-sheet" as const, label: t("nav_salary_sheet"), desc: lang === "bn" ? "স্যালারি শীট প্রিন্ট" : "Salary sheet print", icon: FileBarChart },

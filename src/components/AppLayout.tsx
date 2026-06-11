@@ -21,7 +21,7 @@ export function AppLayout() {
   const nav = [
     { to: "/dashboard", label: t("nav_dashboard"), icon: LayoutDashboard },
     { to: "/monthly-report", label: t("nav_monthly_report"), icon: FileBarChart },
-    { to: "/income", label: t("nav_income"), icon: TrendingUp },
+    { to: "/agent-bank-investment", label: t("nav_investment"), icon: TrendingUp },
     { to: "/daily-deposit", label: t("nav_daily_deposit"), icon: Banknote },
     { to: "/cash-book", label: t("nav_cash_book"), icon: BookOpen },
     { to: "/expense", label: t("nav_expense"), icon: Receipt },
