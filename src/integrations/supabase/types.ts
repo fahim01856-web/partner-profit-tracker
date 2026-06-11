@@ -95,6 +95,39 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_bank_investments: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          description: string | null
+          id: string
+          partner_name: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          partner_name: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          description?: string | null
+          id?: string
+          partner_name?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       app_settings: {
         Row: {
           key: string
@@ -391,36 +424,6 @@ export type Database = {
           holiday_type?: string
           id?: string
           name?: string
-        }
-        Relationships: []
-      }
-      incomes: {
-        Row: {
-          amount: number
-          category: string
-          created_at: string
-          created_by: string | null
-          date: string
-          description: string | null
-          id: string
-        }
-        Insert: {
-          amount?: number
-          category: string
-          created_at?: string
-          created_by?: string | null
-          date?: string
-          description?: string | null
-          id?: string
-        }
-        Update: {
-          amount?: number
-          category?: string
-          created_at?: string
-          created_by?: string | null
-          date?: string
-          description?: string | null
-          id?: string
         }
         Relationships: []
       }
