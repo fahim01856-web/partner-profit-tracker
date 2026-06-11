@@ -31,6 +31,7 @@ import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppDailyDepositRouteImport } from './routes/_app/daily-deposit'
 import { Route as AppCashBookRouteImport } from './routes/_app/cash-book'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
+import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -141,10 +142,16 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAgentBankInvestmentRoute = AppAgentBankInvestmentRouteImport.update({
+  id: '/agent-bank-investment',
+  path: '/agent-bank-investment',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
@@ -193,6 +201,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/login': typeof LoginRoute
+  '/_app/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/_app/attendance': typeof AppAttendanceRoute
   '/_app/cash-book': typeof AppCashBookRoute
   '/_app/daily-deposit': typeof AppDailyDepositRoute
@@ -218,6 +227,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/agent-bank-investment'
     | '/attendance'
     | '/cash-book'
     | '/daily-deposit'
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/agent-bank-investment'
     | '/attendance'
     | '/cash-book'
     | '/daily-deposit'
@@ -265,6 +276,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_app'
     | '/login'
+    | '/_app/agent-bank-investment'
     | '/_app/attendance'
     | '/_app/cash-book'
     | '/_app/daily-deposit'
@@ -448,10 +460,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/agent-bank-investment': {
+      id: '/_app/agent-bank-investment'
+      path: '/agent-bank-investment'
+      fullPath: '/agent-bank-investment'
+      preLoaderRoute: typeof AppAgentBankInvestmentRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
 interface AppRouteChildren {
+  AppAgentBankInvestmentRoute: typeof AppAgentBankInvestmentRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppCashBookRoute: typeof AppCashBookRoute
   AppDailyDepositRoute: typeof AppDailyDepositRoute
@@ -474,6 +494,7 @@ interface AppRouteChildren {
 }
 
 const AppRouteChildren: AppRouteChildren = {
+  AppAgentBankInvestmentRoute: AppAgentBankInvestmentRoute,
   AppAttendanceRoute: AppAttendanceRoute,
   AppCashBookRoute: AppCashBookRoute,
   AppDailyDepositRoute: AppDailyDepositRoute,
