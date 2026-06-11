@@ -32,6 +32,7 @@ const dict = {
   nav_cash_book: { bn: "দৈনিক ক্যাশ বুক", en: "Daily Cash Book" },
   nav_signature: { bn: "সিগনেচার কার্ড", en: "Signature Cards" },
   nav_inventory: { bn: "ইনভেন্টরি", en: "Inventory" },
+  nav_loan_ledger: { bn: "ঋণ খতিয়ান", en: "Loan Ledger" },
 
 
 

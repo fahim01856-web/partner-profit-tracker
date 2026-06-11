@@ -5,7 +5,7 @@ import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
   ClipboardList, MessageSquare, Target, FileText, Banknote,
-  BookOpen, FileSignature, Boxes
+  BookOpen, FileSignature, Boxes, BookUser
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,7 @@ export function AppLayout() {
     { to: "/sms-sending", label: t("nav_sms"), icon: MessageSquare },
     { to: "/targets", label: t("nav_targets"), icon: Target },
     { to: "/documents", label: t("nav_documents"), icon: FileText },
+    { to: "/loan-ledger", label: t("nav_loan_ledger"), icon: BookUser },
   ] as const;
 
   const LangToggle = ({ className = "" }: { className?: string }) => (
