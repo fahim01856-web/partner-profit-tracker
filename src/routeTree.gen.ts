@@ -24,7 +24,6 @@ import { Route as AppPartnersRouteImport } from './routes/_app/partners'
 import { Route as AppMonthlyReportRouteImport } from './routes/_app/monthly-report'
 import { Route as AppLoanLedgerRouteImport } from './routes/_app/loan-ledger'
 import { Route as AppInventoryRouteImport } from './routes/_app/inventory'
-import { Route as AppIncomeRouteImport } from './routes/_app/income'
 import { Route as AppExpenseRouteImport } from './routes/_app/expense'
 import { Route as AppEmployeeAttendanceRouteImport } from './routes/_app/employee-attendance'
 import { Route as AppDocumentsRouteImport } from './routes/_app/documents'
@@ -107,11 +106,6 @@ const AppInventoryRoute = AppInventoryRouteImport.update({
   path: '/inventory',
   getParentRoute: () => AppRoute,
 } as any)
-const AppIncomeRoute = AppIncomeRouteImport.update({
-  id: '/income',
-  path: '/income',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppExpenseRoute = AppExpenseRouteImport.update({
   id: '/expense',
   path: '/expense',
@@ -158,7 +152,6 @@ export interface FileRoutesByFullPath {
   '/documents': typeof AppDocumentsRoute
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
-  '/income': typeof AppIncomeRoute
   '/inventory': typeof AppInventoryRoute
   '/loan-ledger': typeof AppLoanLedgerRoute
   '/monthly-report': typeof AppMonthlyReportRoute
@@ -182,7 +175,6 @@ export interface FileRoutesByTo {
   '/documents': typeof AppDocumentsRoute
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
-  '/income': typeof AppIncomeRoute
   '/inventory': typeof AppInventoryRoute
   '/loan-ledger': typeof AppLoanLedgerRoute
   '/monthly-report': typeof AppMonthlyReportRoute
@@ -208,7 +200,6 @@ export interface FileRoutesById {
   '/_app/documents': typeof AppDocumentsRoute
   '/_app/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/_app/expense': typeof AppExpenseRoute
-  '/_app/income': typeof AppIncomeRoute
   '/_app/inventory': typeof AppInventoryRoute
   '/_app/loan-ledger': typeof AppLoanLedgerRoute
   '/_app/monthly-report': typeof AppMonthlyReportRoute
@@ -234,7 +225,6 @@ export interface FileRouteTypes {
     | '/documents'
     | '/employee-attendance'
     | '/expense'
-    | '/income'
     | '/inventory'
     | '/loan-ledger'
     | '/monthly-report'
@@ -258,7 +248,6 @@ export interface FileRouteTypes {
     | '/documents'
     | '/employee-attendance'
     | '/expense'
-    | '/income'
     | '/inventory'
     | '/loan-ledger'
     | '/monthly-report'
@@ -283,7 +272,6 @@ export interface FileRouteTypes {
     | '/_app/documents'
     | '/_app/employee-attendance'
     | '/_app/expense'
-    | '/_app/income'
     | '/_app/inventory'
     | '/_app/loan-ledger'
     | '/_app/monthly-report'
@@ -411,13 +399,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppInventoryRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/income': {
-      id: '/_app/income'
-      path: '/income'
-      fullPath: '/income'
-      preLoaderRoute: typeof AppIncomeRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/expense': {
       id: '/_app/expense'
       path: '/expense'
@@ -478,7 +459,6 @@ interface AppRouteChildren {
   AppDocumentsRoute: typeof AppDocumentsRoute
   AppEmployeeAttendanceRoute: typeof AppEmployeeAttendanceRoute
   AppExpenseRoute: typeof AppExpenseRoute
-  AppIncomeRoute: typeof AppIncomeRoute
   AppInventoryRoute: typeof AppInventoryRoute
   AppLoanLedgerRoute: typeof AppLoanLedgerRoute
   AppMonthlyReportRoute: typeof AppMonthlyReportRoute
@@ -501,7 +481,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppDocumentsRoute: AppDocumentsRoute,
   AppEmployeeAttendanceRoute: AppEmployeeAttendanceRoute,
   AppExpenseRoute: AppExpenseRoute,
-  AppIncomeRoute: AppIncomeRoute,
   AppInventoryRoute: AppInventoryRoute,
   AppLoanLedgerRoute: AppLoanLedgerRoute,
   AppMonthlyReportRoute: AppMonthlyReportRoute,
@@ -526,3 +505,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
