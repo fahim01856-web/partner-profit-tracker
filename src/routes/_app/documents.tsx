@@ -10,9 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { FileText, Upload, Trash2, Pencil, Printer, ExternalLink, Plus, X, Download, Settings2 } from "lucide-react";
+import { FileText, Upload, Trash2, Pencil, Printer, ExternalLink, Plus, X, Download, Settings2, Search, FileSpreadsheet, AlertTriangle, CheckCircle2, Files, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_app/documents")({ component: DocumentsPage });
 
