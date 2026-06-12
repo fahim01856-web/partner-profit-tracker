@@ -10,9 +10,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { FileText, Upload, Trash2, Pencil, Printer, ExternalLink, Plus, X, Download, Settings2 } from "lucide-react";
+import { FileText, Upload, Trash2, Pencil, Printer, ExternalLink, Plus, X, Download, Settings2, Search, FileSpreadsheet, AlertTriangle, CheckCircle2, Files, Clock } from "lucide-react";
 
 export const Route = createFileRoute("/_app/documents")({ component: DocumentsPage });
 
@@ -26,7 +28,7 @@ function slugify(s: string) {
 function DocumentsPage() {
   const { t, lang } = useI18n();
   const qc = useQueryClient();
-  const [activeCat, setActiveCat] = useState<string>("");
+  const [activeCat, setActiveCat] = useState<string>("__all__");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", description: "", expiry_date: "", uploaded_by: "" });
@@ -34,6 +36,9 @@ function DocumentsPage() {
   const [uploading, setUploading] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Partial<Category> | null>(null);
+  const [search, setSearch] = useState("");
+  const [expiryFilter, setExpiryFilter] = useState<"all" | "expired" | "soon" | "valid" | "none">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title" | "expiry">("newest");
 
   const { data: categories = [] } = useQuery({
     queryKey: ["document_categories"],
@@ -137,7 +142,68 @@ function DocumentsPage() {
     } catch { toast.error(lang === "bn" ? "ডাউনলোড ব্যর্থ" : "Download failed"); }
   };
 
-  const filtered = useMemo(() => docs.filter((d) => d.category === activeCat), [docs, activeCat]);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const soonDate = new Date(); soonDate.setDate(soonDate.getDate() + 30);
+  const soonStr = soonDate.toISOString().slice(0, 10);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = docs.filter((d) => activeCat === "__all__" || d.category === activeCat);
+    if (q) {
+      list = list.filter((d) =>
+        [d.title, d.description, d.uploaded_by, d.file_name]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q)),
+      );
+    }
+    if (expiryFilter !== "all") {
+      list = list.filter((d) => {
+        if (expiryFilter === "none") return !d.expiry_date;
+        if (!d.expiry_date) return false;
+        if (expiryFilter === "expired") return d.expiry_date < todayStr;
+        if (expiryFilter === "soon") return d.expiry_date >= todayStr && d.expiry_date <= soonStr;
+        if (expiryFilter === "valid") return d.expiry_date > soonStr;
+        return true;
+      });
+    }
+    list = [...list].sort((a, b) => {
+      if (sortBy === "title") return a.title.localeCompare(b.title);
+      if (sortBy === "oldest") return a.created_at.localeCompare(b.created_at);
+      if (sortBy === "expiry") return (a.expiry_date || "9999").localeCompare(b.expiry_date || "9999");
+      return b.created_at.localeCompare(a.created_at);
+    });
+    return list;
+  }, [docs, activeCat, search, expiryFilter, sortBy, todayStr, soonStr]);
+
+  const stats = useMemo(() => {
+    const scope = docs.filter((d) => activeCat === "__all__" || d.category === activeCat);
+    return {
+      total: scope.length,
+      withFile: scope.filter((d) => d.file_url).length,
+      expired: scope.filter((d) => d.expiry_date && d.expiry_date < todayStr).length,
+      soon: scope.filter((d) => d.expiry_date && d.expiry_date >= todayStr && d.expiry_date <= soonStr).length,
+    };
+  }, [docs, activeCat, todayStr, soonStr]);
+
+  const catName = (slug: string) => {
+    const c = categories.find((x) => x.slug === slug);
+    return c ? (lang === "bn" ? c.name_bn : c.name_en) : slug;
+  };
+
+  const exportCSV = () => {
+    const rows = [
+      ["#", lang === "bn" ? "ক্যাটাগরি" : "Category", lang === "bn" ? "শিরোনাম" : "Title", lang === "bn" ? "ফাইল" : "File", lang === "bn" ? "মেয়াদ শেষ" : "Expiry", lang === "bn" ? "আপলোডকারী" : "Uploaded By", lang === "bn" ? "তারিখ" : "Date", lang === "bn" ? "বিবরণ" : "Description"],
+      ...filtered.map((d, i) => [i + 1, catName(d.category), d.title, d.file_name || "", d.expiry_date || "", d.uploaded_by || "", d.created_at.slice(0, 10), (d.description || "").replace(/\n/g, " ")]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `documents_${todayStr}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const currentCat = categories.find((c) => c.slug === activeCat);
   const lbl = (c: Category) => (lang === "bn" ? c.name_bn : c.name_en);
 
@@ -185,16 +251,59 @@ function DocumentsPage() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setManageOpen(true)}><Settings2 className="w-4 h-4 mr-1" />{lang === "bn" ? "ক্যাটাগরি" : "Categories"}</Button>
+          <Button variant="outline" onClick={exportCSV}><FileSpreadsheet className="w-4 h-4 mr-1" />CSV</Button>
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
-          <Button onClick={() => { setEditingId(null); setForm({ title: "", description: "", expiry_date: "", uploaded_by: "" }); setFile(null); setShowForm(true); }} disabled={!activeCat}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "নতুন ডকুমেন্ট" : "New Document"}</Button>
+          <Button onClick={() => { setEditingId(null); setForm({ title: "", description: "", expiry_date: "", uploaded_by: "" }); setFile(null); setShowForm(true); }} disabled={!activeCat || activeCat === "__all__"}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "নতুন ডকুমেন্ট" : "New Document"}</Button>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 no-print">
+        <Card className="p-3 flex items-center gap-3"><div className="p-2 rounded-md bg-primary/10"><Files className="w-5 h-5 text-primary" /></div><div><div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট" : "Total"}</div><div className="font-bold text-lg">{stats.total}</div></div></Card>
+        <Card className="p-3 flex items-center gap-3"><div className="p-2 rounded-md bg-emerald-500/10"><CheckCircle2 className="w-5 h-5 text-emerald-600" /></div><div><div className="text-xs text-muted-foreground">{lang === "bn" ? "ফাইল সহ" : "With File"}</div><div className="font-bold text-lg">{stats.withFile}</div></div></Card>
+        <Card className="p-3 flex items-center gap-3"><div className="p-2 rounded-md bg-amber-500/10"><Clock className="w-5 h-5 text-amber-600" /></div><div><div className="text-xs text-muted-foreground">{lang === "bn" ? "৩০ দিনে শেষ" : "Expiring 30d"}</div><div className="font-bold text-lg">{stats.soon}</div></div></Card>
+        <Card className="p-3 flex items-center gap-3"><div className="p-2 rounded-md bg-destructive/10"><AlertTriangle className="w-5 h-5 text-destructive" /></div><div><div className="text-xs text-muted-foreground">{lang === "bn" ? "মেয়াদ শেষ" : "Expired"}</div><div className="font-bold text-lg">{stats.expired}</div></div></Card>
       </div>
 
       <Tabs value={activeCat} onValueChange={setActiveCat} className="no-print">
         <TabsList className="flex flex-wrap h-auto justify-start">
+          <TabsTrigger value="__all__" className="text-xs">{lang === "bn" ? "সব" : "All"}</TabsTrigger>
           {categories.map((c) => <TabsTrigger key={c.slug} value={c.slug} className="text-xs">{lbl(c)}</TabsTrigger>)}
         </TabsList>
       </Tabs>
+
+      <Card className="p-3 no-print">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={lang === "bn" ? "শিরোনাম, বিবরণ, ফাইল, আপলোডকারী..." : "Search title, description, file, uploader..."} className="pl-9" />
+          </div>
+          <Select value={expiryFilter} onValueChange={(v) => setExpiryFilter(v as any)}>
+            <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{lang === "bn" ? "সব মেয়াদ" : "All expiry"}</SelectItem>
+              <SelectItem value="expired">{lang === "bn" ? "মেয়াদ শেষ" : "Expired"}</SelectItem>
+              <SelectItem value="soon">{lang === "bn" ? "৩০ দিনে শেষ" : "Expiring ≤30d"}</SelectItem>
+              <SelectItem value="valid">{lang === "bn" ? "বৈধ" : "Valid"}</SelectItem>
+              <SelectItem value="none">{lang === "bn" ? "মেয়াদ নেই" : "No expiry"}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+            <SelectTrigger className="w-full sm:w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">{lang === "bn" ? "নতুন আগে" : "Newest"}</SelectItem>
+              <SelectItem value="oldest">{lang === "bn" ? "পুরাতন আগে" : "Oldest"}</SelectItem>
+              <SelectItem value="title">{lang === "bn" ? "শিরোনাম (A-Z)" : "Title (A-Z)"}</SelectItem>
+              <SelectItem value="expiry">{lang === "bn" ? "মেয়াদ (কাছের আগে)" : "Expiry (soonest)"}</SelectItem>
+            </SelectContent>
+          </Select>
+          {(search || expiryFilter !== "all" || sortBy !== "newest") && (
+            <Button variant="ghost" onClick={() => { setSearch(""); setExpiryFilter("all"); setSortBy("newest"); }}><X className="w-4 h-4 mr-1" />{lang === "bn" ? "রিসেট" : "Reset"}</Button>
+          )}
+        </div>
+        {(search || expiryFilter !== "all") && (
+          <div className="mt-2 text-xs text-muted-foreground">{lang === "bn" ? `${filtered.length} টি ফলাফল` : `${filtered.length} results`}</div>
+        )}
+      </Card>
 
       {showForm && currentCat && (
         <Card className="p-4 sm:p-6 no-print border-primary/30">
@@ -223,14 +332,20 @@ function DocumentsPage() {
           <div className="font-semibold mt-2">{currentCat ? lbl(currentCat) : ""}</div>
         </div>
         <Table>
-          <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead><TableHead>{lang === "bn" ? "ফাইল" : "File"}</TableHead><TableHead>{lang === "bn" ? "মেয়াদ শেষ" : "Expiry"}</TableHead><TableHead>{lang === "bn" ? "আপলোডকারী" : "Uploaded By"}</TableHead><TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead><TableHead className="no-print"></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>#</TableHead>{activeCat === "__all__" && <TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>}<TableHead>{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead><TableHead>{lang === "bn" ? "ফাইল" : "File"}</TableHead><TableHead>{lang === "bn" ? "মেয়াদ শেষ" : "Expiry"}</TableHead><TableHead>{lang === "bn" ? "আপলোডকারী" : "Uploaded By"}</TableHead><TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead><TableHead className="no-print"></TableHead></TableRow></TableHeader>
           <TableBody>
-            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো ডকুমেন্ট নেই" : "No documents"}</TableCell></TableRow>}
-            {filtered.map((d, i) => (
-              <TableRow key={d.id}>
-                <TableCell>{i + 1}</TableCell><TableCell className="font-medium">{d.title}</TableCell>
+            {filtered.length === 0 && <TableRow><TableCell colSpan={activeCat === "__all__" ? 8 : 7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো ডকুমেন্ট নেই" : "No documents"}</TableCell></TableRow>}
+            {filtered.map((d, i) => {
+              const isExpired = !!d.expiry_date && d.expiry_date < todayStr;
+              const isSoon = !!d.expiry_date && !isExpired && d.expiry_date <= soonStr;
+              return (
+              <TableRow key={d.id} className={isExpired ? "bg-destructive/5" : isSoon ? "bg-amber-500/5" : ""}>
+                <TableCell>{i + 1}</TableCell>
+                {activeCat === "__all__" && <TableCell><Badge variant="outline" className="text-xs">{catName(d.category)}</Badge></TableCell>}
+                <TableCell className="font-medium">{d.title}{d.description && <div className="text-xs text-muted-foreground line-clamp-1">{d.description}</div>}</TableCell>
                 <TableCell>{d.file_url ? <button type="button" onClick={() => handleView(d)} className="text-primary inline-flex items-center gap-1 hover:underline">{d.file_name || "View"} <ExternalLink className="w-3 h-3" /></button> : "-"}</TableCell>
-                <TableCell>{d.expiry_date || "-"}</TableCell><TableCell>{d.uploaded_by || "-"}</TableCell><TableCell>{d.created_at.slice(0, 10)}</TableCell>
+                <TableCell>{d.expiry_date ? <span className={isExpired ? "text-destructive font-medium" : isSoon ? "text-amber-600 font-medium" : ""}>{d.expiry_date}{isExpired && <Badge variant="destructive" className="ml-1 text-[10px]">{lang === "bn" ? "শেষ" : "Expired"}</Badge>}{isSoon && <Badge className="ml-1 text-[10px] bg-amber-500 hover:bg-amber-500">{lang === "bn" ? "শীঘ্রই" : "Soon"}</Badge>}</span> : "-"}</TableCell>
+                <TableCell>{d.uploaded_by || "-"}</TableCell><TableCell>{d.created_at.slice(0, 10)}</TableCell>
                 <TableCell className="no-print">
                   <div className="flex items-center gap-1">
                     {d.file_url && (
@@ -241,7 +356,7 @@ function DocumentsPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            );})}
           </TableBody>
         </Table>
       </Card>
