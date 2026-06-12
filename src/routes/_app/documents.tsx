@@ -251,16 +251,59 @@ function DocumentsPage() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setManageOpen(true)}><Settings2 className="w-4 h-4 mr-1" />{lang === "bn" ? "ক্যাটাগরি" : "Categories"}</Button>
+          <Button variant="outline" onClick={exportCSV}><FileSpreadsheet className="w-4 h-4 mr-1" />CSV</Button>
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
-          <Button onClick={() => { setEditingId(null); setForm({ title: "", description: "", expiry_date: "", uploaded_by: "" }); setFile(null); setShowForm(true); }} disabled={!activeCat}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "নতুন ডকুমেন্ট" : "New Document"}</Button>
+          <Button onClick={() => { setEditingId(null); setForm({ title: "", description: "", expiry_date: "", uploaded_by: "" }); setFile(null); setShowForm(true); }} disabled={!activeCat || activeCat === "__all__"}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "নতুন ডকুমেন্ট" : "New Document"}</Button>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 no-print">
+        <Card className="p-3 flex items-center gap-3"><div className="p-2 rounded-md bg-primary/10"><Files className="w-5 h-5 text-primary" /></div><div><div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট" : "Total"}</div><div className="font-bold text-lg">{stats.total}</div></div></Card>
+        <Card className="p-3 flex items-center gap-3"><div className="p-2 rounded-md bg-emerald-500/10"><CheckCircle2 className="w-5 h-5 text-emerald-600" /></div><div><div className="text-xs text-muted-foreground">{lang === "bn" ? "ফাইল সহ" : "With File"}</div><div className="font-bold text-lg">{stats.withFile}</div></div></Card>
+        <Card className="p-3 flex items-center gap-3"><div className="p-2 rounded-md bg-amber-500/10"><Clock className="w-5 h-5 text-amber-600" /></div><div><div className="text-xs text-muted-foreground">{lang === "bn" ? "৩০ দিনে শেষ" : "Expiring 30d"}</div><div className="font-bold text-lg">{stats.soon}</div></div></Card>
+        <Card className="p-3 flex items-center gap-3"><div className="p-2 rounded-md bg-destructive/10"><AlertTriangle className="w-5 h-5 text-destructive" /></div><div><div className="text-xs text-muted-foreground">{lang === "bn" ? "মেয়াদ শেষ" : "Expired"}</div><div className="font-bold text-lg">{stats.expired}</div></div></Card>
       </div>
 
       <Tabs value={activeCat} onValueChange={setActiveCat} className="no-print">
         <TabsList className="flex flex-wrap h-auto justify-start">
+          <TabsTrigger value="__all__" className="text-xs">{lang === "bn" ? "সব" : "All"}</TabsTrigger>
           {categories.map((c) => <TabsTrigger key={c.slug} value={c.slug} className="text-xs">{lbl(c)}</TabsTrigger>)}
         </TabsList>
       </Tabs>
+
+      <Card className="p-3 no-print">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={lang === "bn" ? "শিরোনাম, বিবরণ, ফাইল, আপলোডকারী..." : "Search title, description, file, uploader..."} className="pl-9" />
+          </div>
+          <Select value={expiryFilter} onValueChange={(v) => setExpiryFilter(v as any)}>
+            <SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{lang === "bn" ? "সব মেয়াদ" : "All expiry"}</SelectItem>
+              <SelectItem value="expired">{lang === "bn" ? "মেয়াদ শেষ" : "Expired"}</SelectItem>
+              <SelectItem value="soon">{lang === "bn" ? "৩০ দিনে শেষ" : "Expiring ≤30d"}</SelectItem>
+              <SelectItem value="valid">{lang === "bn" ? "বৈধ" : "Valid"}</SelectItem>
+              <SelectItem value="none">{lang === "bn" ? "মেয়াদ নেই" : "No expiry"}</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as any)}>
+            <SelectTrigger className="w-full sm:w-40"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="newest">{lang === "bn" ? "নতুন আগে" : "Newest"}</SelectItem>
+              <SelectItem value="oldest">{lang === "bn" ? "পুরাতন আগে" : "Oldest"}</SelectItem>
+              <SelectItem value="title">{lang === "bn" ? "শিরোনাম (A-Z)" : "Title (A-Z)"}</SelectItem>
+              <SelectItem value="expiry">{lang === "bn" ? "মেয়াদ (কাছের আগে)" : "Expiry (soonest)"}</SelectItem>
+            </SelectContent>
+          </Select>
+          {(search || expiryFilter !== "all" || sortBy !== "newest") && (
+            <Button variant="ghost" onClick={() => { setSearch(""); setExpiryFilter("all"); setSortBy("newest"); }}><X className="w-4 h-4 mr-1" />{lang === "bn" ? "রিসেট" : "Reset"}</Button>
+          )}
+        </div>
+        {(search || expiryFilter !== "all") && (
+          <div className="mt-2 text-xs text-muted-foreground">{lang === "bn" ? `${filtered.length} টি ফলাফল` : `${filtered.length} results`}</div>
+        )}
+      </Card>
 
       {showForm && currentCat && (
         <Card className="p-4 sm:p-6 no-print border-primary/30">
