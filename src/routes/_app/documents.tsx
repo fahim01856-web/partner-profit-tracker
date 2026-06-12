@@ -142,7 +142,68 @@ function DocumentsPage() {
     } catch { toast.error(lang === "bn" ? "ডাউনলোড ব্যর্থ" : "Download failed"); }
   };
 
-  const filtered = useMemo(() => docs.filter((d) => d.category === activeCat), [docs, activeCat]);
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const soonDate = new Date(); soonDate.setDate(soonDate.getDate() + 30);
+  const soonStr = soonDate.toISOString().slice(0, 10);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = docs.filter((d) => activeCat === "__all__" || d.category === activeCat);
+    if (q) {
+      list = list.filter((d) =>
+        [d.title, d.description, d.uploaded_by, d.file_name]
+          .filter(Boolean)
+          .some((v) => String(v).toLowerCase().includes(q)),
+      );
+    }
+    if (expiryFilter !== "all") {
+      list = list.filter((d) => {
+        if (expiryFilter === "none") return !d.expiry_date;
+        if (!d.expiry_date) return false;
+        if (expiryFilter === "expired") return d.expiry_date < todayStr;
+        if (expiryFilter === "soon") return d.expiry_date >= todayStr && d.expiry_date <= soonStr;
+        if (expiryFilter === "valid") return d.expiry_date > soonStr;
+        return true;
+      });
+    }
+    list = [...list].sort((a, b) => {
+      if (sortBy === "title") return a.title.localeCompare(b.title);
+      if (sortBy === "oldest") return a.created_at.localeCompare(b.created_at);
+      if (sortBy === "expiry") return (a.expiry_date || "9999").localeCompare(b.expiry_date || "9999");
+      return b.created_at.localeCompare(a.created_at);
+    });
+    return list;
+  }, [docs, activeCat, search, expiryFilter, sortBy, todayStr, soonStr]);
+
+  const stats = useMemo(() => {
+    const scope = docs.filter((d) => activeCat === "__all__" || d.category === activeCat);
+    return {
+      total: scope.length,
+      withFile: scope.filter((d) => d.file_url).length,
+      expired: scope.filter((d) => d.expiry_date && d.expiry_date < todayStr).length,
+      soon: scope.filter((d) => d.expiry_date && d.expiry_date >= todayStr && d.expiry_date <= soonStr).length,
+    };
+  }, [docs, activeCat, todayStr, soonStr]);
+
+  const catName = (slug: string) => {
+    const c = categories.find((x) => x.slug === slug);
+    return c ? (lang === "bn" ? c.name_bn : c.name_en) : slug;
+  };
+
+  const exportCSV = () => {
+    const rows = [
+      ["#", lang === "bn" ? "ক্যাটাগরি" : "Category", lang === "bn" ? "শিরোনাম" : "Title", lang === "bn" ? "ফাইল" : "File", lang === "bn" ? "মেয়াদ শেষ" : "Expiry", lang === "bn" ? "আপলোডকারী" : "Uploaded By", lang === "bn" ? "তারিখ" : "Date", lang === "bn" ? "বিবরণ" : "Description"],
+      ...filtered.map((d, i) => [i + 1, catName(d.category), d.title, d.file_name || "", d.expiry_date || "", d.uploaded_by || "", d.created_at.slice(0, 10), (d.description || "").replace(/\n/g, " ")]),
+    ];
+    const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `documents_${todayStr}.csv`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
+
   const currentCat = categories.find((c) => c.slug === activeCat);
   const lbl = (c: Category) => (lang === "bn" ? c.name_bn : c.name_en);
 
