@@ -163,9 +163,21 @@ function PendingWorksPage() {
   });
 
   const filtered = useMemo(() => {
+    const priorityRank: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
     return rows
-      .filter((r) => r.category === activeCat)
+      .filter((r) => activeCat === ALL || r.category === activeCat)
       .filter((r) => statusFilter === "all" || r.status === statusFilter)
+      .filter((r) => priorityFilter === "all" || r.priority === priorityFilter)
+      .filter((r) => {
+        if (dueFilter === "all") return true;
+        if (dueFilter === "none") return !r.due_date;
+        if (!r.due_date) return false;
+        const d = daysDiff(r.due_date);
+        if (dueFilter === "overdue") return d < 0 && r.status !== "completed";
+        if (dueFilter === "today") return d === 0;
+        if (dueFilter === "week") return d >= 0 && d <= 7;
+        return true;
+      })
       .filter((r) => {
         if (!search) return true;
         const q = search.toLowerCase();
@@ -173,21 +185,43 @@ function PendingWorksPage() {
           r.title.toLowerCase().includes(q) ||
           (r.customer_name || "").toLowerCase().includes(q) ||
           (r.account_number || "").toLowerCase().includes(q) ||
-          (r.mobile || "").toLowerCase().includes(q)
+          (r.mobile || "").toLowerCase().includes(q) ||
+          (r.description || "").toLowerCase().includes(q) ||
+          (r.assigned_to || "").toLowerCase().includes(q)
         );
+      })
+      .sort((a, b) => {
+        if (sortBy === "entry_asc") return a.entry_date.localeCompare(b.entry_date);
+        if (sortBy === "due_asc") return (a.due_date || "9999").localeCompare(b.due_date || "9999");
+        if (sortBy === "priority") return (priorityRank[a.priority] ?? 9) - (priorityRank[b.priority] ?? 9);
+        return b.entry_date.localeCompare(a.entry_date);
       });
-  }, [rows, activeCat, statusFilter, search]);
+  }, [rows, activeCat, statusFilter, priorityFilter, dueFilter, search, sortBy, todayStr]);
 
   const counts = useMemo(() => {
-    const map: Record<string, { p: number; c: number }> = {};
-    for (const c of categories) map[c.slug] = { p: 0, c: 0 };
+    const map: Record<string, { p: number; c: number; total: number }> = {};
+    for (const c of categories) map[c.slug] = { p: 0, c: 0, total: 0 };
     for (const r of rows) {
-      if (!map[r.category]) map[r.category] = { p: 0, c: 0 };
+      if (!map[r.category]) map[r.category] = { p: 0, c: 0, total: 0 };
+      map[r.category].total++;
       if (r.status === "completed") map[r.category].c++;
       else map[r.category].p++;
     }
     return map;
   }, [rows, categories]);
+
+  const stats = useMemo(() => {
+    const scope = activeCat === ALL ? rows : rows.filter((r) => r.category === activeCat);
+    const total = scope.length;
+    const done = scope.filter((r) => r.status === "completed").length;
+    const inProg = scope.filter((r) => r.status === "in_progress").length;
+    const pend = scope.filter((r) => r.status === "pending").length;
+    const overdue = scope.filter((r) => r.due_date && r.status !== "completed" && daysDiff(r.due_date) < 0).length;
+    const todayDue = scope.filter((r) => r.due_date && r.status !== "completed" && daysDiff(r.due_date) === 0).length;
+    const urgent = scope.filter((r) => r.priority === "urgent" && r.status !== "completed").length;
+    const progress = total ? Math.round((done / total) * 100) : 0;
+    return { total, done, inProg, pend, overdue, todayDue, urgent, progress };
+  }, [rows, activeCat, todayStr]);
 
   const startEdit = (r: Row) => {
     setForm({
