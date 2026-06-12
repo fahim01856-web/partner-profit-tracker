@@ -57,6 +57,20 @@ function slugify(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || `cat_${Date.now()}`;
 }
 
+function exportCSV(rows: Row[], filename: string) {
+  const headers = ["Title", "Customer", "Account", "Mobile", "Assigned", "Priority", "Status", "Entry Date", "Due Date", "Description", "Remarks"];
+  const esc = (v: any) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+  const lines = [headers.join(",")];
+  for (const r of rows) {
+    lines.push([r.title, r.customer_name, r.account_number, r.mobile, r.assigned_to, r.priority, r.status, r.entry_date, r.due_date, r.description, r.remarks].map(esc).join(","));
+  }
+  const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `${filename}-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+  URL.revokeObjectURL(url);
+}
+
 function PendingWorksPage() {
   const { t, lang } = useI18n();
   const qc = useQueryClient();
