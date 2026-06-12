@@ -28,7 +28,7 @@ function slugify(s: string) {
 function DocumentsPage() {
   const { t, lang } = useI18n();
   const qc = useQueryClient();
-  const [activeCat, setActiveCat] = useState<string>("");
+  const [activeCat, setActiveCat] = useState<string>("__all__");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: "", description: "", expiry_date: "", uploaded_by: "" });
