@@ -36,6 +36,9 @@ function DocumentsPage() {
   const [uploading, setUploading] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Partial<Category> | null>(null);
+  const [search, setSearch] = useState("");
+  const [expiryFilter, setExpiryFilter] = useState<"all" | "expired" | "soon" | "valid" | "none">("all");
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "title" | "expiry">("newest");
 
   const { data: categories = [] } = useQuery({
     queryKey: ["document_categories"],
