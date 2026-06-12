@@ -106,13 +106,17 @@ export function AppLayout() {
       {open && <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setOpen(false)} />}
 
       <main className="flex-1 min-w-0">
-        <header className="lg:hidden sticky top-0 z-20 bg-card border-b px-4 py-3 flex items-center justify-between no-print">
-          <button onClick={() => setOpen(true)} className="p-1.5 rounded-md hover:bg-muted">
+        <header className="lg:hidden sticky top-0 z-20 bg-card border-b px-4 py-3 flex items-center justify-between gap-2 no-print">
+          <button onClick={() => setOpen(true)} className="p-1.5 rounded-md hover:bg-muted shrink-0">
             {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
-          <div className="font-semibold text-sm">{t("appTitle")}</div>
+          <LiveClock compact className="flex-1 justify-center min-w-0" />
           <LangToggle />
         </header>
+        <div className="hidden lg:flex sticky top-0 z-20 bg-background/80 backdrop-blur border-b px-6 py-3 items-center justify-between no-print">
+          <div className="font-semibold text-sm text-muted-foreground">{t("appTitle")}</div>
+          <LiveClock />
+        </div>
         <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
           <Outlet />
         </div>
