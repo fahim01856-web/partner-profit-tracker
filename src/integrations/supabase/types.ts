@@ -587,33 +587,42 @@ export type Database = {
       }
       loan_persons: {
         Row: {
+          account_number: string | null
           address: string | null
           created_at: string
           id: string
           name: string
+          nid_url: string | null
           notes: string | null
           opening_balance: number
           phone: string | null
+          photo_url: string | null
           updated_at: string
         }
         Insert: {
+          account_number?: string | null
           address?: string | null
           created_at?: string
           id?: string
           name: string
+          nid_url?: string | null
           notes?: string | null
           opening_balance?: number
           phone?: string | null
+          photo_url?: string | null
           updated_at?: string
         }
         Update: {
+          account_number?: string | null
           address?: string | null
           created_at?: string
           id?: string
           name?: string
+          nid_url?: string | null
           notes?: string | null
           opening_balance?: number
           phone?: string | null
+          photo_url?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -626,6 +635,8 @@ export type Database = {
           description: string | null
           id: string
           person_id: string
+          receipt_url: string | null
+          time: string | null
           type: string
           updated_at: string
         }
@@ -636,6 +647,8 @@ export type Database = {
           description?: string | null
           id?: string
           person_id: string
+          receipt_url?: string | null
+          time?: string | null
           type: string
           updated_at?: string
         }
@@ -646,6 +659,8 @@ export type Database = {
           description?: string | null
           id?: string
           person_id?: string
+          receipt_url?: string | null
+          time?: string | null
           type?: string
           updated_at?: string
         }
