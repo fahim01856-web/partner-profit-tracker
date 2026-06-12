@@ -356,7 +356,7 @@ function DocumentsPage() {
                   </div>
                 </TableCell>
               </TableRow>
-            ))}
+            );})}
           </TableBody>
         </Table>
       </Card>
