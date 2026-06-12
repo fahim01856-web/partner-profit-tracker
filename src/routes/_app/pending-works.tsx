@@ -76,10 +76,18 @@ function PendingWorksPage() {
   const [activeCat, setActiveCat] = useState<string>("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [priorityFilter, setPriorityFilter] = useState<string>("all");
+  const [dueFilter, setDueFilter] = useState<string>("all"); // all|overdue|today|week|none
+  const [sortBy, setSortBy] = useState<string>("entry_desc"); // entry_desc|entry_asc|due_asc|priority
   const [form, setForm] = useState(empty(""));
   const [showForm, setShowForm] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Partial<Category> | null>(null);
+
+  const ALL = "__all__";
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const weekStr = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+  const daysDiff = (d: string) => Math.ceil((new Date(d).getTime() - new Date(todayStr).getTime()) / 86400000);
 
   useEffect(() => {
     if (!activeCat && categories.length > 0) setActiveCat(categories[0].slug);
