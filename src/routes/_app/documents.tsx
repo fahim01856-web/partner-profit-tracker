@@ -332,14 +332,20 @@ function DocumentsPage() {
           <div className="font-semibold mt-2">{currentCat ? lbl(currentCat) : ""}</div>
         </div>
         <Table>
-          <TableHeader><TableRow><TableHead>#</TableHead><TableHead>{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead><TableHead>{lang === "bn" ? "ফাইল" : "File"}</TableHead><TableHead>{lang === "bn" ? "মেয়াদ শেষ" : "Expiry"}</TableHead><TableHead>{lang === "bn" ? "আপলোডকারী" : "Uploaded By"}</TableHead><TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead><TableHead className="no-print"></TableHead></TableRow></TableHeader>
+          <TableHeader><TableRow><TableHead>#</TableHead>{activeCat === "__all__" && <TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>}<TableHead>{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead><TableHead>{lang === "bn" ? "ফাইল" : "File"}</TableHead><TableHead>{lang === "bn" ? "মেয়াদ শেষ" : "Expiry"}</TableHead><TableHead>{lang === "bn" ? "আপলোডকারী" : "Uploaded By"}</TableHead><TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead><TableHead className="no-print"></TableHead></TableRow></TableHeader>
           <TableBody>
-            {filtered.length === 0 && <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো ডকুমেন্ট নেই" : "No documents"}</TableCell></TableRow>}
-            {filtered.map((d, i) => (
-              <TableRow key={d.id}>
-                <TableCell>{i + 1}</TableCell><TableCell className="font-medium">{d.title}</TableCell>
+            {filtered.length === 0 && <TableRow><TableCell colSpan={activeCat === "__all__" ? 8 : 7} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো ডকুমেন্ট নেই" : "No documents"}</TableCell></TableRow>}
+            {filtered.map((d, i) => {
+              const isExpired = !!d.expiry_date && d.expiry_date < todayStr;
+              const isSoon = !!d.expiry_date && !isExpired && d.expiry_date <= soonStr;
+              return (
+              <TableRow key={d.id} className={isExpired ? "bg-destructive/5" : isSoon ? "bg-amber-500/5" : ""}>
+                <TableCell>{i + 1}</TableCell>
+                {activeCat === "__all__" && <TableCell><Badge variant="outline" className="text-xs">{catName(d.category)}</Badge></TableCell>}
+                <TableCell className="font-medium">{d.title}{d.description && <div className="text-xs text-muted-foreground line-clamp-1">{d.description}</div>}</TableCell>
                 <TableCell>{d.file_url ? <button type="button" onClick={() => handleView(d)} className="text-primary inline-flex items-center gap-1 hover:underline">{d.file_name || "View"} <ExternalLink className="w-3 h-3" /></button> : "-"}</TableCell>
-                <TableCell>{d.expiry_date || "-"}</TableCell><TableCell>{d.uploaded_by || "-"}</TableCell><TableCell>{d.created_at.slice(0, 10)}</TableCell>
+                <TableCell>{d.expiry_date ? <span className={isExpired ? "text-destructive font-medium" : isSoon ? "text-amber-600 font-medium" : ""}>{d.expiry_date}{isExpired && <Badge variant="destructive" className="ml-1 text-[10px]">{lang === "bn" ? "শেষ" : "Expired"}</Badge>}{isSoon && <Badge className="ml-1 text-[10px] bg-amber-500 hover:bg-amber-500">{lang === "bn" ? "শীঘ্রই" : "Soon"}</Badge>}</span> : "-"}</TableCell>
+                <TableCell>{d.uploaded_by || "-"}</TableCell><TableCell>{d.created_at.slice(0, 10)}</TableCell>
                 <TableCell className="no-print">
                   <div className="flex items-center gap-1">
                     {d.file_url && (
