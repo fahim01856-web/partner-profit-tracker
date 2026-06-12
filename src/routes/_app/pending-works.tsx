@@ -309,10 +309,48 @@ function PendingWorksPage() {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={() => setManageOpen(true)}><Settings2 className="w-4 h-4 mr-1" />{lang === "bn" ? "ক্যাটাগরি" : "Categories"}</Button>
+          <Button variant="outline" onClick={() => exportCSV(filtered, `pending-${activeCat}`)}><Download className="w-4 h-4 mr-1" />CSV</Button>
           <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
-          <Button onClick={() => { setForm(empty(activeCat)); setShowForm(true); }}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "নতুন পেন্ডিং" : "New Pending"}</Button>
+          <Button onClick={() => { setForm(empty(activeCat === ALL ? (categories[0]?.slug || "") : activeCat)); setShowForm(true); }}><Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "নতুন পেন্ডিং" : "New Pending"}</Button>
         </div>
       </div>
+
+      {/* Smart Stats Dashboard */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 no-print">
+        <Card className="p-3 bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20">
+          <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">{lang === "bn" ? "মোট" : "Total"}</span><ListTodo className="w-4 h-4 text-primary" /></div>
+          <div className="text-2xl font-bold mt-1">{stats.total}</div>
+        </Card>
+        <Card className="p-3">
+          <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">{lang === "bn" ? "পেন্ডিং" : "Pending"}</span><Clock className="w-4 h-4 text-muted-foreground" /></div>
+          <div className="text-2xl font-bold mt-1">{stats.pend}</div>
+        </Card>
+        <Card className="p-3 bg-amber-500/5 border-amber-500/20">
+          <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">{lang === "bn" ? "চলমান" : "In Progress"}</span><TrendingUp className="w-4 h-4 text-amber-600" /></div>
+          <div className="text-2xl font-bold mt-1 text-amber-600">{stats.inProg}</div>
+        </Card>
+        <Card className="p-3 bg-green-500/5 border-green-500/20">
+          <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">{lang === "bn" ? "সম্পন্ন" : "Done"}</span><CheckCircle2 className="w-4 h-4 text-green-600" /></div>
+          <div className="text-2xl font-bold mt-1 text-green-600">{stats.done}</div>
+        </Card>
+        <Card className="p-3 bg-destructive/5 border-destructive/20">
+          <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">{lang === "bn" ? "মেয়াদোত্তীর্ণ" : "Overdue"}</span><AlertTriangle className="w-4 h-4 text-destructive" /></div>
+          <div className="text-2xl font-bold mt-1 text-destructive">{stats.overdue}</div>
+        </Card>
+        <Card className="p-3 bg-blue-500/5 border-blue-500/20">
+          <div className="flex items-center justify-between"><span className="text-xs text-muted-foreground">{lang === "bn" ? "আজকের" : "Due Today"}</span><CalendarClock className="w-4 h-4 text-blue-600" /></div>
+          <div className="text-2xl font-bold mt-1 text-blue-600">{stats.todayDue}</div>
+        </Card>
+      </div>
+
+      {/* Progress bar */}
+      <Card className="p-3 no-print">
+        <div className="flex items-center justify-between text-sm mb-2">
+          <span className="font-medium">{lang === "bn" ? "অগ্রগতি" : "Completion Progress"}</span>
+          <span className="text-muted-foreground">{stats.done}/{stats.total} ({stats.progress}%)</span>
+        </div>
+        <Progress value={stats.progress} className="h-2" />
+      </Card>
 
       <Tabs value={activeCat} onValueChange={(v) => { setActiveCat(v); setForm(empty(v)); }} className="no-print">
         <TabsList className="flex flex-wrap h-auto justify-start">
