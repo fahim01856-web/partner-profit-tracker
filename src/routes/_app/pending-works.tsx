@@ -411,10 +411,13 @@ function PendingWorksPage() {
         </Card>
       )}
 
-      <div className="flex gap-2 flex-wrap no-print">
-        <Input placeholder={lang === "bn" ? "নাম/অ্যাকাউন্ট/মোবাইল খুঁজুন" : "Search name/account/mobile"} value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
+      <div className="flex gap-2 flex-wrap no-print items-center">
+        <div className="relative flex-1 max-w-xs min-w-[200px]">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder={lang === "bn" ? "নাম/অ্যাকাউন্ট/মোবাইল/বিবরণ" : "Search title/customer/account/mobile/desc"} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-8" />
+        </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="max-w-[180px]"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">{lang === "bn" ? "সকল অবস্থা" : "All Status"}</SelectItem>
             <SelectItem value="pending">{lang === "bn" ? "পেন্ডিং" : "Pending"}</SelectItem>
@@ -422,13 +425,49 @@ function PendingWorksPage() {
             <SelectItem value="completed">{lang === "bn" ? "সম্পন্ন" : "Completed"}</SelectItem>
           </SelectContent>
         </Select>
+        <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+          <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{lang === "bn" ? "সকল অগ্রাধিকার" : "All Priority"}</SelectItem>
+            <SelectItem value="urgent">{lang === "bn" ? "জরুরি" : "Urgent"}</SelectItem>
+            <SelectItem value="high">{lang === "bn" ? "উচ্চ" : "High"}</SelectItem>
+            <SelectItem value="normal">{lang === "bn" ? "সাধারণ" : "Normal"}</SelectItem>
+            <SelectItem value="low">{lang === "bn" ? "নিম্ন" : "Low"}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={dueFilter} onValueChange={setDueFilter}>
+          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{lang === "bn" ? "সকল ডেডলাইন" : "All Due"}</SelectItem>
+            <SelectItem value="overdue">{lang === "bn" ? "মেয়াদোত্তীর্ণ" : "Overdue"}</SelectItem>
+            <SelectItem value="today">{lang === "bn" ? "আজকের" : "Due Today"}</SelectItem>
+            <SelectItem value="week">{lang === "bn" ? "৭ দিনের মধ্যে" : "Within 7 days"}</SelectItem>
+            <SelectItem value="none">{lang === "bn" ? "ডেডলাইন নেই" : "No deadline"}</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[150px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="entry_desc">{lang === "bn" ? "নতুন আগে" : "Newest first"}</SelectItem>
+            <SelectItem value="entry_asc">{lang === "bn" ? "পুরোনো আগে" : "Oldest first"}</SelectItem>
+            <SelectItem value="due_asc">{lang === "bn" ? "ডেডলাইন কাছাকাছি" : "Due soonest"}</SelectItem>
+            <SelectItem value="priority">{lang === "bn" ? "অগ্রাধিকার" : "Priority"}</SelectItem>
+          </SelectContent>
+        </Select>
+        {(search || statusFilter !== "all" || priorityFilter !== "all" || dueFilter !== "all") && (
+          <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setStatusFilter("all"); setPriorityFilter("all"); setDueFilter("all"); }}>
+            <X className="w-3 h-3 mr-1" />{lang === "bn" ? "ক্লিয়ার" : "Clear"}
+          </Button>
+        )}
+        <div className="ml-auto text-xs text-muted-foreground flex items-center gap-1"><Filter className="w-3 h-3" />{filtered.length} {lang === "bn" ? "টি" : "results"}</div>
       </div>
 
       <Card className="overflow-hidden print-area">
         <div className="hidden print:block p-4 text-center border-b">
           <div className="font-bold text-lg">{t("bankName")}</div>
           <div className="text-sm">{t("outlet")} — {t("locationFull")}</div>
-          <div className="font-semibold mt-2">{currentCat ? lbl(currentCat) : ""}</div>
+          <div className="font-semibold mt-2">{activeCat === ALL ? (lang === "bn" ? "সব ক্যাটাগরি" : "All Categories") : (currentCat ? lbl(currentCat) : "")}</div>
+          <div className="text-xs mt-1">{new Date().toLocaleString()}</div>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -436,41 +475,76 @@ function PendingWorksPage() {
               <TableRow>
                 <TableHead className="w-12">#</TableHead>
                 <TableHead>{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead>
+                {activeCat === ALL && <TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>}
                 <TableHead>{lang === "bn" ? "কাস্টমার" : "Customer"}</TableHead>
                 <TableHead>{lang === "bn" ? "অ্যাকাউন্ট" : "Account"}</TableHead>
                 <TableHead>{lang === "bn" ? "মোবাইল" : "Mobile"}</TableHead>
-                <TableHead>{lang === "bn" ? "তারিখ" : "Date"}</TableHead>
+                <TableHead>{lang === "bn" ? "এন্ট্রি" : "Entry"}</TableHead>
+                <TableHead>{lang === "bn" ? "ডেডলাইন" : "Due"}</TableHead>
                 <TableHead>{lang === "bn" ? "অগ্রাধিকার" : "Priority"}</TableHead>
                 <TableHead>{lang === "bn" ? "অবস্থা" : "Status"}</TableHead>
                 <TableHead className="no-print text-right">{lang === "bn" ? "অ্যাকশন" : "Action"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={9} className="text-center py-6">{t("loading")}</TableCell></TableRow>}
-              {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={9} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো এন্ট্রি নেই" : "No entries"}</TableCell></TableRow>}
-              {filtered.map((r, i) => (
-                <TableRow key={r.id}>
+              {isLoading && <TableRow><TableCell colSpan={11} className="text-center py-6">{t("loading")}</TableCell></TableRow>}
+              {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={11} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো এন্ট্রি নেই" : "No entries"}</TableCell></TableRow>}
+              {filtered.map((r, i) => {
+                const d = r.due_date ? daysDiff(r.due_date) : null;
+                const isOverdue = d !== null && d < 0 && r.status !== "completed";
+                const isToday = d === 0 && r.status !== "completed";
+                const rowClass = isOverdue ? "bg-destructive/5" : isToday ? "bg-amber-500/5" : "";
+                const catLbl = categories.find((c) => c.slug === r.category);
+                return (
+                <TableRow key={r.id} className={rowClass}>
                   <TableCell>{i + 1}</TableCell>
-                  <TableCell className="font-medium">{r.title}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>{r.title}</div>
+                    {r.description && <div className="text-xs text-muted-foreground truncate max-w-[200px]">{r.description}</div>}
+                  </TableCell>
+                  {activeCat === ALL && <TableCell><Badge variant="outline" className="text-[10px]">{catLbl ? lbl(catLbl) : r.category}</Badge></TableCell>}
                   <TableCell>{r.customer_name || "-"}</TableCell>
-                  <TableCell>{r.account_number || "-"}</TableCell>
-                  <TableCell>{r.mobile || "-"}</TableCell>
-                  <TableCell>{r.entry_date}</TableCell>
+                  <TableCell className="font-mono text-xs">{r.account_number || "-"}</TableCell>
+                  <TableCell>
+                    {r.mobile ? (
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs">{r.mobile}</span>
+                        <Button size="icon" variant="ghost" className="h-6 w-6 no-print" onClick={() => { navigator.clipboard.writeText(r.mobile!); toast.success(lang === "bn" ? "কপি হয়েছে" : "Copied"); }}><Copy className="w-3 h-3" /></Button>
+                      </div>
+                    ) : "-"}
+                  </TableCell>
+                  <TableCell className="text-xs">{r.entry_date}</TableCell>
+                  <TableCell className="text-xs">
+                    {r.due_date ? (
+                      <div>
+                        <div>{r.due_date}</div>
+                        {r.status !== "completed" && d !== null && (
+                          <Badge variant={isOverdue ? "destructive" : isToday ? "default" : "secondary"} className="text-[10px] h-4 px-1">
+                            {isOverdue ? `${Math.abs(d)}${lang === "bn" ? " দিন বিলম্ব" : "d late"}` : isToday ? (lang === "bn" ? "আজ" : "Today") : `${d}${lang === "bn" ? " দিন" : "d"}`}
+                          </Badge>
+                        )}
+                      </div>
+                    ) : "-"}
+                  </TableCell>
                   <TableCell><Badge variant={r.priority === "urgent" ? "destructive" : r.priority === "high" ? "default" : "secondary"}>{r.priority}</Badge></TableCell>
                   <TableCell>
                     {r.status === "completed" ? <Badge className="bg-green-600"><CheckCircle2 className="w-3 h-3 mr-1" />{lang === "bn" ? "সম্পন্ন" : "Done"}</Badge>
                       : r.status === "in_progress" ? <Badge className="bg-amber-500"><Clock className="w-3 h-3 mr-1" />{lang === "bn" ? "চলমান" : "Progress"}</Badge>
                       : <Badge variant="outline"><Clock className="w-3 h-3 mr-1" />{lang === "bn" ? "পেন্ডিং" : "Pending"}</Badge>}
                   </TableCell>
-                  <TableCell className="no-print text-right">
-                    <Button size="icon" variant="ghost" onClick={() => toggleStatus.mutate(r)} title={r.status === "completed" ? "Mark pending" : "Mark complete"}>
+                  <TableCell className="no-print text-right whitespace-nowrap">
+                    {r.mobile && <>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" asChild title="Call"><a href={`tel:${r.mobile}`}><Phone className="w-3.5 h-3.5 text-blue-600" /></a></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" asChild title="WhatsApp"><a href={`https://wa.me/${r.mobile.replace(/\D/g, "")}?text=${encodeURIComponent(r.title)}`} target="_blank" rel="noreferrer"><MessageCircle className="w-3.5 h-3.5 text-green-600" /></a></Button>
+                    </>}
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => toggleStatus.mutate(r)} title={r.status === "completed" ? "Mark pending" : "Mark complete"}>
                       <CheckCircle2 className={`w-4 h-4 ${r.status === "completed" ? "text-green-600" : ""}`} />
                     </Button>
-                    <Button size="icon" variant="ghost" onClick={() => startEdit(r)}><Pencil className="w-4 h-4" /></Button>
-                    <Button size="icon" variant="ghost" onClick={() => { if (confirm(lang === "bn" ? "মুছবেন?" : "Delete?")) del.mutate(r.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => startEdit(r)}><Pencil className="w-4 h-4" /></Button>
+                    <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => { if (confirm(lang === "bn" ? "মুছবেন?" : "Delete?")) del.mutate(r.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                   </TableCell>
                 </TableRow>
-              ))}
+              );})}
             </TableBody>
           </Table>
         </div>
