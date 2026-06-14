@@ -33,6 +33,7 @@ const dict = {
   nav_signature: { bn: "সিগনেচার কার্ড", en: "Signature Cards" },
   nav_inventory: { bn: "ইনভেন্টরি", en: "Inventory" },
   nav_loan_ledger: { bn: "ঋণ খতিয়ান", en: "Loan Ledger" },
+  nav_system_monitor: { bn: "স্টোরেজ ও সিস্টেম মনিটর", en: "Storage & System Monitor" },
 
 
 

@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppTargetsRouteImport } from './routes/_app/targets'
+import { Route as AppSystemMonitorRouteImport } from './routes/_app/system-monitor'
 import { Route as AppStaffRouteImport } from './routes/_app/staff'
 import { Route as AppSmsSendingRouteImport } from './routes/_app/sms-sending'
 import { Route as AppSignatureCardsRouteImport } from './routes/_app/signature-cards'
@@ -50,6 +51,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppTargetsRoute = AppTargetsRouteImport.update({
   id: '/targets',
   path: '/targets',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppSystemMonitorRoute = AppSystemMonitorRouteImport.update({
+  id: '/system-monitor',
+  path: '/system-monitor',
   getParentRoute: () => AppRoute,
 } as any)
 const AppStaffRoute = AppStaffRouteImport.update({
@@ -170,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/signature-cards': typeof AppSignatureCardsRoute
   '/sms-sending': typeof AppSmsSendingRoute
   '/staff': typeof AppStaffRoute
+  '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
 }
 export interface FileRoutesByTo {
@@ -194,6 +201,7 @@ export interface FileRoutesByTo {
   '/signature-cards': typeof AppSignatureCardsRoute
   '/sms-sending': typeof AppSmsSendingRoute
   '/staff': typeof AppStaffRoute
+  '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
 }
 export interface FileRoutesById {
@@ -220,6 +228,7 @@ export interface FileRoutesById {
   '/_app/signature-cards': typeof AppSignatureCardsRoute
   '/_app/sms-sending': typeof AppSmsSendingRoute
   '/_app/staff': typeof AppStaffRoute
+  '/_app/system-monitor': typeof AppSystemMonitorRoute
   '/_app/targets': typeof AppTargetsRoute
 }
 export interface FileRouteTypes {
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/signature-cards'
     | '/sms-sending'
     | '/staff'
+    | '/system-monitor'
     | '/targets'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -270,6 +280,7 @@ export interface FileRouteTypes {
     | '/signature-cards'
     | '/sms-sending'
     | '/staff'
+    | '/system-monitor'
     | '/targets'
   id:
     | '__root__'
@@ -295,6 +306,7 @@ export interface FileRouteTypes {
     | '/_app/signature-cards'
     | '/_app/sms-sending'
     | '/_app/staff'
+    | '/_app/system-monitor'
     | '/_app/targets'
   fileRoutesById: FileRoutesById
 }
@@ -332,6 +344,13 @@ declare module '@tanstack/react-router' {
       path: '/targets'
       fullPath: '/targets'
       preLoaderRoute: typeof AppTargetsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/system-monitor': {
+      id: '/_app/system-monitor'
+      path: '/system-monitor'
+      fullPath: '/system-monitor'
+      preLoaderRoute: typeof AppSystemMonitorRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/staff': {
@@ -490,6 +509,7 @@ interface AppRouteChildren {
   AppSignatureCardsRoute: typeof AppSignatureCardsRoute
   AppSmsSendingRoute: typeof AppSmsSendingRoute
   AppStaffRoute: typeof AppStaffRoute
+  AppSystemMonitorRoute: typeof AppSystemMonitorRoute
   AppTargetsRoute: typeof AppTargetsRoute
 }
 
@@ -513,6 +533,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSignatureCardsRoute: AppSignatureCardsRoute,
   AppSmsSendingRoute: AppSmsSendingRoute,
   AppStaffRoute: AppStaffRoute,
+  AppSystemMonitorRoute: AppSystemMonitorRoute,
   AppTargetsRoute: AppTargetsRoute,
 }
 
@@ -526,13 +547,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
