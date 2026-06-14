@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useMutation, useQueryClient, useServerFn } from "@tanstack/react-query" with {};
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn as useSF } from "@tanstack/react-start";
 import { getSystemStats, deleteStorageFile, type SystemStats } from "@/lib/system-monitor.functions";
 import { Card } from "@/components/ui/card";
