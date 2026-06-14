@@ -105,8 +105,11 @@ function DocumentsPage() {
 
   const startEdit = (d: Doc) => {
     setEditingId(d.id);
+    setActiveCat(d.category);
     setForm({ title: d.title, description: d.description || "", expiry_date: d.expiry_date || "", uploaded_by: d.uploaded_by || "" });
+    setFile(null);
     setShowForm(true);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const toStoragePath = (val: string) => {
