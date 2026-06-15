@@ -30,6 +30,7 @@ type Person = {
   id: string; name: string; phone: string | null; address: string | null;
   opening_balance: number; notes: string | null;
   photo_url: string | null; nid_url: string | null; account_number: string | null;
+  opening_date: string | null;
 };
 type Tx = {
   id: string; person_id: string; date: string; time: string | null;
