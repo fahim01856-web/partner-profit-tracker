@@ -134,8 +134,10 @@ function LoanLedgerPage() {
 
   const deletePerson = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from("loan_persons").delete().eq("id", id);
+      const { error } = await supabase.from("loan_transactions").delete().eq("person_id", id);
       if (error) throw error;
+      const { error: e2 } = await supabase.from("loan_persons").delete().eq("id", id);
+      if (e2) throw e2;
     },
     onSuccess: () => {
       toast.success("ডিলিট হয়েছে");
@@ -143,100 +145,103 @@ function LoanLedgerPage() {
       qc.invalidateQueries({ queryKey: ["loan_persons"] });
       qc.invalidateQueries({ queryKey: ["loan_transactions"] });
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
-  if (selectedId) {
-    const person = persons.find(p => p.id === selectedId);
-    if (!person) { setSelectedId(null); return null; }
-    return <PersonDetail
-      person={person}
-      balance={stats.bal.get(person.id) ?? 0}
-      txs={allTx.filter(t => t.person_id === person.id)}
-      onBack={() => setSelectedId(null)}
-      onEdit={() => { setEditingPerson(person); setPersonDialogOpen(true); }}
-      onDelete={() => setDelConfirmId(person.id)}
-    />;
-  }
+  const selectedPerson = selectedId ? persons.find(p => p.id === selectedId) : null;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">ঋণ খতিয়ান (Loan Ledger)</h1>
-          <p className="text-sm text-muted-foreground">প্রতিটি ব্যক্তির ব্যাংক-স্টাইল হিসাব</p>
-        </div>
-        <Dialog open={personDialogOpen} onOpenChange={(o) => { setPersonDialogOpen(o); if (!o) setEditingPerson(null); }}>
-          <DialogTrigger asChild>
-            <Button onClick={() => setEditingPerson(null)} size="lg" className="shadow-md">
+      {selectedPerson ? (
+        <PersonDetail
+          person={selectedPerson}
+          balance={stats.bal.get(selectedPerson.id) ?? 0}
+          txs={allTx.filter(t => t.person_id === selectedPerson.id)}
+          onBack={() => setSelectedId(null)}
+          onEdit={() => { setEditingPerson(selectedPerson); setPersonDialogOpen(true); }}
+          onDelete={() => setDelConfirmId(selectedPerson.id)}
+        />
+      ) : (
+        <>
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">ঋণ খতিয়ান (Loan Ledger)</h1>
+              <p className="text-sm text-muted-foreground">প্রতিটি ব্যক্তির ব্যাংক-স্টাইল হিসাব</p>
+            </div>
+            <Button onClick={() => { setEditingPerson(null); setPersonDialogOpen(true); }} size="lg" className="shadow-md">
               <Plus className="w-4 h-4 mr-2" /> নতুন একাউন্ট খুলুন
             </Button>
-          </DialogTrigger>
-          <PersonDialog
-            initial={editingPerson}
-            onSave={(p) => savePerson.mutate(p)}
-            saving={savePerson.isPending}
-          />
-        </Dialog>
-      </div>
+          </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard icon={<Users className="w-5 h-5" />} label="মোট একাউন্ট" value={fmt.num(persons.length)} />
-        <StatCard icon={<TrendingUp className="w-5 h-5 text-success" />} label="মোট পাওনা" value={fmt.bdt(totalReceivable)} accent="success" />
-        <StatCard icon={<TrendingDown className="w-5 h-5 text-destructive" />} label="মোট দেনা" value={fmt.bdt(totalPayable)} accent="destructive" />
-        <StatCard icon={<Wallet className="w-5 h-5" />} label="নেট ব্যালেন্স" value={fmt.bdt(totalReceivable - totalPayable)} />
-      </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            <StatCard icon={<Users className="w-5 h-5" />} label="মোট একাউন্ট" value={fmt.num(persons.length)} />
+            <StatCard icon={<TrendingUp className="w-5 h-5 text-success" />} label="মোট পাওনা" value={fmt.bdt(totalReceivable)} accent="success" />
+            <StatCard icon={<TrendingDown className="w-5 h-5 text-destructive" />} label="মোট দেনা" value={fmt.bdt(totalPayable)} accent="destructive" />
+            <StatCard icon={<Wallet className="w-5 h-5" />} label="নেট ব্যালেন্স" value={fmt.bdt(totalReceivable - totalPayable)} />
+          </div>
 
-      <Card className="p-4">
-        <div className="relative mb-4">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input className="pl-9 h-11" placeholder="নাম, মোবাইল বা একাউন্ট নম্বর দিয়ে খুঁজুন" value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map(p => {
-            const bal = stats.bal.get(p.id) ?? 0;
-            const count = stats.txCount.get(p.id) ?? 0;
-            const last = stats.lastDate.get(p.id);
-            const risk = riskLevel(bal);
-            return (
-              <button key={p.id} onClick={() => setSelectedId(p.id)}
-                className="text-left rounded-xl border bg-card hover:shadow-lg hover:border-primary/40 transition-all p-4 group">
-                <div className="flex items-start gap-3">
-                  <PersonAvatar person={p} size={56} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="font-semibold truncate">{p.name}</div>
-                      <Badge variant="outline" className={risk.cls}>{risk.icon} {risk.label}</Badge>
-                    </div>
-                    {p.account_number && <div className="text-xs text-muted-foreground font-mono mt-0.5">A/C: {p.account_number}</div>}
-                    {p.phone && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{p.phone}</div>}
-                  </div>
-                </div>
-                <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <div className="text-muted-foreground">বর্তমান ব্যালেন্স</div>
-                    <div className={`font-bold text-base ${bal > 0 ? "text-success" : bal < 0 ? "text-destructive" : ""}`}>
-                      {fmt.bdt(Math.abs(bal))}
-                    </div>
-                    <div className="text-[10px]">{bal > 0 ? "পাওনা" : bal < 0 ? "দেনা" : "সমান"}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-muted-foreground">লেনদেন</div>
-                    <div className="font-semibold">{fmt.num(count)} টি</div>
-                    {last && <div className="text-[10px] text-muted-foreground">শেষ: {fmt.date(last)}</div>}
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-          {filtered.length === 0 && (
-            <div className="col-span-full p-12 text-center text-muted-foreground">
-              <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
-              কোনো একাউন্ট নেই
+          <Card className="p-4">
+            <div className="relative mb-4">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input className="pl-9 h-11" placeholder="নাম, মোবাইল বা একাউন্ট নম্বর দিয়ে খুঁজুন" value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-          )}
-        </div>
-      </Card>
+
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {filtered.map(p => {
+                const bal = stats.bal.get(p.id) ?? 0;
+                const count = stats.txCount.get(p.id) ?? 0;
+                const last = stats.lastDate.get(p.id);
+                const risk = riskLevel(bal);
+                return (
+                  <button key={p.id} onClick={() => setSelectedId(p.id)}
+                    className="text-left rounded-xl border bg-card hover:shadow-lg hover:border-primary/40 transition-all p-4 group">
+                    <div className="flex items-start gap-3">
+                      <PersonAvatar person={p} size={56} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="font-semibold truncate">{p.name}</div>
+                          <Badge variant="outline" className={risk.cls}>{risk.icon} {risk.label}</Badge>
+                        </div>
+                        {p.account_number && <div className="text-xs text-muted-foreground font-mono mt-0.5">A/C: {p.account_number}</div>}
+                        {p.phone && <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5"><Phone className="w-3 h-3" />{p.phone}</div>}
+                        {p.opening_date && <div className="text-[10px] text-muted-foreground mt-0.5">ওপেনিং: {fmt.date(p.opening_date)}</div>}
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <div className="text-muted-foreground">বর্তমান ব্যালেন্স</div>
+                        <div className={`font-bold text-base ${bal > 0 ? "text-success" : bal < 0 ? "text-destructive" : ""}`}>
+                          {fmt.bdt(Math.abs(bal))}
+                        </div>
+                        <div className="text-[10px]">{bal > 0 ? "পাওনা" : bal < 0 ? "দেনা" : "সমান"}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-muted-foreground">লেনদেন</div>
+                        <div className="font-semibold">{fmt.num(count)} টি</div>
+                        {last && <div className="text-[10px] text-muted-foreground">শেষ: {fmt.date(last)}</div>}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+              {filtered.length === 0 && (
+                <div className="col-span-full p-12 text-center text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                  কোনো একাউন্ট নেই
+                </div>
+              )}
+            </div>
+          </Card>
+        </>
+      )}
+
+      <Dialog open={personDialogOpen} onOpenChange={(o) => { setPersonDialogOpen(o); if (!o) setEditingPerson(null); }}>
+        <PersonDialog
+          initial={editingPerson}
+          onSave={(p) => savePerson.mutate(p)}
+          saving={savePerson.isPending}
+        />
+      </Dialog>
 
       <AlertDialog open={!!delConfirmId} onOpenChange={(o) => !o && setDelConfirmId(null)}>
         <AlertDialogContent>
@@ -246,7 +251,7 @@ function LoanLedgerPage() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>বাতিল</AlertDialogCancel>
-            <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => delConfirmId && deletePerson.mutate(delConfirmId)}>ডিলিট</AlertDialogAction>
+            <AlertDialogAction className="bg-destructive text-destructive-foreground" onClick={() => delConfirmId && deletePerson.mutate(delConfirmId)} disabled={deletePerson.isPending}>ডিলিট</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
