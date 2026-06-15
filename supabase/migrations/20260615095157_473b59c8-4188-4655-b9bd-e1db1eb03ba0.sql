@@ -1,0 +1,2 @@
+ALTER TABLE public.loan_transactions DROP CONSTRAINT IF EXISTS loan_transactions_type_check;
+ALTER TABLE public.loan_transactions ADD CONSTRAINT loan_transactions_type_check CHECK (type = ANY (ARRAY['deposit','withdraw','transfer','loan_out','loan_in','payment_in','payment_out','interest','adjustment']));
