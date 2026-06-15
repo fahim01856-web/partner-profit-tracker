@@ -114,6 +114,7 @@ function LoanLedgerPage() {
         opening_balance: Number(p.opening_balance) || 0, notes: p.notes || null,
         photo_url: p.photo_url || null, nid_url: p.nid_url || null,
         account_number: p.account_number || null,
+        opening_date: p.opening_date || new Date().toISOString().slice(0, 10),
       };
       if (p.id) {
         const { error } = await supabase.from("loan_persons").update(payload).eq("id", p.id);
