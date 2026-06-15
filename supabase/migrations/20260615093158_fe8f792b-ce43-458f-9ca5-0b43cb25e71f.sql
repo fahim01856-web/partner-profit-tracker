@@ -1,0 +1,1 @@
+ALTER TABLE public.loan_persons ADD COLUMN IF NOT EXISTS opening_date date NOT NULL DEFAULT CURRENT_DATE;

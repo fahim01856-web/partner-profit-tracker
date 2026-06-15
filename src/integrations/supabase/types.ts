@@ -595,6 +595,7 @@ export type Database = {
           nid_url: string | null
           notes: string | null
           opening_balance: number
+          opening_date: string
           phone: string | null
           photo_url: string | null
           updated_at: string
@@ -608,6 +609,7 @@ export type Database = {
           nid_url?: string | null
           notes?: string | null
           opening_balance?: number
+          opening_date?: string
           phone?: string | null
           photo_url?: string | null
           updated_at?: string
@@ -621,6 +623,7 @@ export type Database = {
           nid_url?: string | null
           notes?: string | null
           opening_balance?: number
+          opening_date?: string
           phone?: string | null
           photo_url?: string | null
           updated_at?: string
