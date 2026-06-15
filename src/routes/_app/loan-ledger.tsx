@@ -357,10 +357,12 @@ function FileUploadField({ value, onChange, prefix, label, accept = "image/*", p
 
 /* ---------------- Person Dialog ---------------- */
 function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onSave: (p: Partial<Person> & { id?: string }) => void; saving: boolean }) {
+  const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     name: initial?.name ?? "", phone: initial?.phone ?? "", address: initial?.address ?? "",
     account_number: initial?.account_number ?? "",
     opening_balance: String(initial?.opening_balance ?? 0),
+    opening_date: initial?.opening_date ?? today,
     notes: initial?.notes ?? "",
     photo_url: initial?.photo_url ?? null as string | null,
     nid_url: initial?.nid_url ?? null as string | null,
@@ -370,9 +372,11 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
       name: initial?.name ?? "", phone: initial?.phone ?? "", address: initial?.address ?? "",
       account_number: initial?.account_number ?? "",
       opening_balance: String(initial?.opening_balance ?? 0),
+      opening_date: initial?.opening_date ?? today,
       notes: initial?.notes ?? "",
       photo_url: initial?.photo_url ?? null, nid_url: initial?.nid_url ?? null,
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initial]);
 
   return (
@@ -389,8 +393,13 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
           <div><Label>একাউন্ট নম্বর</Label><Input value={form.account_number} onChange={(e) => setForm({ ...form, account_number: e.target.value })} /></div>
         </div>
         <div><Label>ঠিকানা</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-        <div><Label>ওপেনিং ব্যালেন্স <span className="text-xs text-muted-foreground">(+ পাওনা, − দেনা)</span></Label>
-          <Input type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm({ ...form, opening_balance: e.target.value })} />
+        <div className="grid grid-cols-2 gap-3">
+          <div><Label>তারিখ (একাউন্ট খোলা)</Label>
+            <Input type="date" value={form.opening_date} onChange={(e) => setForm({ ...form, opening_date: e.target.value })} required />
+          </div>
+          <div><Label>ওপেনিং ব্যালেন্স <span className="text-xs text-muted-foreground">(+ / −)</span></Label>
+            <Input type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm({ ...form, opening_balance: e.target.value })} />
+          </div>
         </div>
         <div><Label>নোট</Label><Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         <DialogFooter>
