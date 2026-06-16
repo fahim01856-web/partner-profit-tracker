@@ -394,6 +394,7 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
     account_number: initial?.account_number ?? "",
     opening_balance: String(initial?.opening_balance ?? 0),
     opening_date: initial?.opening_date ?? today,
+    due_date: initial?.due_date ?? "",
     notes: initial?.notes ?? "",
     photo_url: initial?.photo_url ?? null as string | null,
     nid_url: initial?.nid_url ?? null as string | null,
@@ -404,6 +405,7 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
       account_number: initial?.account_number ?? "",
       opening_balance: String(initial?.opening_balance ?? 0),
       opening_date: initial?.opening_date ?? today,
+      due_date: initial?.due_date ?? "",
       notes: initial?.notes ?? "",
       photo_url: initial?.photo_url ?? null, nid_url: initial?.nid_url ?? null,
     });
@@ -413,7 +415,7 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
   return (
     <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
       <DialogHeader><DialogTitle>{initial ? "একাউন্ট এডিট" : "নতুন একাউন্ট"}</DialogTitle></DialogHeader>
-      <form onSubmit={(e) => { e.preventDefault(); onSave({ id: initial?.id, ...form, opening_balance: Number(form.opening_balance) }); }} className="space-y-3">
+      <form onSubmit={(e) => { e.preventDefault(); onSave({ id: initial?.id, ...form, opening_balance: Number(form.opening_balance), due_date: form.due_date || null }); }} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <FileUploadField value={form.photo_url} onChange={(v) => setForm({ ...form, photo_url: v })} prefix="photos" label="ছবি" />
           <FileUploadField value={form.nid_url} onChange={(v) => setForm({ ...form, nid_url: v })} prefix="nid" label="NID / ডকুমেন্ট" accept="image/*,.pdf" preview={form.nid_url?.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? true : false} />
@@ -428,9 +430,12 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
           <div><Label>তারিখ (একাউন্ট খোলা)</Label>
             <Input type="date" value={form.opening_date} onChange={(e) => setForm({ ...form, opening_date: e.target.value })} required />
           </div>
-          <div><Label>ওপেনিং ব্যালেন্স <span className="text-xs text-muted-foreground">(+ / −)</span></Label>
-            <Input type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm({ ...form, opening_balance: e.target.value })} />
+          <div><Label>পরিশোধের তারিখ</Label>
+            <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
           </div>
+        </div>
+        <div><Label>ওপেনিং ব্যালেন্স <span className="text-xs text-muted-foreground">(+ / −)</span></Label>
+          <Input type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm({ ...form, opening_balance: e.target.value })} />
         </div>
         <div><Label>নোট</Label><Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         <DialogFooter>
