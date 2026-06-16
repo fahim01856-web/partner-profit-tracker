@@ -105,6 +105,7 @@ export type Database = {
           partner_name: string
           type: string
           updated_at: string
+          voucher_no: string | null
         }
         Insert: {
           amount: number
@@ -115,6 +116,7 @@ export type Database = {
           partner_name: string
           type?: string
           updated_at?: string
+          voucher_no?: string | null
         }
         Update: {
           amount?: number
@@ -125,6 +127,7 @@ export type Database = {
           partner_name?: string
           type?: string
           updated_at?: string
+          voucher_no?: string | null
         }
         Relationships: []
       }
