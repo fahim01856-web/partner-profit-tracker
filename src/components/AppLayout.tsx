@@ -39,6 +39,7 @@ export function AppLayout() {
     { to: "/targets", label: t("nav_targets"), icon: Target },
     { to: "/documents", label: t("nav_documents"), icon: FileText },
     { to: "/loan-ledger", label: t("nav_loan_ledger"), icon: BookUser },
+    { to: "/upcoming-payments", label: t("nav_upcoming_payments"), icon: CalendarClock },
     { to: "/system-monitor", label: t("nav_system_monitor"), icon: Activity },
   ] as const;
 
