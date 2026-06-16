@@ -103,8 +103,10 @@ export type Database = {
           description: string | null
           id: string
           partner_name: string
+          payment_method: string
           type: string
           updated_at: string
+          voucher_image_url: string | null
           voucher_no: string | null
         }
         Insert: {
@@ -114,8 +116,10 @@ export type Database = {
           description?: string | null
           id?: string
           partner_name: string
+          payment_method?: string
           type?: string
           updated_at?: string
+          voucher_image_url?: string | null
           voucher_no?: string | null
         }
         Update: {
@@ -125,8 +129,10 @@ export type Database = {
           description?: string | null
           id?: string
           partner_name?: string
+          payment_method?: string
           type?: string
           updated_at?: string
+          voucher_image_url?: string | null
           voucher_no?: string | null
         }
         Relationships: []
