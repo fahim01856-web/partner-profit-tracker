@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppUpcomingPaymentsRouteImport } from './routes/_app/upcoming-payments'
 import { Route as AppTargetsRouteImport } from './routes/_app/targets'
 import { Route as AppSystemMonitorRouteImport } from './routes/_app/system-monitor'
 import { Route as AppStaffRouteImport } from './routes/_app/staff'
@@ -47,6 +48,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AppUpcomingPaymentsRoute = AppUpcomingPaymentsRouteImport.update({
+  id: '/upcoming-payments',
+  path: '/upcoming-payments',
+  getParentRoute: () => AppRoute,
 } as any)
 const AppTargetsRoute = AppTargetsRouteImport.update({
   id: '/targets',
@@ -178,6 +184,7 @@ export interface FileRoutesByFullPath {
   '/staff': typeof AppStaffRoute
   '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
+  '/upcoming-payments': typeof AppUpcomingPaymentsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -203,6 +210,7 @@ export interface FileRoutesByTo {
   '/staff': typeof AppStaffRoute
   '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
+  '/upcoming-payments': typeof AppUpcomingPaymentsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -230,6 +238,7 @@ export interface FileRoutesById {
   '/_app/staff': typeof AppStaffRoute
   '/_app/system-monitor': typeof AppSystemMonitorRoute
   '/_app/targets': typeof AppTargetsRoute
+  '/_app/upcoming-payments': typeof AppUpcomingPaymentsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -257,6 +266,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/system-monitor'
     | '/targets'
+    | '/upcoming-payments'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
     | '/staff'
     | '/system-monitor'
     | '/targets'
+    | '/upcoming-payments'
   id:
     | '__root__'
     | '/'
@@ -308,6 +319,7 @@ export interface FileRouteTypes {
     | '/_app/staff'
     | '/_app/system-monitor'
     | '/_app/targets'
+    | '/_app/upcoming-payments'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -338,6 +350,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_app/upcoming-payments': {
+      id: '/_app/upcoming-payments'
+      path: '/upcoming-payments'
+      fullPath: '/upcoming-payments'
+      preLoaderRoute: typeof AppUpcomingPaymentsRouteImport
+      parentRoute: typeof AppRoute
     }
     '/_app/targets': {
       id: '/_app/targets'
@@ -511,6 +530,7 @@ interface AppRouteChildren {
   AppStaffRoute: typeof AppStaffRoute
   AppSystemMonitorRoute: typeof AppSystemMonitorRoute
   AppTargetsRoute: typeof AppTargetsRoute
+  AppUpcomingPaymentsRoute: typeof AppUpcomingPaymentsRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -535,6 +555,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppStaffRoute: AppStaffRoute,
   AppSystemMonitorRoute: AppSystemMonitorRoute,
   AppTargetsRoute: AppTargetsRoute,
+  AppUpcomingPaymentsRoute: AppUpcomingPaymentsRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
