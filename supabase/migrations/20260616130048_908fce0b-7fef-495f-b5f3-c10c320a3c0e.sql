@@ -1,0 +1,1 @@
+ALTER TABLE public.agent_bank_investments ADD COLUMN IF NOT EXISTS voucher_no text;
