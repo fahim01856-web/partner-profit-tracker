@@ -5,7 +5,7 @@ import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
   ClipboardList, MessageSquare, Target, FileText, Banknote,
-  BookOpen, FileSignature, Boxes, BookUser, Activity
+  BookOpen, FileSignature, Boxes, BookUser, Activity, CalendarClock
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
