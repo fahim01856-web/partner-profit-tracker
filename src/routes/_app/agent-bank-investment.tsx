@@ -8,11 +8,11 @@ import { Label } from "@/components/ui/label";
 import { useFmt } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { genVoucherNo } from "@/lib/format";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Printer, Pencil, X, TrendingUp, TrendingDown, Wallet,
-  ArrowLeft, Users, FileText,
+  ArrowLeft, Users, FileText, Image as ImageIcon, Upload, Banknote, Landmark,
 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/agent-bank-investment")({ component: InvestmentPage });
@@ -20,6 +20,11 @@ export const Route = createFileRoute("/_app/agent-bank-investment")({ component:
 const TYPES = [
   { value: "investment", bn: "বিনিয়োগ (জমা)", en: "Investment (In)" },
   { value: "withdrawal", bn: "উত্তোলন", en: "Withdrawal" },
+] as const;
+
+const PAY_METHODS = [
+  { value: "cash", bn: "ক্যাশ", en: "Cash" },
+  { value: "bank", bn: "ব্যাংক", en: "Bank" },
 ] as const;
 
 type Row = {
@@ -30,8 +35,24 @@ type Row = {
   amount: number;
   description: string | null;
   voucher_no: string | null;
+  payment_method: string | null;
+  voucher_image_url: string | null;
   created_at: string;
 };
+
+// Signed URL helper (private bucket)
+async function getSignedUrl(path: string): Promise<string | null> {
+  if (!path) return null;
+  const { data } = await supabase.storage.from("voucher-images").createSignedUrl(path, 60 * 60);
+  return data?.signedUrl ?? null;
+}
+
+function SignedImage({ path, className, onClick }: { path: string; className?: string; onClick?: () => void }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => { getSignedUrl(path).then(setUrl); }, [path]);
+  if (!url) return <div className={`bg-muted animate-pulse ${className ?? ""}`} />;
+  return <img src={url} className={className} onClick={onClick} alt="voucher" />;
+}
 
 function InvestmentPage() {
   const { t, lang } = useI18n();
@@ -40,6 +61,8 @@ function InvestmentPage() {
 
   const [selectedPartner, setSelectedPartner] = useState<string | null>(null);
   const [voucherPrint, setVoucherPrint] = useState<Row | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const emptyForm = () => ({
     date: new Date().toISOString().slice(0, 10),
@@ -48,6 +71,8 @@ function InvestmentPage() {
     amount: "",
     description: "",
     voucher_no: genVoucherNo(),
+    payment_method: "cash" as string,
+    voucher_image_url: "" as string,
   });
   const [form, setForm] = useState(emptyForm());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -68,6 +93,20 @@ function InvestmentPage() {
 
   const resetForm = () => { setForm(emptyForm()); setEditingId(null); };
 
+  const handleImageUpload = async (file: File) => {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() ?? "jpg";
+      const path = `${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("voucher-images").upload(path, file, { contentType: file.type });
+      if (error) throw error;
+      setForm((f) => ({ ...f, voucher_image_url: path }));
+      toast.success(lang === "bn" ? "ছবি আপলোড হয়েছে" : "Image uploaded");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally { setUploading(false); }
+  };
+
   const save = useMutation({
     mutationFn: async () => {
       const payload = {
@@ -77,6 +116,8 @@ function InvestmentPage() {
         amount: Number(form.amount),
         description: form.description || null,
         voucher_no: form.voucher_no?.trim() || genVoucherNo(),
+        payment_method: form.payment_method,
+        voucher_image_url: form.voucher_image_url || null,
       };
       if (!payload.partner_name) throw new Error(lang === "bn" ? "পার্টনারের নাম দিন" : "Partner name required");
       if (editingId) {
@@ -115,11 +156,18 @@ function InvestmentPage() {
       amount: String(r.amount),
       description: r.description ?? "",
       voucher_no: r.voucher_no ?? genVoucherNo(),
+      payment_method: r.payment_method ?? "cash",
+      voucher_image_url: r.voucher_image_url ?? "",
     });
     if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const onDelete = (id: string) => { if (window.confirm(t("confirm_delete"))) del.mutate(id); };
+
+  const openImage = async (path: string) => {
+    const u = await getSignedUrl(path);
+    if (u) setImagePreview(u);
+  };
 
   const partners = useMemo(() => Array.from(new Set(rows.map((r) => r.partner_name))).sort(), [rows]);
 
@@ -142,9 +190,9 @@ function InvestmentPage() {
     return { invested, withdrawn, balance: invested - withdrawn };
   }, [perPartner]);
 
-  const showType = (val: string) => {
-    const tp = TYPES.find((x) => x.value === val);
-    return tp ? (lang === "bn" ? tp.bn : tp.en) : val;
+  const payMethodLabel = (v: string | null) => {
+    const m = PAY_METHODS.find((x) => x.value === (v ?? "cash"));
+    return m ? (lang === "bn" ? m.bn : m.en) : (v ?? "-");
   };
 
   // ============== PARTNER STATEMENT VIEW ==============
@@ -211,7 +259,9 @@ function InvestmentPage() {
                   <th className="p-2 border text-left">{lang === "bn" ? "ক্রমিক" : "#"}</th>
                   <th className="p-2 border text-left">{t("date")}</th>
                   <th className="p-2 border text-left">{lang === "bn" ? "ভাউচার নং" : "Voucher No"}</th>
+                  <th className="p-2 border text-left">{lang === "bn" ? "পদ্ধতি" : "Method"}</th>
                   <th className="p-2 border text-left">{t("description")}</th>
+                  <th className="p-2 border text-center">{lang === "bn" ? "ছবি" : "Image"}</th>
                   <th className="p-2 border text-right">{lang === "bn" ? "জমা" : "Deposit"}</th>
                   <th className="p-2 border text-right">{lang === "bn" ? "উত্তোলন" : "Withdraw"}</th>
                   <th className="p-2 border text-right">{lang === "bn" ? "ব্যালেন্স" : "Balance"}</th>
@@ -224,7 +274,20 @@ function InvestmentPage() {
                     <td className="p-2 border">{fmt.num(idx + 1)}</td>
                     <td className="p-2 border">{fmt.date(r.date)}</td>
                     <td className="p-2 border font-mono text-xs">{r.voucher_no ?? "-"}</td>
+                    <td className="p-2 border">
+                      <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded ${r.payment_method === "bank" ? "bg-primary/10 text-primary" : "bg-success/10 text-success"}`}>
+                        {r.payment_method === "bank" ? <Landmark className="w-3 h-3" /> : <Banknote className="w-3 h-3" />}
+                        {payMethodLabel(r.payment_method)}
+                      </span>
+                    </td>
                     <td className="p-2 border">{r.description ?? <span className="text-muted-foreground">—</span>}</td>
+                    <td className="p-2 border text-center">
+                      {r.voucher_image_url ? (
+                        <button type="button" onClick={() => openImage(r.voucher_image_url!)} className="inline-block">
+                          <SignedImage path={r.voucher_image_url} className="w-10 h-10 object-cover rounded border cursor-pointer hover:opacity-80" />
+                        </button>
+                      ) : <span className="text-muted-foreground text-xs">—</span>}
+                    </td>
                     <td className="p-2 border text-right text-success font-semibold">
                       {r.type === "investment" ? fmt.bdt(Number(r.amount)) : ""}
                     </td>
@@ -250,13 +313,13 @@ function InvestmentPage() {
                   </tr>
                 ))}
                 {withRunning.length === 0 && (
-                  <tr><td colSpan={8} className="p-6 text-center text-muted-foreground">{t("noEntries")}</td></tr>
+                  <tr><td colSpan={10} className="p-6 text-center text-muted-foreground">{t("noEntries")}</td></tr>
                 )}
               </tbody>
               {withRunning.length > 0 && (
                 <tfoot className="bg-muted font-bold">
                   <tr>
-                    <td colSpan={4} className="p-2 border text-right">{t("total")}</td>
+                    <td colSpan={6} className="p-2 border text-right">{t("total")}</td>
                     <td className="p-2 border text-right text-success">{fmt.bdt(summary.invested)}</td>
                     <td className="p-2 border text-right text-destructive">{fmt.bdt(summary.withdrawn)}</td>
                     <td className="p-2 border text-right">{fmt.bdt(summary.balance)}</td>
@@ -277,7 +340,13 @@ function InvestmentPage() {
           </div>
         </Card>
 
-        {voucherPrint && <VoucherPrint row={voucherPrint} onClose={() => setVoucherPrint(null)} lang={lang} fmt={fmt} />}
+        {voucherPrint && <VoucherPrint row={voucherPrint} onClose={() => setVoucherPrint(null)} lang={lang} fmt={fmt} payMethodLabel={payMethodLabel} />}
+        {imagePreview && (
+          <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4" onClick={() => setImagePreview(null)}>
+            <img src={imagePreview} className="max-w-full max-h-full rounded" alt="voucher preview" />
+            <Button className="absolute top-4 right-4" size="sm" variant="secondary" onClick={() => setImagePreview(null)}><X className="w-4 h-4" /></Button>
+          </div>
+        )}
       </div>
     );
   }
@@ -319,7 +388,7 @@ function InvestmentPage() {
         <h2 className="font-semibold mb-4 flex items-center gap-2">
           {editingId ? <><Pencil className="w-4 h-4" /> {t("edit")}</> : <><Plus className="w-4 h-4" /> {lang === "bn" ? "নতুন এন্ট্রি" : "New Entry"}</>}
         </h2>
-        <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-6 gap-3">
+        <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
             <Label>{t("date")}</Label>
             <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
@@ -346,15 +415,59 @@ function InvestmentPage() {
             </select>
           </div>
           <div>
+            <Label>{lang === "bn" ? "পেমেন্ট পদ্ধতি" : "Payment Method"}</Label>
+            <div className="flex gap-2 mt-1">
+              {PAY_METHODS.map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => setForm({ ...form, payment_method: m.value })}
+                  className={`flex-1 h-9 rounded-md border text-sm flex items-center justify-center gap-1 ${
+                    form.payment_method === m.value
+                      ? (m.value === "bank" ? "border-primary bg-primary/10 text-primary" : "border-success bg-success/10 text-success")
+                      : "border-input bg-background"
+                  }`}
+                >
+                  {m.value === "bank" ? <Landmark className="w-4 h-4" /> : <Banknote className="w-4 h-4" />}
+                  {lang === "bn" ? m.bn : m.en}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
             <Label>{t("amountBDT")}</Label>
             <Input type="number" step="0.01" required value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} />
           </div>
-          <div className="lg:col-span-1">
+          <div className="sm:col-span-2">
             <Label>{t("description")}</Label>
             <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>
-          <div className="lg:col-span-6 flex gap-2">
-            <Button type="submit" disabled={save.isPending}>{editingId ? t("update") : t("add")}</Button>
+          <div className="sm:col-span-2 lg:col-span-4">
+            <Label className="flex items-center gap-2"><ImageIcon className="w-4 h-4" /> {lang === "bn" ? "ভাউচার ছবি" : "Voucher Image"}</Label>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <label className={`inline-flex items-center gap-2 px-3 h-9 rounded-md border border-input bg-background cursor-pointer text-sm hover:bg-accent ${uploading ? "opacity-50" : ""}`}>
+                <Upload className="w-4 h-4" />
+                {uploading ? (lang === "bn" ? "আপলোড হচ্ছে..." : "Uploading...") : (lang === "bn" ? "ছবি বেছে নিন" : "Choose Image")}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImageUpload(f); e.target.value = ""; }}
+                />
+              </label>
+              {form.voucher_image_url && (
+                <div className="flex items-center gap-2">
+                  <SignedImage path={form.voucher_image_url} className="w-16 h-16 object-cover rounded border" />
+                  <Button type="button" size="sm" variant="ghost" onClick={() => setForm({ ...form, voucher_image_url: "" })}>
+                    <X className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="lg:col-span-4 flex gap-2">
+            <Button type="submit" disabled={save.isPending || uploading}>{editingId ? t("update") : t("add")}</Button>
             {editingId && <Button type="button" variant="outline" onClick={resetForm}><X className="w-4 h-4 mr-1" /> {t("cancel_edit")}</Button>}
           </div>
         </form>
@@ -404,7 +517,7 @@ function InvestmentPage() {
   );
 }
 
-function VoucherPrint({ row, onClose, lang, fmt }: { row: Row; onClose: () => void; lang: string; fmt: ReturnType<typeof useFmt> }) {
+function VoucherPrint({ row, onClose, lang, fmt, payMethodLabel }: { row: Row; onClose: () => void; lang: string; fmt: ReturnType<typeof useFmt>; payMethodLabel: (v: string | null) => string }) {
   const typeLabel = TYPES.find((x) => x.value === row.type);
   return (
     <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 voucher-modal">
@@ -444,6 +557,10 @@ function VoucherPrint({ row, onClose, lang, fmt }: { row: Row; onClose: () => vo
                 <td className="p-3 font-semibold">{typeLabel ? (lang === "bn" ? typeLabel.bn : typeLabel.en) : row.type}</td>
               </tr>
               <tr className="border-b">
+                <td className="p-3 bg-muted font-medium">{lang === "bn" ? "পেমেন্ট পদ্ধতি" : "Payment Method"}</td>
+                <td className="p-3 font-semibold">{payMethodLabel(row.payment_method)}</td>
+              </tr>
+              <tr className="border-b">
                 <td className="p-3 bg-muted font-medium">{lang === "bn" ? "বিবরণ" : "Description"}</td>
                 <td className="p-3">{row.description ?? "—"}</td>
               </tr>
@@ -455,6 +572,12 @@ function VoucherPrint({ row, onClose, lang, fmt }: { row: Row; onClose: () => vo
               </tr>
             </tbody>
           </table>
+          {row.voucher_image_url && (
+            <div className="mb-6">
+              <div className="text-sm font-medium mb-2">{lang === "bn" ? "সংযুক্ত ভাউচার ছবি:" : "Attached Voucher Image:"}</div>
+              <SignedImage path={row.voucher_image_url} className="max-w-full max-h-96 border rounded mx-auto" />
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-6 mt-16 text-sm text-center">
             <div><div className="border-t pt-2">{lang === "bn" ? "প্রস্তুতকারী" : "Prepared By"}</div></div>
             <div><div className="border-t pt-2">{lang === "bn" ? "গ্রহীতা" : "Received By"}</div></div>
