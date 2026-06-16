@@ -5,7 +5,7 @@ import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
   ClipboardList, MessageSquare, Target, FileText, Banknote,
-  BookOpen, FileSignature, Boxes, BookUser, Activity
+  BookOpen, FileSignature, Boxes, BookUser, Activity, CalendarClock
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -39,6 +39,7 @@ export function AppLayout() {
     { to: "/targets", label: t("nav_targets"), icon: Target },
     { to: "/documents", label: t("nav_documents"), icon: FileText },
     { to: "/loan-ledger", label: t("nav_loan_ledger"), icon: BookUser },
+    { to: "/upcoming-payments", label: t("nav_upcoming_payments"), icon: CalendarClock },
     { to: "/system-monitor", label: t("nav_system_monitor"), icon: Activity },
   ] as const;
 
