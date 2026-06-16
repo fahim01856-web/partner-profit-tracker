@@ -551,6 +551,12 @@ function PersonDetail({ person, balance, txs, onBack, onEdit, onDelete }: {
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-bold truncate">{person.name}</h2>
                 <Badge variant="secondary" className="text-[10px]">{risk.icon} {risk.label}</Badge>
+                {person.due_date && (() => {
+                  const today = new Date().toISOString().slice(0, 10);
+                  const d = daysBetween(today, person.due_date);
+                  const lbl = d < 0 ? `${fmt.num(Math.abs(d))} দিন overdue` : d === 0 ? "আজ পরিশোধ" : `${fmt.num(d)} দিন বাকি`;
+                  return <Badge variant="secondary" className={`text-[10px] ${d < 0 ? "bg-destructive text-destructive-foreground" : d <= 7 ? "bg-amber-500 text-white" : ""}`}>📅 {fmt.date(person.due_date)} · {lbl}</Badge>;
+                })()}
               </div>
               {person.account_number && <div className="text-xs opacity-90 font-mono mt-1">A/C: {person.account_number}</div>}
               <div className="flex gap-3 flex-wrap text-xs opacity-90 mt-1">
