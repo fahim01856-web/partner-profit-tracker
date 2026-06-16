@@ -31,7 +31,14 @@ type Person = {
   opening_balance: number; notes: string | null;
   photo_url: string | null; nid_url: string | null; account_number: string | null;
   opening_date: string | null;
+  due_date: string | null;
 };
+
+function daysBetween(a: string, b: string) {
+  const da = new Date(a + "T00:00:00").getTime();
+  const db = new Date(b + "T00:00:00").getTime();
+  return Math.round((db - da) / 86400000);
+}
 type Tx = {
   id: string; person_id: string; date: string; time: string | null;
   type: string; amount: number; description: string | null; receipt_url: string | null;
@@ -115,6 +122,7 @@ function LoanLedgerPage() {
         photo_url: p.photo_url || null, nid_url: p.nid_url || null,
         account_number: p.account_number || null,
         opening_date: p.opening_date || new Date().toISOString().slice(0, 10),
+        due_date: p.due_date || null,
       };
       if (p.id) {
         const { error } = await supabase.from("loan_persons").update(payload).eq("id", p.id);
@@ -192,14 +200,37 @@ function LoanLedgerPage() {
                 const count = stats.txCount.get(p.id) ?? 0;
                 const last = stats.lastDate.get(p.id);
                 const risk = riskLevel(bal);
+                const today = new Date().toISOString().slice(0, 10);
+                const daysLeft = p.due_date ? daysBetween(today, p.due_date) : null;
+                const dueCls = daysLeft === null ? "" :
+                  daysLeft < 0 ? "bg-destructive/10 text-destructive border-destructive/30" :
+                  daysLeft <= 7 ? "bg-amber-500/10 text-amber-700 border-amber-500/30" :
+                  "bg-success/10 text-success border-success/30";
                 return (
                   <button key={p.id} onClick={() => setSelectedId(p.id)}
                     className="text-left rounded-xl border bg-card hover:shadow-lg hover:border-primary/40 transition-all p-4 group">
+                    {p.due_date && (
+                      <div className={`mb-2 px-2 py-1 rounded-md border text-[11px] flex items-center justify-between ${dueCls}`}>
+                        <span className="font-medium">পরিশোধ: {fmt.date(p.due_date)}</span>
+                        <span className="font-bold">
+                          {daysLeft! < 0 ? `${fmt.num(Math.abs(daysLeft!))} দিন overdue` :
+                           daysLeft === 0 ? "আজ" :
+                           `${fmt.num(daysLeft!)} দিন বাকি`}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-start gap-3">
                       <PersonAvatar person={p} size={56} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <div className="font-semibold truncate">{p.name}</div>
+                          <div className="font-semibold truncate">
+                            {p.name}
+                            {daysLeft !== null && (
+                              <span className={`ml-2 text-[10px] font-normal ${daysLeft < 0 ? "text-destructive" : daysLeft <= 7 ? "text-amber-600" : "text-muted-foreground"}`}>
+                                ({daysLeft < 0 ? `${fmt.num(Math.abs(daysLeft))} দিন পার` : `${fmt.num(daysLeft)} দিন বাকি`})
+                              </span>
+                            )}
+                          </div>
                           <Badge variant="outline" className={risk.cls}>{risk.icon} {risk.label}</Badge>
                         </div>
                         {p.account_number && <div className="text-xs text-muted-foreground font-mono mt-0.5">A/C: {p.account_number}</div>}
@@ -363,6 +394,7 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
     account_number: initial?.account_number ?? "",
     opening_balance: String(initial?.opening_balance ?? 0),
     opening_date: initial?.opening_date ?? today,
+    due_date: initial?.due_date ?? "",
     notes: initial?.notes ?? "",
     photo_url: initial?.photo_url ?? null as string | null,
     nid_url: initial?.nid_url ?? null as string | null,
@@ -373,6 +405,7 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
       account_number: initial?.account_number ?? "",
       opening_balance: String(initial?.opening_balance ?? 0),
       opening_date: initial?.opening_date ?? today,
+      due_date: initial?.due_date ?? "",
       notes: initial?.notes ?? "",
       photo_url: initial?.photo_url ?? null, nid_url: initial?.nid_url ?? null,
     });
@@ -382,7 +415,7 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
   return (
     <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
       <DialogHeader><DialogTitle>{initial ? "একাউন্ট এডিট" : "নতুন একাউন্ট"}</DialogTitle></DialogHeader>
-      <form onSubmit={(e) => { e.preventDefault(); onSave({ id: initial?.id, ...form, opening_balance: Number(form.opening_balance) }); }} className="space-y-3">
+      <form onSubmit={(e) => { e.preventDefault(); onSave({ id: initial?.id, ...form, opening_balance: Number(form.opening_balance), due_date: form.due_date || null }); }} className="space-y-3">
         <div className="grid grid-cols-2 gap-3">
           <FileUploadField value={form.photo_url} onChange={(v) => setForm({ ...form, photo_url: v })} prefix="photos" label="ছবি" />
           <FileUploadField value={form.nid_url} onChange={(v) => setForm({ ...form, nid_url: v })} prefix="nid" label="NID / ডকুমেন্ট" accept="image/*,.pdf" preview={form.nid_url?.match(/\.(jpg|jpeg|png|webp|gif)$/i) ? true : false} />
@@ -397,9 +430,12 @@ function PersonDialog({ initial, onSave, saving }: { initial: Person | null; onS
           <div><Label>তারিখ (একাউন্ট খোলা)</Label>
             <Input type="date" value={form.opening_date} onChange={(e) => setForm({ ...form, opening_date: e.target.value })} required />
           </div>
-          <div><Label>ওপেনিং ব্যালেন্স <span className="text-xs text-muted-foreground">(+ / −)</span></Label>
-            <Input type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm({ ...form, opening_balance: e.target.value })} />
+          <div><Label>পরিশোধের তারিখ</Label>
+            <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
           </div>
+        </div>
+        <div><Label>ওপেনিং ব্যালেন্স <span className="text-xs text-muted-foreground">(+ / −)</span></Label>
+          <Input type="number" step="0.01" value={form.opening_balance} onChange={(e) => setForm({ ...form, opening_balance: e.target.value })} />
         </div>
         <div><Label>নোট</Label><Textarea rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
         <DialogFooter>
@@ -515,6 +551,12 @@ function PersonDetail({ person, balance, txs, onBack, onEdit, onDelete }: {
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="text-xl font-bold truncate">{person.name}</h2>
                 <Badge variant="secondary" className="text-[10px]">{risk.icon} {risk.label}</Badge>
+                {person.due_date && (() => {
+                  const today = new Date().toISOString().slice(0, 10);
+                  const d = daysBetween(today, person.due_date);
+                  const lbl = d < 0 ? `${fmt.num(Math.abs(d))} দিন overdue` : d === 0 ? "আজ পরিশোধ" : `${fmt.num(d)} দিন বাকি`;
+                  return <Badge variant="secondary" className={`text-[10px] ${d < 0 ? "bg-destructive text-destructive-foreground" : d <= 7 ? "bg-amber-500 text-white" : ""}`}>📅 {fmt.date(person.due_date)} · {lbl}</Badge>;
+                })()}
               </div>
               {person.account_number && <div className="text-xs opacity-90 font-mono mt-1">A/C: {person.account_number}</div>}
               <div className="flex gap-3 flex-wrap text-xs opacity-90 mt-1">

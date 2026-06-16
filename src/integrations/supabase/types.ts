@@ -590,6 +590,7 @@ export type Database = {
           account_number: string | null
           address: string | null
           created_at: string
+          due_date: string | null
           id: string
           name: string
           nid_url: string | null
@@ -604,6 +605,7 @@ export type Database = {
           account_number?: string | null
           address?: string | null
           created_at?: string
+          due_date?: string | null
           id?: string
           name: string
           nid_url?: string | null
@@ -618,6 +620,7 @@ export type Database = {
           account_number?: string | null
           address?: string | null
           created_at?: string
+          due_date?: string | null
           id?: string
           name?: string
           nid_url?: string | null
