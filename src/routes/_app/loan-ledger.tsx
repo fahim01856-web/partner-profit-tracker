@@ -31,7 +31,14 @@ type Person = {
   opening_balance: number; notes: string | null;
   photo_url: string | null; nid_url: string | null; account_number: string | null;
   opening_date: string | null;
+  due_date: string | null;
 };
+
+function daysBetween(a: string, b: string) {
+  const da = new Date(a + "T00:00:00").getTime();
+  const db = new Date(b + "T00:00:00").getTime();
+  return Math.round((db - da) / 86400000);
+}
 type Tx = {
   id: string; person_id: string; date: string; time: string | null;
   type: string; amount: number; description: string | null; receipt_url: string | null;
