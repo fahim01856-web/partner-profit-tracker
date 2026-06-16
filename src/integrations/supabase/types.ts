@@ -1179,6 +1179,57 @@ export type Database = {
         }
         Relationships: []
       }
+      upcoming_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          customer_account_id: string | null
+          customer_mobile: string | null
+          customer_name: string
+          id: string
+          notes: string | null
+          paid_at: string | null
+          payment_date: string
+          purpose: string | null
+          serial_no: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          customer_account_id?: string | null
+          customer_mobile?: string | null
+          customer_name: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_date: string
+          purpose?: string | null
+          serial_no?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          customer_account_id?: string | null
+          customer_mobile?: string | null
+          customer_name?: string
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          payment_date?: string
+          purpose?: string | null
+          serial_no?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
