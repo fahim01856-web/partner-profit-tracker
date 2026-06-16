@@ -200,14 +200,37 @@ function LoanLedgerPage() {
                 const count = stats.txCount.get(p.id) ?? 0;
                 const last = stats.lastDate.get(p.id);
                 const risk = riskLevel(bal);
+                const today = new Date().toISOString().slice(0, 10);
+                const daysLeft = p.due_date ? daysBetween(today, p.due_date) : null;
+                const dueCls = daysLeft === null ? "" :
+                  daysLeft < 0 ? "bg-destructive/10 text-destructive border-destructive/30" :
+                  daysLeft <= 7 ? "bg-amber-500/10 text-amber-700 border-amber-500/30" :
+                  "bg-success/10 text-success border-success/30";
                 return (
                   <button key={p.id} onClick={() => setSelectedId(p.id)}
                     className="text-left rounded-xl border bg-card hover:shadow-lg hover:border-primary/40 transition-all p-4 group">
+                    {p.due_date && (
+                      <div className={`mb-2 px-2 py-1 rounded-md border text-[11px] flex items-center justify-between ${dueCls}`}>
+                        <span className="font-medium">পরিশোধ: {fmt.date(p.due_date)}</span>
+                        <span className="font-bold">
+                          {daysLeft! < 0 ? `${fmt.num(Math.abs(daysLeft!))} দিন overdue` :
+                           daysLeft === 0 ? "আজ" :
+                           `${fmt.num(daysLeft!)} দিন বাকি`}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex items-start gap-3">
                       <PersonAvatar person={p} size={56} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <div className="font-semibold truncate">{p.name}</div>
+                          <div className="font-semibold truncate">
+                            {p.name}
+                            {daysLeft !== null && (
+                              <span className={`ml-2 text-[10px] font-normal ${daysLeft < 0 ? "text-destructive" : daysLeft <= 7 ? "text-amber-600" : "text-muted-foreground"}`}>
+                                ({daysLeft < 0 ? `${fmt.num(Math.abs(daysLeft))} দিন পার` : `${fmt.num(daysLeft)} দিন বাকি`})
+                              </span>
+                            )}
+                          </div>
                           <Badge variant="outline" className={risk.cls}>{risk.icon} {risk.label}</Badge>
                         </div>
                         {p.account_number && <div className="text-xs text-muted-foreground font-mono mt-0.5">A/C: {p.account_number}</div>}
