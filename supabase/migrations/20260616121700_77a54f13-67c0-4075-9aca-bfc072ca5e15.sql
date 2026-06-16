@@ -1,0 +1,1 @@
+ALTER TABLE public.loan_persons ADD COLUMN IF NOT EXISTS due_date date;
