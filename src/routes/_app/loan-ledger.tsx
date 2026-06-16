@@ -688,7 +688,31 @@ function PersonDetail({ person, balance, txs, onBack, onEdit, onDelete }: {
                   </tr>
                 );
               })}
-              {withRunning.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</td></tr>}
+              {(() => {
+                const ob = Number(person.opening_balance) || 0;
+                return (
+                  <tr className="border-t bg-primary/5 font-medium">
+                    <td className="p-2 whitespace-nowrap">
+                      <div>{person.opening_date ? fmt.date(person.opening_date) : "—"}</div>
+                      <div className="text-[10px] text-muted-foreground">ওপেনিং</div>
+                    </td>
+                    <td className="p-2">
+                      <div className="flex items-start gap-2">
+                        <Wallet className="w-4 h-4 mt-0.5 text-primary" />
+                        <div>
+                          <div className="font-semibold">ওপেনিং ব্যালেন্স (Opening Balance)</div>
+                          <div className="text-xs text-muted-foreground">একাউন্ট শুরুর ব্যালেন্স</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-2 text-right text-destructive">{ob < 0 ? fmt.bdt(Math.abs(ob)) : ""}</td>
+                    <td className="p-2 text-right text-success">{ob > 0 ? fmt.bdt(ob) : ""}</td>
+                    <td className="p-2 text-right font-bold">{fmt.bdt(ob)}</td>
+                    <td className="p-2 no-print"></td>
+                  </tr>
+                );
+              })()}
+              {withRunning.length === 0 && Number(person.opening_balance) === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">কোনো লেনদেন নেই</td></tr>}
             </tbody>
           </table>
         </div>
