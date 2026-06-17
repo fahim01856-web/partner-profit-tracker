@@ -232,6 +232,16 @@ const dict = {
   cat_transport: { bn: "যাতায়াত", en: "Transport" },
   cat_repair: { bn: "মেরামত", en: "Repair" },
   cat_other: { bn: "অন্যান্য", en: "Other" },
+  expense_rows: { bn: "খরচের আইটেমসমূহ", en: "Expense Items" },
+  expense_need_row: { bn: "অন্তত একটি বৈধ খরচ যোগ করুন", en: "Add at least one valid expense row" },
+  add_row: { bn: "নতুন আইটেম", en: "Add Row" },
+  search: { bn: "অনুসন্ধান", en: "Search" },
+  items: { bn: "আইটেম", en: "items" },
+  select_category: { bn: "ক্যাটাগরি নির্বাচন করুন", en: "Select category" },
+  search_or_type: { bn: "খুঁজুন বা টাইপ করুন", en: "Search or type" },
+  no_match: { bn: "কোনো মিল নেই", en: "No match" },
+  create_new: { bn: "নতুন যোগ করুন", en: "Create new" },
+  suggestions: { bn: "সাজেশন", en: "Suggestions" },
 
   // Staff
   staff_title: { bn: "স্টাফ ব্যবস্থাপনা", en: "Staff Management" },
