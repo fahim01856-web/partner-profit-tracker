@@ -123,8 +123,9 @@ function ExpensePage() {
       if (!valid.length) throw new Error(t("expense_need_row"));
       const voucher_no = voucherNoFor(date);
 
-      // Replace voucher: delete existing for this date then insert
-      const { error: delErr } = await supabase.from("expenses").delete().eq("date", date);
+      // Replace voucher: delete existing rows for the new date AND (if editing) the original date
+      const datesToClear = Array.from(new Set([date, ...(editingVoucher ? [editingVoucher] : [])]));
+      const { error: delErr } = await supabase.from("expenses").delete().in("date", datesToClear);
       if (delErr) throw delErr;
 
       const payload = valid.map((r, idx) => ({
