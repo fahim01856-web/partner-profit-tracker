@@ -1,3 +1,4 @@
+import { BankLogo } from "@/components/BankLogo";
 import { createFileRoute, useNavigate, Navigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
