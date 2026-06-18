@@ -59,7 +59,7 @@ function LoginPage() {
       <div className="hidden lg:flex flex-col justify-between p-12 text-primary-foreground relative overflow-hidden"
         style={{ background: 'var(--gradient-hero)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-lg grid place-items-center font-bold text-xl" style={{ background: 'var(--gradient-gold)', color: 'var(--gold-foreground)' }}>{lang === "bn" ? "ইব" : "IB"}</div>
+          <div className="w-12 h-12 rounded-lg bg-white p-1 grid place-items-center shadow"><BankLogo className="w-full h-full" /></div>
           <div>
             <div className="font-bold text-lg">{t("bankName")}</div>
             <div className="text-sm opacity-80">{t("outlet")}</div>
@@ -81,7 +81,7 @@ function LoginPage() {
       <div className="flex items-center justify-center p-6">
         <Card className="w-full max-w-md p-6 shadow-lg">
           <div className="lg:hidden flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-lg grid place-items-center font-bold" style={{ background: 'var(--gradient-primary)', color: 'var(--primary-foreground)' }}>{lang === "bn" ? "ইব" : "IB"}</div>
+            <div className="w-10 h-10 rounded-lg bg-white p-0.5 grid place-items-center shadow-sm"><BankLogo className="w-full h-full" /></div>
             <div>
               <div className="font-bold text-sm">{t("bankShort")} 121/11</div>
               <div className="text-xs text-muted-foreground">{t("outlet")}</div>

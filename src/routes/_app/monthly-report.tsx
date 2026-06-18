@@ -368,8 +368,8 @@ function MonthlyReportPage() {
         <div className="mx-auto bg-white text-black border print:border-0 shadow-sm print:shadow-none p-6 print:p-8" style={{ maxWidth: "210mm", minHeight: "297mm" }}>
           {/* Header */}
           <div className="border-b-2 border-black pb-3 mb-4 flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full border-2 border-black flex items-center justify-center font-bold text-lg shrink-0" style={{ background: "var(--gradient-gold)" }}>
-              IB
+            <div className="w-16 h-16 shrink-0 flex items-center justify-center">
+              <BankLogo className="w-full h-full" />
             </div>
             <div className="flex-1 text-center">
               <div className="text-xl font-extrabold tracking-wide">ISLAMI BANK AGENT BANKING</div>

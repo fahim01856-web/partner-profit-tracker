@@ -288,7 +288,7 @@ function ExpensePage() {
           <div className="p-8 max-w-3xl mx-auto text-black">
             <div className="border-2 border-black p-4 mb-4">
               <div className="flex items-start gap-4">
-                <div className="w-16 h-16 rounded-full border-2 border-black flex items-center justify-center font-bold shrink-0">IB</div>
+                <div className="w-16 h-16 shrink-0 flex items-center justify-center"><BankLogo className="w-full h-full" /></div>
                 <div className="flex-1 text-center">
                   <div className="text-xl font-extrabold tracking-wide">ISLAMI BANK AGENT BANKING</div>
                   <div className="text-sm font-bold">M/S FEED HOUSE (121/11)</div>
