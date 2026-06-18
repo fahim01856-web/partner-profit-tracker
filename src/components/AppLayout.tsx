@@ -1,3 +1,4 @@
+import { BankLogo } from "@/components/BankLogo";
 import { Link, useRouter, Outlet } from "@tanstack/react-router";
 import { useAuth } from "@/lib/auth-context";
 import { useI18n } from "@/lib/i18n";
@@ -62,8 +63,8 @@ export function AppLayout() {
       )}>
         <div className="p-5 border-b border-sidebar-border shrink-0">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-lg flex items-center justify-center text-xl font-bold shrink-0" style={{ background: 'var(--gradient-gold)', color: 'var(--gold-foreground)' }}>
-              {lang === "bn" ? "ইব" : "IB"}
+            <div className="w-11 h-11 rounded-lg bg-white flex items-center justify-center shrink-0 p-1 shadow-sm">
+              <BankLogo className="w-full h-full" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-bold text-sm leading-tight truncate">{t("bankShort")}</div>
