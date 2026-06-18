@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Authenticated users manage upcoming payments" ON public.upcoming_payments;
