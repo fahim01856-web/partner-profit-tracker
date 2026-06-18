@@ -157,8 +157,7 @@ function ExpensePage() {
       toast.success(editingVoucher ? t("updated") : t("voucher_created"));
       qc.invalidateQueries({ queryKey: ["expenses"] });
       qc.invalidateQueries({ queryKey: ["expense_categories"] });
-      setRows([emptyRow()]);
-      setEditingVoucher(null);
+      resetForm();
     },
     onError: (e: Error) => toast.error(e.message),
   });
