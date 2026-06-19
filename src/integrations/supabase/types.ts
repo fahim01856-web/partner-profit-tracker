@@ -1120,7 +1120,14 @@ export type Database = {
           address: string | null
           created_at: string
           due_date: string | null
+          emi_day: number | null
+          guarantor_name: string | null
+          guarantor_nid: string | null
+          guarantor_phone: string | null
           id: string
+          interest_rate: number | null
+          loan_amount: number | null
+          loan_type: string | null
           name: string
           nid_url: string | null
           notes: string | null
@@ -1128,6 +1135,9 @@ export type Database = {
           opening_date: string
           phone: string | null
           photo_url: string | null
+          purpose: string | null
+          status: string | null
+          tenure_months: number | null
           updated_at: string
         }
         Insert: {
@@ -1135,7 +1145,14 @@ export type Database = {
           address?: string | null
           created_at?: string
           due_date?: string | null
+          emi_day?: number | null
+          guarantor_name?: string | null
+          guarantor_nid?: string | null
+          guarantor_phone?: string | null
           id?: string
+          interest_rate?: number | null
+          loan_amount?: number | null
+          loan_type?: string | null
           name: string
           nid_url?: string | null
           notes?: string | null
@@ -1143,6 +1160,9 @@ export type Database = {
           opening_date?: string
           phone?: string | null
           photo_url?: string | null
+          purpose?: string | null
+          status?: string | null
+          tenure_months?: number | null
           updated_at?: string
         }
         Update: {
@@ -1150,7 +1170,14 @@ export type Database = {
           address?: string | null
           created_at?: string
           due_date?: string | null
+          emi_day?: number | null
+          guarantor_name?: string | null
+          guarantor_nid?: string | null
+          guarantor_phone?: string | null
           id?: string
+          interest_rate?: number | null
+          loan_amount?: number | null
+          loan_type?: string | null
           name?: string
           nid_url?: string | null
           notes?: string | null
@@ -1158,6 +1185,9 @@ export type Database = {
           opening_date?: string
           phone?: string | null
           photo_url?: string | null
+          purpose?: string | null
+          status?: string | null
+          tenure_months?: number | null
           updated_at?: string
         }
         Relationships: []
