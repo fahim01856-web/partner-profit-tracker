@@ -567,7 +567,7 @@ function InventoryPage() {
 
 type Asset = { id: string; name: string; category: string | null; quantity: number; note: string | null };
 
-function AssetsPanel({ lang, t, fmt }: { lang: string; t: (k: string) => string; fmt: { num: (n: number) => string } }) {
+function AssetsPanel({ lang, t, fmt }: { lang: string; t: (k: any) => string; fmt: { num: (n: number) => string } }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({ id: null as string | null, name: "", category: "", quantity: "1", note: "" });
   const [search, setSearch] = useState("");
