@@ -39,6 +39,7 @@ import { Route as AppAuditReportRouteImport } from './routes/_app/audit-report'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
 import { Route as AppStaffIndexRouteImport } from './routes/_app/staff.index'
+import { Route as AppAuditReportIndexRouteImport } from './routes/_app/audit-report.index'
 import { Route as AppStaffIdRouteImport } from './routes/_app/staff.$id'
 import { Route as AppMeetingsIdRouteImport } from './routes/_app/meetings.$id'
 import { Route as AppKycIdRouteImport } from './routes/_app/kyc.$id'
@@ -193,6 +194,11 @@ const AppStaffIndexRoute = AppStaffIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AppStaffRoute,
 } as any)
+const AppAuditReportIndexRoute = AppAuditReportIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAuditReportRoute,
+} as any)
 const AppStaffIdRoute = AppStaffIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -247,6 +253,7 @@ export interface FileRoutesByFullPath {
   '/kyc/$id': typeof AppKycIdRoute
   '/meetings/$id': typeof AppMeetingsIdRoute
   '/staff/$id': typeof AppStaffIdRoute
+  '/audit-report/': typeof AppAuditReportIndexRoute
   '/staff/': typeof AppStaffIndexRoute
 }
 export interface FileRoutesByTo {
@@ -254,7 +261,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
-  '/audit-report': typeof AppAuditReportRouteWithChildren
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -281,6 +287,7 @@ export interface FileRoutesByTo {
   '/kyc/$id': typeof AppKycIdRoute
   '/meetings/$id': typeof AppMeetingsIdRoute
   '/staff/$id': typeof AppStaffIdRoute
+  '/audit-report': typeof AppAuditReportIndexRoute
   '/staff': typeof AppStaffIndexRoute
 }
 export interface FileRoutesById {
@@ -318,6 +325,7 @@ export interface FileRoutesById {
   '/_app/kyc/$id': typeof AppKycIdRoute
   '/_app/meetings/$id': typeof AppMeetingsIdRoute
   '/_app/staff/$id': typeof AppStaffIdRoute
+  '/_app/audit-report/': typeof AppAuditReportIndexRoute
   '/_app/staff/': typeof AppStaffIndexRoute
 }
 export interface FileRouteTypes {
@@ -355,6 +363,7 @@ export interface FileRouteTypes {
     | '/kyc/$id'
     | '/meetings/$id'
     | '/staff/$id'
+    | '/audit-report/'
     | '/staff/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -362,7 +371,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/agent-bank-investment'
     | '/attendance'
-    | '/audit-report'
     | '/cash-book'
     | '/daily-deposit'
     | '/dashboard'
@@ -389,6 +397,7 @@ export interface FileRouteTypes {
     | '/kyc/$id'
     | '/meetings/$id'
     | '/staff/$id'
+    | '/audit-report'
     | '/staff'
   id:
     | '__root__'
@@ -425,6 +434,7 @@ export interface FileRouteTypes {
     | '/_app/kyc/$id'
     | '/_app/meetings/$id'
     | '/_app/staff/$id'
+    | '/_app/audit-report/'
     | '/_app/staff/'
   fileRoutesById: FileRoutesById
 }
@@ -646,6 +656,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStaffIndexRouteImport
       parentRoute: typeof AppStaffRoute
     }
+    '/_app/audit-report/': {
+      id: '/_app/audit-report/'
+      path: '/'
+      fullPath: '/audit-report/'
+      preLoaderRoute: typeof AppAuditReportIndexRouteImport
+      parentRoute: typeof AppAuditReportRoute
+    }
     '/_app/staff/$id': {
       id: '/_app/staff/$id'
       path: '/$id'
@@ -679,10 +696,12 @@ declare module '@tanstack/react-router' {
 
 interface AppAuditReportRouteChildren {
   AppAuditReportIdRoute: typeof AppAuditReportIdRoute
+  AppAuditReportIndexRoute: typeof AppAuditReportIndexRoute
 }
 
 const AppAuditReportRouteChildren: AppAuditReportRouteChildren = {
   AppAuditReportIdRoute: AppAuditReportIdRoute,
+  AppAuditReportIndexRoute: AppAuditReportIndexRoute,
 }
 
 const AppAuditReportRouteWithChildren = AppAuditReportRoute._addFileChildren(
