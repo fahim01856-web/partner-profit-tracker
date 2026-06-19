@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, Printer, Save, Plus, Trash2, AlertTriangle, CheckCircle2,
   FileCheck, ClipboardList, ShieldCheck, FileText, Pencil, LayoutDashboard,
-  FolderOpen, Upload, Eye,
+  FolderOpen, Upload, Eye, X,
 } from "lucide-react";
 
 const AUDIT_TABS = ["overview", "info", "findings", "tasks", "checks", "documents", "signoff"] as const;
