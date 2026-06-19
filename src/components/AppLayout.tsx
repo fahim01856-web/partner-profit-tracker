@@ -6,7 +6,8 @@ import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
   ClipboardList, MessageSquare, Target, FileText, Banknote,
-  BookOpen, FileSignature, Boxes, BookUser, Activity, CalendarClock, ShieldCheck
+  BookOpen, FileSignature, Boxes, BookUser, Activity, CalendarClock, ShieldCheck,
+  CalendarDays, UserCheck, ListTodo
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -27,7 +28,6 @@ export function AppLayout() {
     { to: "/daily-deposit", label: t("nav_daily_deposit"), icon: Banknote },
     { to: "/cash-book", label: t("nav_cash_book"), icon: BookOpen },
     { to: "/expense", label: t("nav_expense"), icon: Receipt },
-    { to: "/signature-cards", label: t("nav_signature"), icon: FileSignature },
     { to: "/inventory", label: t("nav_inventory"), icon: Boxes },
     { to: "/staff", label: t("nav_staff"), icon: Users },
     { to: "/employee-attendance", label: t("nav_emp_att"), icon: ClipboardCheck },
@@ -35,14 +35,21 @@ export function AppLayout() {
     { to: "/salary-sheet", label: t("nav_salary_sheet"), icon: FileBarChart },
     { to: "/partners", label: t("nav_partners"), icon: Handshake },
     { to: "/reports", label: t("nav_reports"), icon: FileBarChart },
-    { to: "/pending-works", label: t("nav_pending"), icon: ClipboardList },
+    // === M.S. KYC. Task ===
+    { to: "/meetings", label: "Meeting Schedule", icon: CalendarDays, group: "M.S. KYC. Task" },
+    { to: "/kyc", label: "KYC Documents", icon: UserCheck, group: "M.S. KYC. Task" },
+    { to: "/tasks", label: "Task Management", icon: ListTodo, group: "M.S. KYC. Task" },
+    // === Other ===
     { to: "/sms-sending", label: t("nav_sms"), icon: MessageSquare },
     { to: "/targets", label: t("nav_targets"), icon: Target },
-    { to: "/documents", label: t("nav_documents"), icon: FileText },
     { to: "/loan-ledger", label: t("nav_loan_ledger"), icon: BookUser },
     { to: "/upcoming-payments", label: t("nav_upcoming_payments"), icon: CalendarClock },
     { to: "/system-monitor", label: t("nav_system_monitor"), icon: Activity },
     { to: "/audit-report", label: t("nav_audit_report"), icon: ShieldCheck },
+    // legacy (accessible via KYC/Task page links)
+    { to: "/documents", label: t("nav_documents"), icon: FileText },
+    { to: "/signature-cards", label: t("nav_signature"), icon: FileSignature },
+    { to: "/pending-works", label: t("nav_pending"), icon: ClipboardList },
   ] as const;
 
   const LangToggle = ({ className = "" }: { className?: string }) => (
