@@ -17,7 +17,7 @@ import {
   Calendar, Search, FileBarChart, TrendingUp, ListChecks, Pencil, X,
 } from "lucide-react";
 
-export const Route = createFileRoute("/_app/audit-report")({ component: AuditReportListPage });
+export const Route = createFileRoute("/_app/audit-report/")({ component: AuditReportListPage });
 
 const AUDIT_TYPES = [
   { v: "internal", bn: "অভ্যন্তরীণ অডিট", en: "Internal Audit" },
