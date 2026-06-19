@@ -168,7 +168,7 @@ function DailyTab() {
                       <StaffPhoto path={s.photo_url} name={s.name} className="w-9 h-9 rounded-full object-cover border bg-muted" />
                     </td>
                     <td className="p-2.5 font-semibold">{s.name}</td>
-                    <td className="p-2.5 text-xs">{s.employee_code ?? '-'}</td>
+                    <td className="p-2.5 text-xs">{s.nid ?? s.employee_code ?? '-'}</td>
                     <td className="p-2.5 text-xs">{s.position}</td>
                     <td className="p-2.5">
                       <span className="hidden print:inline">{cur?.in_time ?? '-'}</span>
