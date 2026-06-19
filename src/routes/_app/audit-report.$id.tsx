@@ -336,65 +336,143 @@ function InfoTab({ report, qc }: { report: any; qc: any }) {
 /* --------------------- Compliance Checks --------------------- */
 function ChecksTab({ report, qc }: { report: any; qc: any }) {
   const { lang } = useI18n();
-  const [state, setState] = useState<any>(() => {
-    const s: any = {};
-    CHECK_FIELDS.forEach(f => {
-      s[`${f.key}_check_status`] = report[`${f.key}_check_status`] || "ok";
-      s[`${f.key}_check_note`] = report[`${f.key}_check_note`] || "";
-    });
-    return s;
+  const emptyForm = { title: "", status: "ok", note: "" };
+  const [form, setForm] = useState(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ["audit_compliance_checks", report.id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("audit_compliance_checks").select("*")
+        .eq("audit_report_id", report.id).order("sort_order", { ascending: true }).order("created_at", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
   });
+
+  const fallbackRows = useMemo(() => CHECK_FIELDS.map((f, index) => ({
+    id: `legacy-${f.key}`,
+    audit_report_id: report.id,
+    title: lang === "bn" ? f.labelBn : f.labelEn,
+    status: report[`${f.key}_check_status`] || "ok",
+    note: report[`${f.key}_check_note`] || "",
+    sort_order: (index + 1) * 10,
+  })), [lang, report]);
+  const displayRows = rows.length ? rows : fallbackRows;
+  const score = displayRows.length ? Math.round((displayRows.filter((r: any) => r.status === "ok" || r.status === "pass").length / displayRows.length) * 100) : 0;
+
+  const resetForm = () => { setForm(emptyForm); setEditingId(null); };
+  const refreshChecks = () => {
+    qc.invalidateQueries({ queryKey: ["audit_compliance_checks", report.id] });
+    qc.invalidateQueries({ queryKey: ["audit_report", report.id] });
+    qc.invalidateQueries({ queryKey: ["audit_reports"] });
+  };
 
   const save = useMutation({
     mutationFn: async () => {
-      const { error } = await supabase.from("audit_reports").update(state).eq("id", report.id);
+      if (!form.title.trim()) throw new Error(lang === "bn" ? "চেকের নাম দিন" : "Checklist title required");
+      if (editingId?.startsWith("legacy-")) {
+        const seedRows = fallbackRows.map((r: any) => ({ audit_report_id: report.id, title: r.title, status: r.status, note: r.note || null, sort_order: r.sort_order }));
+        const { error: seedError } = await supabase.from("audit_compliance_checks").insert(seedRows);
+        if (seedError) throw seedError;
+        const { data: created, error: findError } = await supabase.from("audit_compliance_checks").select("id")
+          .eq("audit_report_id", report.id).eq("sort_order", fallbackRows.find((r: any) => r.id === editingId)?.sort_order || 0).maybeSingle();
+        if (findError) throw findError;
+        if (created?.id) {
+          const { error } = await supabase.from("audit_compliance_checks").update({
+            title: form.title.trim(), status: form.status, note: form.note.trim() || null,
+          }).eq("id", created.id);
+          if (error) throw error;
+        }
+        return;
+      }
+      if (editingId) {
+        const { error } = await supabase.from("audit_compliance_checks").update({
+          title: form.title.trim(), status: form.status, note: form.note.trim() || null,
+        }).eq("id", editingId);
+        if (error) throw error;
+        return;
+      }
+      const nextOrder = displayRows.reduce((max: number, row: any) => Math.max(max, Number(row.sort_order) || 0), 0) + 10;
+      const { error } = await supabase.from("audit_compliance_checks").insert({
+        audit_report_id: report.id, title: form.title.trim(), status: form.status, note: form.note.trim() || null, sort_order: nextOrder,
+      });
       if (error) throw error;
     },
-    onSuccess: () => { toast.success(lang === "bn" ? "সংরক্ষিত" : "Saved"); qc.invalidateQueries({ queryKey: ["audit_report", report.id] }); },
+    onSuccess: () => { toast.success(lang === "bn" ? "চেকলিস্ট সংরক্ষিত" : "Checklist saved"); resetForm(); refreshChecks(); },
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const passCount = CHECK_FIELDS.filter(f => state[`${f.key}_check_status`] === "ok").length;
-  const score = Math.round((passCount / CHECK_FIELDS.length) * 100);
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      if (id.startsWith("legacy-")) throw new Error(lang === "bn" ? "আগে এডিট/সংরক্ষণ করুন" : "Please save the checklist first");
+      const { error } = await supabase.from("audit_compliance_checks").update({ status }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: refreshChecks,
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      if (id.startsWith("legacy-")) throw new Error(lang === "bn" ? "আগে চেকলিস্ট সংরক্ষণ করুন" : "Please save the checklist first");
+      const { error } = await supabase.from("audit_compliance_checks").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success(lang === "bn" ? "মুছে ফেলা হয়েছে" : "Deleted"); refreshChecks(); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const startEdit = (row: any) => {
+    setEditingId(row.id);
+    setForm({ title: row.title || "", status: row.status || "ok", note: row.note || "" });
+  };
 
   return (
     <div className="space-y-4">
       <Card className="p-5">
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
-          <h3 className="font-semibold">{lang === "bn" ? "কমপ্লায়েন্স চেকলিস্ট" : "Compliance Checklist"}</h3>
+          <div>
+            <h3 className="font-semibold">{lang === "bn" ? "কমপ্লায়েন্স চেকলিস্ট" : "Compliance Checklist"}</h3>
+            <p className="text-xs text-muted-foreground">{lang === "bn" ? "প্রতিটি চেক আলাদা রেকর্ড হিসেবে অ্যাড, এডিট ও ডিলিট করা যাবে" : "Add, edit, and delete each checklist item separately"}</p>
+          </div>
           <div className="text-right">
             <div className="text-xs text-muted-foreground">{lang === "bn" ? "স্কোর" : "Score"}</div>
             <div className={`text-2xl font-bold ${score >= 80 ? "text-green-600" : score >= 60 ? "text-amber-600" : "text-red-600"}`}>{score}%</div>
           </div>
         </div>
+
+        <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="grid sm:grid-cols-12 gap-2 rounded-md border bg-muted/30 p-3 mb-4 no-print">
+          <div className="sm:col-span-4"><Label>{lang === "bn" ? "চেকের নাম" : "Check Name"}</Label><Input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} maxLength={160} placeholder={lang === "bn" ? "যেমন: ক্যাশ ব্যালেন্স ভেরিফিকেশন" : "Example: Cash Balance Verification"} /></div>
+          <div className="sm:col-span-2"><Label>{lang === "bn" ? "স্ট্যাটাস" : "Status"}</Label><select className="w-full h-9 border rounded-md px-2 bg-background text-foreground text-sm" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>{STATUS_OPTIONS.map(o => <option key={o} value={o}>{statusLabel(o, lang)}</option>)}</select></div>
+          <div className="sm:col-span-4"><Label>{lang === "bn" ? "নোট" : "Note"}</Label><Input value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} maxLength={500} placeholder={lang === "bn" ? "মন্তব্য" : "Comment"} /></div>
+          <div className="sm:col-span-2 flex items-end gap-2"><Button type="submit" disabled={save.isPending} className="flex-1"><Save className="w-4 h-4 mr-1" />{editingId ? (lang === "bn" ? "আপডেট" : "Update") : (lang === "bn" ? "অ্যাড" : "Add")}</Button>{editingId && <Button type="button" variant="outline" size="icon" onClick={resetForm}><X className="w-4 h-4" /></Button>}</div>
+        </form>
+
         <div className="space-y-2">
-          {CHECK_FIELDS.map(f => {
-            const s = state[`${f.key}_check_status`];
+          {isLoading && <Card className="p-6 text-center text-muted-foreground">Loading...</Card>}
+          {!isLoading && displayRows.length === 0 && <Card className="p-6 text-center text-muted-foreground">{lang === "bn" ? "কোনো চেক নেই" : "No checks"}</Card>}
+          {!isLoading && displayRows.map((row: any) => {
+            const s = row.status || "ok";
             return (
-              <div key={f.key} className={`border rounded-md p-3 ${statusColor[s]}`}>
+              <div key={row.id} className={`border rounded-md p-3 ${statusColor[s]}`}>
                 <div className="grid sm:grid-cols-12 gap-2 items-center">
                   <div className="sm:col-span-4 font-medium text-sm flex items-center gap-2">
                     {s === "ok" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
-                    {lang === "bn" ? f.labelBn : f.labelEn}
+                    {row.title}
                   </div>
                   <div className="sm:col-span-2">
-                    <select className="w-full h-8 border rounded-md px-2 bg-background text-foreground text-sm"
-                      value={s} onChange={e => setState({ ...state, [`${f.key}_check_status`]: e.target.value })}>
-                      {STATUS_OPTIONS.map(o => <option key={o} value={o}>{statusLabel(o, lang)}</option>)}
-                    </select>
+                    <select className="w-full h-8 border rounded-md px-2 bg-background text-foreground text-sm" value={s} onChange={e => updateStatus.mutate({ id: row.id, status: e.target.value })} disabled={row.id.startsWith("legacy-")}>{STATUS_OPTIONS.map(o => <option key={o} value={o}>{statusLabel(o, lang)}</option>)}</select>
                   </div>
-                  <div className="sm:col-span-6">
-                    <Input className="h-8 text-sm bg-background text-foreground"
-                      placeholder={lang === "bn" ? "নোট / মন্তব্য" : "Note / comment"} maxLength={500}
-                      value={state[`${f.key}_check_note`]} onChange={e => setState({ ...state, [`${f.key}_check_note`]: e.target.value })} />
+                  <div className="sm:col-span-4 text-sm text-foreground/80">{row.note || <span className="text-muted-foreground">{lang === "bn" ? "নোট নেই" : "No note"}</span>}</div>
+                  <div className="sm:col-span-2 flex justify-end gap-1 no-print">
+                    <Button type="button" size="sm" variant="ghost" onClick={() => startEdit(row)}><Pencil className="w-4 h-4" /></Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => { if (window.confirm(lang === "bn" ? "নিশ্চিতভাবে মুছবেন?" : "Delete this check?")) del.mutate(row.id); }} disabled={row.id.startsWith("legacy-")}><Trash2 className="w-4 h-4 text-destructive" /></Button>
                   </div>
                 </div>
               </div>
             );
           })}
-        </div>
-        <div className="mt-4 no-print">
-          <Button onClick={() => save.mutate()} disabled={save.isPending}><Save className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save Checks"}</Button>
         </div>
       </Card>
     </div>
