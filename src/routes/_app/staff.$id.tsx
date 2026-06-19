@@ -131,6 +131,117 @@ function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; va
   );
 }
 
+/* --------------------- OVERVIEW TAB (consolidated dashboard) --------------------- */
+function OverviewTab({ staffId, staff }: { staffId: string; staff: any }) {
+  const { lang } = useI18n();
+  const fmt = useFmt();
+  const now = new Date();
+  const { start, end } = useMemo(() => monthRange(now.getFullYear(), now.getMonth() + 1), []);
+
+  const { data: att = [] } = useQuery({
+    queryKey: ["ov-att", staffId, start, end],
+    queryFn: async () => (await supabase.from("attendance").select("status,date").eq("staff_id", staffId).gte("date", start).lte("date", end)).data ?? [],
+  });
+  const { data: salaries = [] } = useQuery({
+    queryKey: ["ov-sal", staffId],
+    queryFn: async () => (await supabase.from("salaries").select("*").eq("staff_id", staffId).order("year", { ascending: false }).order("month", { ascending: false })).data ?? [],
+  });
+  const { data: leaves = [] } = useQuery({
+    queryKey: ["ov-lv", staffId],
+    queryFn: async () => (await supabase.from("leaves").select("*").eq("staff_id", staffId).order("start_date", { ascending: false }).limit(5)).data ?? [],
+  });
+  const { data: docs = [] } = useQuery({
+    queryKey: ["ov-doc", staffId],
+    queryFn: async () => (await supabase.from("documents").select("id,title,expiry_date").eq("staff_id", staffId)).data ?? [],
+  });
+  const { data: perf = [] } = useQuery({
+    queryKey: ["ov-perf", staffId],
+    queryFn: async () => (await supabase.from("staff_performance").select("rating").eq("staff_id", staffId)).data ?? [],
+  });
+  const { data: acts = [] } = useQuery({
+    queryKey: ["ov-act", staffId],
+    queryFn: async () => (await supabase.from("staff_activity_log").select("*").eq("staff_id", staffId).order("created_at", { ascending: false }).limit(5)).data ?? [],
+  });
+
+  const aStats = { present: 0, absent: 0, late: 0, leave: 0 };
+  att.forEach((r: any) => { if (r.status in aStats) (aStats as any)[r.status]++; });
+  const totalPaid = salaries.filter((s: any) => s.payment_status === "paid").reduce((a: number, r: any) => a + Number(r.net_paid || 0), 0);
+  const lastSal = salaries[0];
+  const avgRating = perf.length ? perf.reduce((s: number, r: any) => s + Number(r.rating || 0), 0) / perf.length : 0;
+  const expiringSoon = docs.filter((d: any) => d.expiry_date && new Date(d.expiry_date) < new Date(Date.now() + 30 * 86400000));
+
+  return (
+    <div className="space-y-4">
+      {/* Attendance summary (current month) */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold flex items-center gap-2"><ClipboardCheck className="w-4 h-4" />{lang === "bn" ? "এই মাসের হাজিরা" : "This Month Attendance"}</h3>
+          <span className="text-xs text-muted-foreground">{fmt.months[now.getMonth()]} {fmt.num(now.getFullYear())}</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <StatBox color="green" label={lang === "bn" ? "উপস্থিত" : "Present"} value={aStats.present} />
+          <StatBox color="red" label={lang === "bn" ? "অনুপস্থিত" : "Absent"} value={aStats.absent} />
+          <StatBox color="amber" label={lang === "bn" ? "দেরি" : "Late"} value={aStats.late} />
+          <StatBox color="blue" label={lang === "bn" ? "ছুটি" : "Leave"} value={aStats.leave} />
+        </div>
+      </Card>
+
+      {/* Salary + Performance + Docs summary */}
+      <div className="grid md:grid-cols-3 gap-3">
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground flex items-center gap-1"><Wallet className="w-3.5 h-3.5" />{lang === "bn" ? "মোট পরিশোধিত বেতন" : "Total Paid Salary"}</div>
+          <div className="text-2xl font-bold text-primary mt-1">{fmt.bdt(totalPaid)}</div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {lastSal ? `${lang === "bn" ? "শেষ:" : "Last:"} ${fmt.months[lastSal.month - 1]} ${fmt.num(lastSal.year)} — ${fmt.bdt(Number(lastSal.net_paid))}` : (lang === "bn" ? "কোনো রেকর্ড নেই" : "No records")}
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground flex items-center gap-1"><Star className="w-3.5 h-3.5" />{lang === "bn" ? "পারফরম্যান্স" : "Performance"}</div>
+          <div className="text-2xl font-bold mt-1 flex items-center gap-1">
+            {fmt.num(avgRating.toFixed(1))}<Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">{fmt.num(perf.length)} {lang === "bn" ? "রিভিউ" : "reviews"}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="text-xs text-muted-foreground flex items-center gap-1"><FileText className="w-3.5 h-3.5" />{lang === "bn" ? "ডকুমেন্ট" : "Documents"}</div>
+          <div className="text-2xl font-bold mt-1">{fmt.num(docs.length)}</div>
+          <div className={`text-xs mt-1 ${expiringSoon.length ? "text-red-600 font-semibold" : "text-muted-foreground"}`}>
+            {expiringSoon.length ? `${fmt.num(expiringSoon.length)} ${lang === "bn" ? "টি মেয়াদ শেষ হচ্ছে" : "expiring soon"}` : (lang === "bn" ? "সব ঠিক আছে" : "All good")}
+          </div>
+        </Card>
+      </div>
+
+      {/* Recent leaves + activities */}
+      <div className="grid md:grid-cols-2 gap-3">
+        <Card className="p-4">
+          <h3 className="font-semibold mb-2 flex items-center gap-2"><Calendar className="w-4 h-4" />{lang === "bn" ? "সাম্প্রতিক ছুটি" : "Recent Leaves"}</h3>
+          {leaves.length === 0 ? <div className="text-xs text-muted-foreground">{lang === "bn" ? "কোনো ছুটি নেই" : "No leaves"}</div> :
+            <div className="space-y-2">
+              {leaves.map((l: any) => (
+                <div key={l.id} className="flex items-center justify-between text-sm border-b last:border-0 pb-1">
+                  <div><Badge variant="outline" className="mr-2">{l.leave_type}</Badge>{fmt.date(l.start_date)} → {fmt.date(l.end_date)}</div>
+                  <span className="text-xs text-muted-foreground">{l.reason || "—"}</span>
+                </div>
+              ))}
+            </div>}
+        </Card>
+        <Card className="p-4">
+          <h3 className="font-semibold mb-2 flex items-center gap-2"><Activity className="w-4 h-4" />{lang === "bn" ? "সাম্প্রতিক কার্যক্রম" : "Recent Activity"}</h3>
+          {acts.length === 0 ? <div className="text-xs text-muted-foreground">{lang === "bn" ? "কোনো লগ নেই" : "No logs"}</div> :
+            <div className="space-y-2">
+              {acts.map((a: any) => (
+                <div key={a.id} className="text-sm border-b last:border-0 pb-1">
+                  <div className="flex items-center gap-2"><Badge variant="secondary" className="text-[10px]">{a.category}</Badge><span>{a.action}</span></div>
+                  <div className="text-[10px] text-muted-foreground">{fmt.date(a.created_at)}</div>
+                </div>
+              ))}
+            </div>}
+        </Card>
+      </div>
+    </div>
+  );
+}
+
 /* --------------------- PROFILE TAB --------------------- */
 function ProfileTab({ staff }: { staff: any }) {
   const { lang } = useI18n();
