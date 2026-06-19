@@ -823,6 +823,190 @@ export type Database = {
         }
         Relationships: []
       }
+      kyc_checklist_items: {
+        Row: {
+          checked: boolean
+          checked_by: string | null
+          checked_on: string | null
+          created_at: string
+          id: string
+          item_key: string
+          item_label: string
+          kyc_id: string
+          note: string | null
+        }
+        Insert: {
+          checked?: boolean
+          checked_by?: string | null
+          checked_on?: string | null
+          created_at?: string
+          id?: string
+          item_key: string
+          item_label: string
+          kyc_id: string
+          note?: string | null
+        }
+        Update: {
+          checked?: boolean
+          checked_by?: string | null
+          checked_on?: string | null
+          created_at?: string
+          id?: string
+          item_key?: string
+          item_label?: string
+          kyc_id?: string
+          note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_checklist_items_kyc_id_fkey"
+            columns: ["kyc_id"]
+            isOneToOne: false
+            referencedRelation: "kyc_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kyc_documents: {
+        Row: {
+          created_at: string
+          doc_name: string | null
+          doc_type: string
+          expire_on: string | null
+          file_path: string | null
+          file_url: string | null
+          id: string
+          issued_on: string | null
+          kyc_id: string
+          remarks: string | null
+        }
+        Insert: {
+          created_at?: string
+          doc_name?: string | null
+          doc_type: string
+          expire_on?: string | null
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          issued_on?: string | null
+          kyc_id: string
+          remarks?: string | null
+        }
+        Update: {
+          created_at?: string
+          doc_name?: string | null
+          doc_type?: string
+          expire_on?: string | null
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          issued_on?: string | null
+          kyc_id?: string
+          remarks?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kyc_documents_kyc_id_fkey"
+            columns: ["kyc_id"]
+            isOneToOne: false
+            referencedRelation: "kyc_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kyc_profiles: {
+        Row: {
+          account_number: string | null
+          address: string | null
+          approved_by: string | null
+          approved_on: string | null
+          created_at: string
+          created_by: string | null
+          customer_name: string
+          date_of_birth: string | null
+          email: string | null
+          father_name: string | null
+          id: string
+          monthly_income: number | null
+          mother_name: string | null
+          nid_number: string | null
+          nominee_name: string | null
+          nominee_nid: string | null
+          nominee_relation: string | null
+          notes: string | null
+          occupation: string | null
+          phone: string | null
+          photo_url: string | null
+          risk_level: Database["public"]["Enums"]["risk_level"]
+          source_of_income: string | null
+          spouse_name: string | null
+          status: Database["public"]["Enums"]["kyc_status"]
+          updated_at: string
+          verified_by: string | null
+          verified_on: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          address?: string | null
+          approved_by?: string | null
+          approved_on?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name: string
+          date_of_birth?: string | null
+          email?: string | null
+          father_name?: string | null
+          id?: string
+          monthly_income?: number | null
+          mother_name?: string | null
+          nid_number?: string | null
+          nominee_name?: string | null
+          nominee_nid?: string | null
+          nominee_relation?: string | null
+          notes?: string | null
+          occupation?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          source_of_income?: string | null
+          spouse_name?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          verified_by?: string | null
+          verified_on?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          address?: string | null
+          approved_by?: string | null
+          approved_on?: string | null
+          created_at?: string
+          created_by?: string | null
+          customer_name?: string
+          date_of_birth?: string | null
+          email?: string | null
+          father_name?: string | null
+          id?: string
+          monthly_income?: number | null
+          mother_name?: string | null
+          nid_number?: string | null
+          nominee_name?: string | null
+          nominee_nid?: string | null
+          nominee_relation?: string | null
+          notes?: string | null
+          occupation?: string | null
+          phone?: string | null
+          photo_url?: string | null
+          risk_level?: Database["public"]["Enums"]["risk_level"]
+          source_of_income?: string | null
+          spouse_name?: string | null
+          status?: Database["public"]["Enums"]["kyc_status"]
+          updated_at?: string
+          verified_by?: string | null
+          verified_on?: string | null
+        }
+        Relationships: []
+      }
       leaves: {
         Row: {
           approved_by: string | null
@@ -961,6 +1145,269 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      meeting_actions: {
+        Row: {
+          action: string
+          completed_on: string | null
+          completion_note: string | null
+          created_at: string
+          deadline: string | null
+          id: string
+          meeting_id: string
+          responsible: string | null
+          status: Database["public"]["Enums"]["action_status"]
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          completed_on?: string | null
+          completion_note?: string | null
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          meeting_id: string
+          responsible?: string | null
+          status?: Database["public"]["Enums"]["action_status"]
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          completed_on?: string | null
+          completion_note?: string | null
+          created_at?: string
+          deadline?: string | null
+          id?: string
+          meeting_id?: string
+          responsible?: string | null
+          status?: Database["public"]["Enums"]["action_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_actions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_agendas: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          notes: string | null
+          presenter: string | null
+          sort_order: number
+          time_slot: string | null
+          topic: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          notes?: string | null
+          presenter?: string | null
+          sort_order?: number
+          time_slot?: string | null
+          topic: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          notes?: string | null
+          presenter?: string | null
+          sort_order?: number
+          time_slot?: string | null
+          topic?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_agendas_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_attendees: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          name: string
+          present: boolean
+          role: string | null
+          staff_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          name: string
+          present?: boolean
+          role?: string | null
+          staff_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          name?: string
+          present?: boolean
+          role?: string | null
+          staff_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_attendees_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_attendees_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_problems: {
+        Row: {
+          created_at: string
+          id: string
+          meeting_id: string
+          problem: string
+          raised_by: string | null
+          resolution: string | null
+          resolved_on: string | null
+          status: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meeting_id: string
+          problem: string
+          raised_by?: string | null
+          resolution?: string | null
+          resolved_on?: string | null
+          status?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          problem?: string
+          raised_by?: string | null
+          resolution?: string | null
+          resolved_on?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_problems_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_targets: {
+        Row: {
+          achievement_percent: number
+          assigned_to: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          meeting_id: string
+          remarks: string | null
+          target: string
+        }
+        Insert: {
+          achievement_percent?: number
+          assigned_to?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          meeting_id: string
+          remarks?: string | null
+          target: string
+        }
+        Update: {
+          achievement_percent?: number
+          assigned_to?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          meeting_id?: string
+          remarks?: string | null
+          target?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_targets_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          chairperson: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          location: string | null
+          meeting_date: string
+          meeting_time: string | null
+          meeting_type: string
+          next_meeting_date: string | null
+          status: Database["public"]["Enums"]["meeting_status"]
+          summary: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          chairperson?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location?: string | null
+          meeting_date: string
+          meeting_time?: string | null
+          meeting_type?: string
+          next_meeting_date?: string | null
+          status?: Database["public"]["Enums"]["meeting_status"]
+          summary?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          chairperson?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          location?: string | null
+          meeting_date?: string
+          meeting_time?: string | null
+          meeting_type?: string
+          next_meeting_date?: string | null
+          status?: Database["public"]["Enums"]["meeting_status"]
+          summary?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       monthly_profits: {
         Row: {
@@ -1543,6 +1990,127 @@ export type Database = {
           },
         ]
       }
+      task_history: {
+        Row: {
+          action: string
+          created_at: string
+          from_status: string | null
+          id: string
+          note: string | null
+          performed_by: string | null
+          performed_by_name: string | null
+          task_id: string
+          to_status: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          performed_by?: string | null
+          performed_by_name?: string | null
+          task_id: string
+          to_status?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          from_status?: string | null
+          id?: string
+          note?: string | null
+          performed_by?: string | null
+          performed_by_name?: string | null
+          task_id?: string
+          to_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_history_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tasks: {
+        Row: {
+          assigned_to: string | null
+          assigned_to_name: string | null
+          attachment_url: string | null
+          category: string
+          completed_on: string | null
+          completion_note: string | null
+          created_at: string
+          created_by: string | null
+          deadline: string | null
+          description: string | null
+          id: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          reminder_date: string | null
+          source_id: string | null
+          source_type: string | null
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at: string
+          verified_by: string | null
+          verified_on: string | null
+        }
+        Insert: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          attachment_url?: string | null
+          category?: string
+          completed_on?: string | null
+          completion_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          reminder_date?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          title: string
+          updated_at?: string
+          verified_by?: string | null
+          verified_on?: string | null
+        }
+        Update: {
+          assigned_to?: string | null
+          assigned_to_name?: string | null
+          attachment_url?: string | null
+          category?: string
+          completed_on?: string | null
+          completion_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          reminder_date?: string | null
+          source_id?: string | null
+          source_type?: string | null
+          status?: Database["public"]["Enums"]["task_status"]
+          title?: string
+          updated_at?: string
+          verified_by?: string | null
+          verified_on?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       upcoming_payments: {
         Row: {
           amount: number
@@ -1630,7 +2198,18 @@ export type Database = {
       }
     }
     Enums: {
+      action_status: "pending" | "in_progress" | "completed" | "overdue"
       app_role: "admin" | "user"
+      kyc_status: "pending" | "verified" | "approved" | "rejected"
+      meeting_status: "scheduled" | "in_progress" | "completed" | "cancelled"
+      risk_level: "low" | "medium" | "high"
+      task_priority: "low" | "medium" | "high" | "urgent"
+      task_status:
+        | "pending"
+        | "in_progress"
+        | "completed"
+        | "verified"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1758,7 +2337,19 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      action_status: ["pending", "in_progress", "completed", "overdue"],
       app_role: ["admin", "user"],
+      kyc_status: ["pending", "verified", "approved", "rejected"],
+      meeting_status: ["scheduled", "in_progress", "completed", "cancelled"],
+      risk_level: ["low", "medium", "high"],
+      task_priority: ["low", "medium", "high", "urgent"],
+      task_status: [
+        "pending",
+        "in_progress",
+        "completed",
+        "verified",
+        "cancelled",
+      ],
     },
   },
 } as const
