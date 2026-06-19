@@ -276,13 +276,18 @@ export type Database = {
           document_check_note: string | null
           document_check_status: string | null
           id: string
+          inventory_check_note: string | null
+          inventory_check_status: string | null
           kyc_check_note: string | null
           kyc_check_status: string | null
+          loan_check_note: string | null
+          loan_check_status: string | null
           pending_check_note: string | null
           pending_check_status: string | null
           period_end: string | null
           period_start: string | null
           prepared_by: string | null
+          reference_number: string | null
           remarks: string | null
           salary_check_note: string | null
           salary_check_status: string | null
@@ -307,13 +312,18 @@ export type Database = {
           document_check_note?: string | null
           document_check_status?: string | null
           id?: string
+          inventory_check_note?: string | null
+          inventory_check_status?: string | null
           kyc_check_note?: string | null
           kyc_check_status?: string | null
+          loan_check_note?: string | null
+          loan_check_status?: string | null
           pending_check_note?: string | null
           pending_check_status?: string | null
           period_end?: string | null
           period_start?: string | null
           prepared_by?: string | null
+          reference_number?: string | null
           remarks?: string | null
           salary_check_note?: string | null
           salary_check_status?: string | null
@@ -338,13 +348,18 @@ export type Database = {
           document_check_note?: string | null
           document_check_status?: string | null
           id?: string
+          inventory_check_note?: string | null
+          inventory_check_status?: string | null
           kyc_check_note?: string | null
           kyc_check_status?: string | null
+          loan_check_note?: string | null
+          loan_check_status?: string | null
           pending_check_note?: string | null
           pending_check_status?: string | null
           period_end?: string | null
           period_start?: string | null
           prepared_by?: string | null
+          reference_number?: string | null
           remarks?: string | null
           salary_check_note?: string | null
           salary_check_status?: string | null
@@ -360,8 +375,11 @@ export type Database = {
       audit_tasks: {
         Row: {
           assigned_to: string | null
+          attachment_name: string | null
+          attachment_url: string | null
           audit_report_id: string | null
           completion_date: string | null
+          completion_note: string | null
           created_at: string
           due_date: string | null
           id: string
@@ -373,8 +391,11 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          attachment_name?: string | null
+          attachment_url?: string | null
           audit_report_id?: string | null
           completion_date?: string | null
+          completion_note?: string | null
           created_at?: string
           due_date?: string | null
           id?: string
@@ -386,8 +407,11 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          attachment_name?: string | null
+          attachment_url?: string | null
           audit_report_id?: string | null
           completion_date?: string | null
+          completion_note?: string | null
           created_at?: string
           due_date?: string | null
           id?: string
