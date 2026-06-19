@@ -26,6 +26,7 @@ type Staff = {
   joining_date: string | null;
   active: boolean;
   photo_url?: string | null;
+  nid?: string | null;
 };
 
 type Salary = {
