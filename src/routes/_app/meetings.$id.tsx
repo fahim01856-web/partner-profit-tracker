@@ -361,10 +361,10 @@ function ActionsTab({ meetingId }: { meetingId: string }) {
     mutationFn: async () => {
       const items = parseBulk(bulk);
       if (!items.length) return;
-      const rows = items.map((action) => ({ meeting_id: meetingId, action, responsible: bulkResp || null, deadline: bulkDeadline || null, status: "pending" }));
+      const rows = items.map((action) => ({ meeting_id: meetingId, action, responsible: bulkResp || null, deadline: bulkDeadline || null, status: "pending" as const }));
       const { error } = await supabase.from("meeting_actions").insert(rows);
       if (error) throw error;
-      const taskRows = items.map((title) => ({ title, category: "meeting", priority: "medium", assigned_to_name: bulkResp || null, deadline: bulkDeadline || null, source_type: "meeting", source_id: meetingId }));
+      const taskRows = items.map((title) => ({ title, category: "meeting", priority: "medium" as const, assigned_to_name: bulkResp || null, deadline: bulkDeadline || null, source_type: "meeting", source_id: meetingId }));
       await supabase.from("tasks").insert(taskRows);
     },
     onSuccess: () => { setBulk(""); setBulkResp(""); setBulkDeadline(""); toast.success("সব অ্যাকশন + টাস্ক যোগ হয়েছে"); qc.invalidateQueries({ queryKey: ["meeting_actions", meetingId] }); },
