@@ -434,7 +434,6 @@ function ChecksTab({ report, qc }: { report: any; qc: any }) {
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <div>
             <h3 className="font-semibold">{lang === "bn" ? "কমপ্লায়েন্স চেকলিস্ট" : "Compliance Checklist"}</h3>
-            <p className="text-xs text-muted-foreground">{lang === "bn" ? "প্রতিটি চেক আলাদা রেকর্ড হিসেবে অ্যাড, এডিট ও ডিলিট করা যাবে" : "Add, edit, and delete each checklist item separately"}</p>
           </div>
           <div className="text-right">
             <div className="text-xs text-muted-foreground">{lang === "bn" ? "স্কোর" : "Score"}</div>
