@@ -878,7 +878,11 @@ export type Database = {
           id: string
           issued_on: string | null
           kyc_id: string
+          notes: string | null
           remarks: string | null
+          verified: boolean | null
+          verified_by: string | null
+          verified_on: string | null
         }
         Insert: {
           created_at?: string
@@ -890,7 +894,11 @@ export type Database = {
           id?: string
           issued_on?: string | null
           kyc_id: string
+          notes?: string | null
           remarks?: string | null
+          verified?: boolean | null
+          verified_by?: string | null
+          verified_on?: string | null
         }
         Update: {
           created_at?: string
@@ -902,7 +910,11 @@ export type Database = {
           id?: string
           issued_on?: string | null
           kyc_id?: string
+          notes?: string | null
           remarks?: string | null
+          verified?: boolean | null
+          verified_by?: string | null
+          verified_on?: string | null
         }
         Relationships: [
           {
@@ -917,90 +929,141 @@ export type Database = {
       kyc_profiles: {
         Row: {
           account_number: string | null
+          account_type: string | null
           address: string | null
           approved_by: string | null
           approved_on: string | null
+          branch_name: string | null
           created_at: string
           created_by: string | null
+          customer_id: string | null
           customer_name: string
           date_of_birth: string | null
           email: string | null
+          emergency_contact: string | null
+          expected_monthly_transaction: number | null
           father_name: string | null
+          gender: string | null
           id: string
+          introducer_account: string | null
+          introducer_name: string | null
+          marital_status: string | null
           monthly_income: number | null
           mother_name: string | null
+          nationality: string | null
+          next_review_date: string | null
           nid_number: string | null
           nominee_name: string | null
           nominee_nid: string | null
           nominee_relation: string | null
           notes: string | null
           occupation: string | null
+          opening_date: string | null
+          pep_status: boolean | null
+          permanent_address: string | null
           phone: string | null
           photo_url: string | null
+          place_of_birth: string | null
+          relationship_officer: string | null
           risk_level: Database["public"]["Enums"]["risk_level"]
           source_of_income: string | null
           spouse_name: string | null
           status: Database["public"]["Enums"]["kyc_status"]
+          tin_number: string | null
           updated_at: string
           verified_by: string | null
           verified_on: string | null
         }
         Insert: {
           account_number?: string | null
+          account_type?: string | null
           address?: string | null
           approved_by?: string | null
           approved_on?: string | null
+          branch_name?: string | null
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           customer_name: string
           date_of_birth?: string | null
           email?: string | null
+          emergency_contact?: string | null
+          expected_monthly_transaction?: number | null
           father_name?: string | null
+          gender?: string | null
           id?: string
+          introducer_account?: string | null
+          introducer_name?: string | null
+          marital_status?: string | null
           monthly_income?: number | null
           mother_name?: string | null
+          nationality?: string | null
+          next_review_date?: string | null
           nid_number?: string | null
           nominee_name?: string | null
           nominee_nid?: string | null
           nominee_relation?: string | null
           notes?: string | null
           occupation?: string | null
+          opening_date?: string | null
+          pep_status?: boolean | null
+          permanent_address?: string | null
           phone?: string | null
           photo_url?: string | null
+          place_of_birth?: string | null
+          relationship_officer?: string | null
           risk_level?: Database["public"]["Enums"]["risk_level"]
           source_of_income?: string | null
           spouse_name?: string | null
           status?: Database["public"]["Enums"]["kyc_status"]
+          tin_number?: string | null
           updated_at?: string
           verified_by?: string | null
           verified_on?: string | null
         }
         Update: {
           account_number?: string | null
+          account_type?: string | null
           address?: string | null
           approved_by?: string | null
           approved_on?: string | null
+          branch_name?: string | null
           created_at?: string
           created_by?: string | null
+          customer_id?: string | null
           customer_name?: string
           date_of_birth?: string | null
           email?: string | null
+          emergency_contact?: string | null
+          expected_monthly_transaction?: number | null
           father_name?: string | null
+          gender?: string | null
           id?: string
+          introducer_account?: string | null
+          introducer_name?: string | null
+          marital_status?: string | null
           monthly_income?: number | null
           mother_name?: string | null
+          nationality?: string | null
+          next_review_date?: string | null
           nid_number?: string | null
           nominee_name?: string | null
           nominee_nid?: string | null
           nominee_relation?: string | null
           notes?: string | null
           occupation?: string | null
+          opening_date?: string | null
+          pep_status?: boolean | null
+          permanent_address?: string | null
           phone?: string | null
           photo_url?: string | null
+          place_of_birth?: string | null
+          relationship_officer?: string | null
           risk_level?: Database["public"]["Enums"]["risk_level"]
           source_of_income?: string | null
           spouse_name?: string | null
           status?: Database["public"]["Enums"]["kyc_status"]
+          tin_number?: string | null
           updated_at?: string
           verified_by?: string | null
           verified_on?: string | null
