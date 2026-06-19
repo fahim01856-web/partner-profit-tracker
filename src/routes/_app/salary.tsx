@@ -88,7 +88,7 @@ function SalaryRow({ staff, existing, onPay }: any) {
   return (
     <div className="p-3 rounded-lg border space-y-2">
       <div className="flex justify-between items-center">
-        <div className="font-semibold">{staff.name} <span className="text-xs text-muted-foreground">— {staff.position}</span></div>
+        <div className="font-semibold">{staff.name} <span className="text-xs text-muted-foreground">— {staff.position}{staff.nid ? ` · NID: ${staff.nid}` : ""}</span></div>
         {existing && <span className="text-xs px-2 py-0.5 rounded bg-success/15 text-success">{t("paid")}</span>}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
