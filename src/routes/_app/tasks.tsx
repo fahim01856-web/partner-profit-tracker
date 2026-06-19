@@ -132,7 +132,7 @@ function TasksPage() {
       const lines = bulkText.split("\n").map((l) => l.replace(/^\s*(\d+[\.\)]|[-•*])\s*/, "").trim()).filter(Boolean);
       if (!lines.length) throw new Error("কোনো শিরোনাম নেই");
       const staffName = staff.find((s: any) => s.id === bulkAssigned)?.name || null;
-      const rows = lines.map((title) => ({
+      const rows: any[] = lines.map((title) => ({
         title, priority: bulkPriority, status: "pending", category: "daily",
         assigned_to: bulkAssigned || null, assigned_to_name: staffName,
         deadline: bulkDeadline || null, progress: 0,
