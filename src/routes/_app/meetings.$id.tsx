@@ -256,6 +256,8 @@ function ProblemsTab({ meetingId }: { meetingId: string }) {
 function TargetsTab({ meetingId }: { meetingId: string }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({ target: "", assigned_to: "", due_date: "", achievement_percent: 0, remarks: "" });
+  const [bulk, setBulk] = useState("");
+  const [bulkDue, setBulkDue] = useState("");
   const { data = [] } = useQuery({
     queryKey: ["meeting_targets", meetingId],
     queryFn: async () => {
@@ -268,6 +270,17 @@ function TargetsTab({ meetingId }: { meetingId: string }) {
     mutationFn: async () => { const { error } = await supabase.from("meeting_targets").insert({ meeting_id: meetingId, ...form, due_date: form.due_date || null }); if (error) throw error; },
     onSuccess: () => { setForm({ target: "", assigned_to: "", due_date: "", achievement_percent: 0, remarks: "" }); qc.invalidateQueries({ queryKey: ["meeting_targets", meetingId] }); },
   });
+  const bulkAdd = useMutation({
+    mutationFn: async () => {
+      const items = parseBulk(bulk);
+      if (!items.length) return;
+      const rows = items.map((target) => ({ meeting_id: meetingId, target, due_date: bulkDue || null, achievement_percent: 0 }));
+      const { error } = await supabase.from("meeting_targets").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => { setBulk(""); setBulkDue(""); toast.success("সব লক্ষ্য যোগ হয়েছে"); qc.invalidateQueries({ queryKey: ["meeting_targets", meetingId] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
   const update = useMutation({ mutationFn: async ({ id, patch }: any) => { await supabase.from("meeting_targets").update(patch).eq("id", id); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["meeting_targets", meetingId] }) });
   const del = useMutation({ mutationFn: async (id: string) => { await supabase.from("meeting_targets").delete().eq("id", id); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["meeting_targets", meetingId] }) });
   return (
@@ -278,13 +291,22 @@ function TargetsTab({ meetingId }: { meetingId: string }) {
         <Input type="date" value={form.due_date} onChange={(e) => setForm({ ...form, due_date: e.target.value })} />
         <Button onClick={() => form.target && add.mutate()}><Plus className="w-4 h-4 mr-1" /> যোগ</Button>
       </div>
+      <div className="border-t pt-3 no-print space-y-2">
+        <Label className="text-xs">একসাথে সিরিয়াল করে যোগ করুন (প্রতি লাইনে একটি লক্ষ্য)</Label>
+        <Textarea rows={4} placeholder={"1. প্রথম লক্ষ্য\n2. দ্বিতীয় লক্ষ্য\n3. তৃতীয় লক্ষ্য"} value={bulk} onChange={(e) => setBulk(e.target.value)} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Input type="date" value={bulkDue} onChange={(e) => setBulkDue(e.target.value)} className="w-44" placeholder="সবার Due Date (ঐচ্ছিক)" />
+          <Button size="sm" onClick={() => bulkAdd.mutate()} disabled={!bulk.trim()}><Plus className="w-4 h-4 mr-1" /> সব যোগ করুন ({parseBulk(bulk).length})</Button>
+        </div>
+      </div>
       <div className="space-y-3">
-        {data.map((t: any) => {
+        {data.map((t: any, i: number) => {
           const dl = daysLeft(t.due_date);
           const done = (t.achievement_percent || 0) >= 100;
           return (
             <div key={t.id} className={`border rounded p-3 ${dl?.tone === "danger" && !done ? "border-destructive/50 bg-destructive/5" : ""}`}>
               <div className="flex items-start justify-between gap-2">
+                <div className="w-7 text-sm font-mono text-muted-foreground pt-0.5">{i + 1}.</div>
                 <div className="flex-1">
                   <div className="font-medium">{t.target}</div>
                   <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
