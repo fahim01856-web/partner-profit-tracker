@@ -1,0 +1,551 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { BankLogo } from "@/components/BankLogo";
+import { useI18n } from "@/lib/i18n";
+import { useFmt } from "@/lib/format";
+import { toast } from "sonner";
+import {
+  ArrowLeft, Printer, Save, Plus, Trash2, AlertTriangle, CheckCircle2,
+  FileCheck, Upload, ClipboardList, ShieldCheck, FileText, Pencil,
+} from "lucide-react";
+
+export const Route = createFileRoute("/_app/audit-report/$id")({ component: AuditReportDetailPage });
+
+const STATUS_OPTIONS = ["ok", "warning", "fail"] as const;
+const statusColor: Record<string, string> = {
+  ok: "bg-green-100 text-green-800 border-green-300",
+  warning: "bg-amber-100 text-amber-800 border-amber-300",
+  fail: "bg-red-100 text-red-800 border-red-300",
+};
+const statusLabel = (s: string, lang: "bn" | "en") => {
+  const map: any = {
+    bn: { ok: "ঠিক আছে", warning: "সতর্ক", fail: "ব্যর্থ", pending: "পেন্ডিং", in_progress: "চলমান", completed: "সম্পন্ন" },
+    en: { ok: "OK", warning: "Warning", fail: "Failed", pending: "Pending", in_progress: "In Progress", completed: "Completed" },
+  };
+  return map[lang][s] || s;
+};
+const riskColor: Record<string, string> = {
+  low: "bg-blue-100 text-blue-800",
+  medium: "bg-amber-100 text-amber-800",
+  high: "bg-orange-100 text-orange-800",
+  critical: "bg-red-100 text-red-800",
+};
+const priorityColor: Record<string, string> = {
+  low: "bg-gray-100 text-gray-800",
+  medium: "bg-blue-100 text-blue-800",
+  high: "bg-orange-100 text-orange-800",
+  urgent: "bg-red-100 text-red-800",
+};
+
+const CHECK_FIELDS = [
+  { key: "cash", labelBn: "ক্যাশ ব্যালেন্স চেক", labelEn: "Cash Balance Check" },
+  { key: "voucher", labelBn: "ভাউচার অনুমোদন চেক", labelEn: "Voucher Approval Check" },
+  { key: "document", labelBn: "ডকুমেন্ট মেয়াদ চেক", labelEn: "Document Expiry Check" },
+  { key: "pending", labelBn: "পেন্ডিং টাস্ক চেক", labelEn: "Pending Task Check" },
+  { key: "attendance", labelBn: "হাজিরা চেক", labelEn: "Attendance Check" },
+  { key: "salary", labelBn: "বেতন চেক", labelEn: "Salary Check" },
+  { key: "signature", labelBn: "সিগনেচার কার্ড চেক", labelEn: "Signature Card Check" },
+  { key: "kyc", labelBn: "KYC চেক", labelEn: "KYC Check" },
+];
+
+function AuditReportDetailPage() {
+  const { id } = Route.useParams();
+  const { t, lang } = useI18n();
+  const fmt = useFmt();
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+
+  const { data: report, isLoading } = useQuery({
+    queryKey: ["audit_report", id],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("audit_reports").select("*").eq("id", id).single();
+      if (error) throw error;
+      return data as any;
+    },
+  });
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
+  if (!report) return <div className="p-8 text-center text-muted-foreground">Not found</div>;
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between no-print gap-2 flex-wrap">
+        <Button variant="ghost" size="sm" onClick={() => navigate({ to: "/audit-report" })}>
+          <ArrowLeft className="w-4 h-4 mr-1" /> {lang === "bn" ? "ফিরে যান" : "Back"}
+        </Button>
+        <Button onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট / PDF" : "Print / PDF"}</Button>
+      </div>
+
+      {/* Print header */}
+      <div className="hidden print:flex items-center justify-between border-b pb-4 mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-14 h-14 bg-white border p-1"><BankLogo className="w-full h-full" /></div>
+          <div>
+            <div className="font-bold">{t("bankName")}</div>
+            <div className="text-sm">{t("outlet")} — {t("locationFull")}</div>
+          </div>
+        </div>
+        <div className="text-right">
+          <div className="font-bold">{lang === "bn" ? "অডিট ও কমপ্লায়েন্স রিপোর্ট" : "Audit & Compliance Report"}</div>
+          <div className="text-sm">{fmt.date(report.audit_date)} • {report.auditor_name}</div>
+        </div>
+      </div>
+
+      <Tabs defaultValue="info" className="w-full">
+        <TabsList className="flex flex-wrap h-auto justify-start w-full gap-1 no-print">
+          <TabsTrigger value="info"><FileText className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "তথ্য" : "Info"}</TabsTrigger>
+          <TabsTrigger value="checks"><ShieldCheck className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "কমপ্লায়েন্স" : "Compliance"}</TabsTrigger>
+          <TabsTrigger value="findings"><AlertTriangle className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "ইস্যু/ফাইন্ডিং" : "Findings"}</TabsTrigger>
+          <TabsTrigger value="tasks"><ClipboardList className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "পেন্ডিং টাস্ক" : "Tasks"}</TabsTrigger>
+          <TabsTrigger value="signoff"><Pencil className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "সাইন-অফ" : "Sign-off"}</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="info" className="print:block"><InfoTab report={report} qc={qc} /></TabsContent>
+        <TabsContent value="checks" className="print:block"><ChecksTab report={report} qc={qc} /></TabsContent>
+        <TabsContent value="findings" className="print:block"><FindingsTab reportId={id} /></TabsContent>
+        <TabsContent value="tasks" className="print:block"><TasksTab reportId={id} /></TabsContent>
+        <TabsContent value="signoff" className="print:block"><SignOffTab report={report} qc={qc} /></TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+/* --- Audit Info --- */
+function InfoTab({ report, qc }: { report: any; qc: any }) {
+  const { lang } = useI18n();
+  const [form, setForm] = useState({
+    audit_date: report.audit_date, auditor_name: report.auditor_name,
+    audit_type: report.audit_type, period_start: report.period_start || "",
+    period_end: report.period_end || "", remarks: report.remarks || "",
+  });
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("audit_reports").update({
+        ...form, period_start: form.period_start || null, period_end: form.period_end || null,
+      }).eq("id", report.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success(lang === "bn" ? "সংরক্ষিত" : "Saved"); qc.invalidateQueries({ queryKey: ["audit_report", report.id] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <Card className="p-5">
+      <h3 className="font-semibold mb-3">{lang === "bn" ? "১. অডিট তথ্য" : "1. Audit Information"}</h3>
+      <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div><Label>{lang === "bn" ? "অডিট তারিখ" : "Audit Date"}</Label><Input type="date" value={form.audit_date} onChange={e => setForm({ ...form, audit_date: e.target.value })} /></div>
+        <div><Label>{lang === "bn" ? "অডিটরের নাম" : "Auditor Name"}</Label><Input value={form.auditor_name} onChange={e => setForm({ ...form, auditor_name: e.target.value })} maxLength={100} /></div>
+        <div><Label>{lang === "bn" ? "অডিটের ধরন" : "Audit Type"}</Label>
+          <select className="w-full h-9 border rounded-md px-2 bg-background" value={form.audit_type} onChange={e => setForm({ ...form, audit_type: e.target.value })}>
+            <option value="internal">Internal</option><option value="external">External</option><option value="surprise">Surprise</option><option value="compliance">Compliance</option><option value="financial">Financial</option>
+          </select>
+        </div>
+        <div><Label>{lang === "bn" ? "পিরিয়ড শুরু" : "Period Start"}</Label><Input type="date" value={form.period_start} onChange={e => setForm({ ...form, period_start: e.target.value })} /></div>
+        <div><Label>{lang === "bn" ? "পিরিয়ড শেষ" : "Period End"}</Label><Input type="date" value={form.period_end} onChange={e => setForm({ ...form, period_end: e.target.value })} /></div>
+        <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "মন্তব্য" : "Remarks"}</Label><Textarea rows={3} value={form.remarks} onChange={e => setForm({ ...form, remarks: e.target.value })} maxLength={2000} /></div>
+        <div><Button type="submit" disabled={save.isPending}><Save className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</Button></div>
+      </form>
+    </Card>
+  );
+}
+
+/* --- Compliance Checks --- */
+function ChecksTab({ report, qc }: { report: any; qc: any }) {
+  const { lang } = useI18n();
+  const [state, setState] = useState<any>(() => {
+    const s: any = {};
+    CHECK_FIELDS.forEach(f => {
+      s[`${f.key}_check_status`] = report[`${f.key}_check_status`] || "ok";
+      s[`${f.key}_check_note`] = report[`${f.key}_check_note`] || "";
+    });
+    return s;
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("audit_reports").update(state).eq("id", report.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success(lang === "bn" ? "সংরক্ষিত" : "Saved"); qc.invalidateQueries({ queryKey: ["audit_report", report.id] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const passCount = CHECK_FIELDS.filter(f => state[`${f.key}_check_status`] === "ok").length;
+  const score = Math.round((passCount / CHECK_FIELDS.length) * 100);
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-5">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
+          <h3 className="font-semibold">{lang === "bn" ? "৩. কমপ্লায়েন্স চেকলিস্ট" : "3. Compliance Summary"}</h3>
+          <div className="text-right">
+            <div className="text-xs text-muted-foreground">{lang === "bn" ? "স্কোর" : "Score"}</div>
+            <div className={`text-2xl font-bold ${score >= 80 ? "text-green-600" : score >= 60 ? "text-amber-600" : "text-red-600"}`}>{score}%</div>
+          </div>
+        </div>
+        <div className="space-y-2">
+          {CHECK_FIELDS.map(f => {
+            const s = state[`${f.key}_check_status`];
+            return (
+              <div key={f.key} className={`border rounded-md p-3 ${statusColor[s]}`}>
+                <div className="grid sm:grid-cols-12 gap-2 items-center">
+                  <div className="sm:col-span-4 font-medium text-sm flex items-center gap-2">
+                    {s === "ok" ? <CheckCircle2 className="w-4 h-4" /> : <AlertTriangle className="w-4 h-4" />}
+                    {lang === "bn" ? f.labelBn : f.labelEn}
+                  </div>
+                  <div className="sm:col-span-2">
+                    <select className="w-full h-8 border rounded-md px-2 bg-background text-foreground text-sm"
+                      value={s} onChange={e => setState({ ...state, [`${f.key}_check_status`]: e.target.value })}>
+                      {STATUS_OPTIONS.map(o => <option key={o} value={o}>{statusLabel(o, lang)}</option>)}
+                    </select>
+                  </div>
+                  <div className="sm:col-span-6">
+                    <Input className="h-8 text-sm bg-background text-foreground"
+                      placeholder={lang === "bn" ? "নোট / মন্তব্য" : "Note / comment"} maxLength={500}
+                      value={state[`${f.key}_check_note`]} onChange={e => setState({ ...state, [`${f.key}_check_note`]: e.target.value })} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-4 no-print">
+          <Button onClick={() => save.mutate()} disabled={save.isPending}><Save className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save Checks"}</Button>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+/* --- Findings --- */
+function FindingsTab({ reportId }: { reportId: string }) {
+  const { lang } = useI18n();
+  const fmt = useFmt();
+  const qc = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const empty = {
+    title: "", details: "", category: "general", risk_level: "medium",
+    recommendation: "", responsible_person: "", deadline: "",
+    status: "pending", corrective_action: "",
+  };
+  const [form, setForm] = useState(empty);
+  const [evidenceFile, setEvidenceFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const { data: rows = [] } = useQuery({
+    queryKey: ["audit_findings", reportId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("audit_findings").select("*")
+        .eq("audit_report_id", reportId).order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!form.title.trim()) throw new Error(lang === "bn" ? "শিরোনাম দিন" : "Title required");
+      setUploading(true);
+      let evidence_url: string | null = null, evidence_name: string | null = null;
+      if (evidenceFile) {
+        const ext = evidenceFile.name.split(".").pop() || "bin";
+        const path = `audit/${reportId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("documents").upload(path, evidenceFile);
+        if (upErr) throw upErr;
+        evidence_url = path; evidence_name = evidenceFile.name;
+      }
+      const payload: any = {
+        ...form,
+        audit_report_id: reportId,
+        deadline: form.deadline || null,
+        resolved_date: form.status === "completed" ? new Date().toISOString().slice(0, 10) : null,
+      };
+      if (evidence_url) { payload.evidence_url = evidence_url; payload.evidence_name = evidence_name; }
+      if (editingId) {
+        const { error } = await supabase.from("audit_findings").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("audit_findings").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(lang === "bn" ? "সংরক্ষিত" : "Saved");
+      setForm(empty); setEvidenceFile(null); setEditingId(null); setShowForm(false);
+      qc.invalidateQueries({ queryKey: ["audit_findings", reportId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+    onSettled: () => setUploading(false),
+  });
+
+  const del = useMutation({
+    mutationFn: async (fid: string) => { const { error } = await supabase.from("audit_findings").delete().eq("id", fid); if (error) throw error; },
+    onSuccess: () => { toast.success("Deleted"); qc.invalidateQueries({ queryKey: ["audit_findings", reportId] }); },
+  });
+
+  const startEdit = (r: any) => {
+    setEditingId(r.id); setShowForm(true);
+    setForm({
+      title: r.title, details: r.details || "", category: r.category, risk_level: r.risk_level,
+      recommendation: r.recommendation || "", responsible_person: r.responsible_person || "",
+      deadline: r.deadline || "", status: r.status, corrective_action: r.corrective_action || "",
+    });
+  };
+
+  const openEvidence = async (url: string) => {
+    if (url.startsWith("http")) { window.open(url, "_blank"); return; }
+    const { data } = await supabase.storage.from("documents").createSignedUrl(url, 300);
+    if (data?.signedUrl) window.open(data.signedUrl, "_blank");
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between no-print">
+        <h3 className="font-semibold">{lang === "bn" ? "২. অডিট ফাইন্ডিংস / ইস্যু" : "2. Audit Findings / Issues"} ({fmt.num(rows.length)})</h3>
+        <Button size="sm" onClick={() => { setShowForm(s => !s); setEditingId(null); setForm(empty); }}>
+          <Plus className="w-4 h-4 mr-1" />{lang === "bn" ? "নতুন ইস্যু" : "New Issue"}
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card className="p-4 ring-2 ring-primary no-print">
+          <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "ইস্যু শিরোনাম" : "Issue Title"} *</Label>
+              <Input required value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} maxLength={200} /></div>
+            <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "বিস্তারিত" : "Issue Details"}</Label>
+              <Textarea rows={3} value={form.details} onChange={e => setForm({ ...form, details: e.target.value })} maxLength={2000} /></div>
+            <div><Label>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</Label>
+              <select className="w-full h-9 border rounded-md px-2 bg-background" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
+                <option value="general">General</option><option value="financial">Financial</option><option value="operational">Operational</option>
+                <option value="compliance">Compliance</option><option value="kyc">KYC</option><option value="security">Security</option>
+                <option value="document">Document</option><option value="staff">Staff</option>
+              </select>
+            </div>
+            <div><Label>{lang === "bn" ? "ঝুঁকির মাত্রা" : "Risk Level"}</Label>
+              <select className="w-full h-9 border rounded-md px-2 bg-background" value={form.risk_level} onChange={e => setForm({ ...form, risk_level: e.target.value })}>
+                <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="critical">Critical</option>
+              </select>
+            </div>
+            <div><Label>{lang === "bn" ? "স্ট্যাটাস" : "Status"}</Label>
+              <select className="w-full h-9 border rounded-md px-2 bg-background" value={form.status} onChange={e => setForm({ ...form, status: e.target.value })}>
+                <option value="pending">{statusLabel("pending", lang)}</option>
+                <option value="in_progress">{statusLabel("in_progress", lang)}</option>
+                <option value="completed">{statusLabel("completed", lang)}</option>
+              </select>
+            </div>
+            <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "অডিটরের সুপারিশ" : "Auditor Recommendation"}</Label>
+              <Textarea rows={2} value={form.recommendation} onChange={e => setForm({ ...form, recommendation: e.target.value })} maxLength={1000} /></div>
+            <div><Label>{lang === "bn" ? "দায়িত্বপ্রাপ্ত ব্যক্তি" : "Responsible Person"}</Label>
+              <Input value={form.responsible_person} onChange={e => setForm({ ...form, responsible_person: e.target.value })} maxLength={100} /></div>
+            <div><Label>{lang === "bn" ? "ডেডলাইন" : "Deadline"}</Label>
+              <Input type="date" value={form.deadline} onChange={e => setForm({ ...form, deadline: e.target.value })} /></div>
+            <div><Label>{lang === "bn" ? "প্রমাণপত্র (ফাইল)" : "Evidence Upload"}</Label>
+              <Input type="file" onChange={e => setEvidenceFile(e.target.files?.[0] || null)} /></div>
+            <div className="sm:col-span-2 lg:col-span-3"><Label>{lang === "bn" ? "সংশোধনমূলক ব্যবস্থা" : "Corrective Action"}</Label>
+              <Textarea rows={2} value={form.corrective_action} onChange={e => setForm({ ...form, corrective_action: e.target.value })} maxLength={1000} /></div>
+            <div className="sm:col-span-2 lg:col-span-3 flex gap-2">
+              <Button type="submit" disabled={uploading}><Save className="w-4 h-4 mr-1" />{editingId ? (lang === "bn" ? "আপডেট" : "Update") : (lang === "bn" ? "সংরক্ষণ" : "Save")}</Button>
+              <Button type="button" variant="outline" onClick={() => { setShowForm(false); setEditingId(null); setForm(empty); }}>{lang === "bn" ? "বাতিল" : "Cancel"}</Button>
+            </div>
+          </form>
+        </Card>
+      )}
+
+      <div className="space-y-2">
+        {rows.length === 0 && <Card className="p-6 text-center text-muted-foreground">{lang === "bn" ? "কোনো ইস্যু নেই" : "No findings"}</Card>}
+        {rows.map((r: any) => (
+          <Card key={r.id} className="p-4">
+            <div className="flex items-start justify-between gap-2 flex-wrap">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-medium uppercase ${riskColor[r.risk_level]}`}>{r.risk_level}</span>
+                  <Badge variant="outline">{r.category}</Badge>
+                  <Badge variant={r.status === "completed" ? "default" : r.status === "in_progress" ? "secondary" : "destructive"}>
+                    {statusLabel(r.status, lang)}
+                  </Badge>
+                </div>
+                <div className="font-semibold">{r.title}</div>
+                {r.details && <p className="text-sm text-muted-foreground mt-1">{r.details}</p>}
+                <div className="grid sm:grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs">
+                  {r.recommendation && <div><span className="font-semibold">{lang === "bn" ? "সুপারিশ:" : "Recommendation:"}</span> {r.recommendation}</div>}
+                  {r.responsible_person && <div><span className="font-semibold">{lang === "bn" ? "দায়িত্বে:" : "Responsible:"}</span> {r.responsible_person}</div>}
+                  {r.deadline && <div><span className="font-semibold">{lang === "bn" ? "ডেডলাইন:" : "Deadline:"}</span> {fmt.date(r.deadline)}</div>}
+                  {r.corrective_action && <div className="sm:col-span-2"><span className="font-semibold">{lang === "bn" ? "ব্যবস্থা:" : "Action:"}</span> {r.corrective_action}</div>}
+                </div>
+                {r.evidence_url && (
+                  <Button size="sm" variant="outline" className="mt-2 no-print" onClick={() => openEvidence(r.evidence_url)}>
+                    <FileCheck className="w-3 h-3 mr-1" />{r.evidence_name || "Evidence"}
+                  </Button>
+                )}
+              </div>
+              <div className="flex flex-col gap-1 no-print">
+                <Button size="sm" variant="ghost" onClick={() => startEdit(r)}><Pencil className="w-4 h-4" /></Button>
+                <Button size="sm" variant="ghost" onClick={() => { if (window.confirm("?")) del.mutate(r.id); }}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* --- Tasks --- */
+function TasksTab({ reportId }: { reportId: string }) {
+  const { lang } = useI18n();
+  const fmt = useFmt();
+  const qc = useQueryClient();
+  const empty = { task_name: "", assigned_to: "", due_date: "", priority: "medium", status: "pending", completion_date: "", notes: "" };
+  const [form, setForm] = useState(empty);
+
+  const { data: rows = [] } = useQuery({
+    queryKey: ["audit_tasks", reportId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("audit_tasks").select("*")
+        .eq("audit_report_id", reportId).order("due_date", { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const add = useMutation({
+    mutationFn: async () => {
+      if (!form.task_name.trim()) throw new Error(lang === "bn" ? "কাজের নাম দিন" : "Task name required");
+      const { error } = await supabase.from("audit_tasks").insert({
+        audit_report_id: reportId, ...form,
+        due_date: form.due_date || null, completion_date: form.completion_date || null,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success(lang === "bn" ? "যোগ হয়েছে" : "Added"); setForm(empty); qc.invalidateQueries({ queryKey: ["audit_tasks", reportId] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const upd = useMutation({
+    mutationFn: async ({ tid, patch }: { tid: string; patch: any }) => {
+      const { error } = await supabase.from("audit_tasks").update(patch).eq("id", tid);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["audit_tasks", reportId] }),
+  });
+
+  const del = useMutation({
+    mutationFn: async (tid: string) => { const { error } = await supabase.from("audit_tasks").delete().eq("id", tid); if (error) throw error; },
+    onSuccess: () => { toast.success("Deleted"); qc.invalidateQueries({ queryKey: ["audit_tasks", reportId] }); },
+  });
+
+  return (
+    <div className="space-y-4">
+      <Card className="p-4 no-print">
+        <h3 className="font-semibold mb-3 flex items-center gap-2"><Plus className="w-4 h-4" />{lang === "bn" ? "৪. পেন্ডিং টাস্ক ট্র্যাকার" : "4. Pending Task Tracker"}</h3>
+        <form onSubmit={(e) => { e.preventDefault(); add.mutate(); }} className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="sm:col-span-2"><Label>{lang === "bn" ? "কাজের নাম" : "Task Name"} *</Label><Input required value={form.task_name} onChange={e => setForm({ ...form, task_name: e.target.value })} maxLength={200} /></div>
+          <div><Label>{lang === "bn" ? "দায়িত্বপ্রাপ্ত" : "Assigned To"}</Label><Input value={form.assigned_to} onChange={e => setForm({ ...form, assigned_to: e.target.value })} maxLength={100} /></div>
+          <div><Label>{lang === "bn" ? "ডেডলাইন" : "Due Date"}</Label><Input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })} /></div>
+          <div><Label>{lang === "bn" ? "অগ্রাধিকার" : "Priority"}</Label>
+            <select className="w-full h-9 border rounded-md px-2 bg-background" value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}>
+              <option value="low">Low</option><option value="medium">Medium</option><option value="high">High</option><option value="urgent">Urgent</option>
+            </select>
+          </div>
+          <div className="sm:col-span-3"><Label>{lang === "bn" ? "নোট" : "Notes"}</Label><Input value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} maxLength={500} /></div>
+          <div className="flex items-end"><Button type="submit" disabled={add.isPending}>{lang === "bn" ? "যোগ করুন" : "Add Task"}</Button></div>
+        </form>
+      </Card>
+
+      <Card className="p-0 overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-muted text-xs">
+            <tr>
+              <th className="p-2 text-left">{lang === "bn" ? "কাজ" : "Task"}</th>
+              <th className="p-2 text-left">{lang === "bn" ? "দায়িত্ব" : "Assigned"}</th>
+              <th className="p-2 text-left">{lang === "bn" ? "ডেডলাইন" : "Due"}</th>
+              <th className="p-2">{lang === "bn" ? "অগ্রাধিকার" : "Priority"}</th>
+              <th className="p-2">{lang === "bn" ? "স্ট্যাটাস" : "Status"}</th>
+              <th className="p-2">{lang === "bn" ? "সম্পন্ন" : "Done"}</th>
+              <th className="no-print"></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">{lang === "bn" ? "কোনো টাস্ক নেই" : "No tasks"}</td></tr>}
+            {rows.map((r: any) => {
+              const overdue = r.due_date && r.status !== "completed" && new Date(r.due_date) < new Date();
+              return (
+                <tr key={r.id} className={`border-t ${overdue ? "bg-red-50 dark:bg-red-950/20" : ""}`}>
+                  <td className="p-2">
+                    <div className="font-medium">{r.task_name}</div>
+                    {r.notes && <div className="text-xs text-muted-foreground">{r.notes}</div>}
+                  </td>
+                  <td className="p-2">{r.assigned_to || "—"}</td>
+                  <td className="p-2 text-xs">{r.due_date ? fmt.date(r.due_date) : "—"} {overdue && <span className="text-red-600 font-semibold">({lang === "bn" ? "অতিক্রান্ত" : "overdue"})</span>}</td>
+                  <td className="p-2 text-center"><span className={`text-[10px] px-2 py-0.5 rounded font-medium ${priorityColor[r.priority]}`}>{r.priority}</span></td>
+                  <td className="p-2">
+                    <select className="h-7 text-xs border rounded px-1 bg-background no-print"
+                      value={r.status} onChange={e => upd.mutate({
+                        tid: r.id,
+                        patch: { status: e.target.value, completion_date: e.target.value === "completed" ? new Date().toISOString().slice(0, 10) : null }
+                      })}>
+                      <option value="pending">{statusLabel("pending", lang)}</option>
+                      <option value="in_progress">{statusLabel("in_progress", lang)}</option>
+                      <option value="completed">{statusLabel("completed", lang)}</option>
+                    </select>
+                    <span className="hidden print:inline">{statusLabel(r.status, lang)}</span>
+                  </td>
+                  <td className="p-2 text-xs">{r.completion_date ? fmt.date(r.completion_date) : "—"}</td>
+                  <td className="p-2 no-print"><Button size="sm" variant="ghost" onClick={() => del.mutate(r.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Card>
+    </div>
+  );
+}
+
+/* --- Sign-off --- */
+function SignOffTab({ report, qc }: { report: any; qc: any }) {
+  const { lang } = useI18n();
+  const fmt = useFmt();
+  const [form, setForm] = useState({
+    prepared_by: report.prepared_by || "",
+    checked_by: report.checked_by || "",
+    approved_by: report.approved_by || "",
+    sign_date: report.sign_date || new Date().toISOString().slice(0, 10),
+  });
+  const save = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.from("audit_reports").update(form).eq("id", report.id);
+      if (error) throw error;
+    },
+    onSuccess: () => { toast.success(lang === "bn" ? "সাইন-অফ সংরক্ষিত" : "Sign-off saved"); qc.invalidateQueries({ queryKey: ["audit_report", report.id] }); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+  return (
+    <Card className="p-5">
+      <h3 className="font-semibold mb-3">{lang === "bn" ? "৫. অনুমোদন ও সাইন-অফ" : "5. Approval & Sign-off"}</h3>
+      <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }} className="grid sm:grid-cols-2 gap-3">
+        <div><Label>{lang === "bn" ? "প্রস্তুতকারী" : "Prepared By"}</Label><Input value={form.prepared_by} onChange={e => setForm({ ...form, prepared_by: e.target.value })} maxLength={100} /></div>
+        <div><Label>{lang === "bn" ? "যাচাইকারী" : "Checked By"}</Label><Input value={form.checked_by} onChange={e => setForm({ ...form, checked_by: e.target.value })} maxLength={100} /></div>
+        <div><Label>{lang === "bn" ? "অনুমোদনকারী" : "Approved By"}</Label><Input value={form.approved_by} onChange={e => setForm({ ...form, approved_by: e.target.value })} maxLength={100} /></div>
+        <div><Label>{lang === "bn" ? "তারিখ" : "Sign Date"}</Label><Input type="date" value={form.sign_date} onChange={e => setForm({ ...form, sign_date: e.target.value })} /></div>
+        <div className="sm:col-span-2 no-print"><Button type="submit" disabled={save.isPending}><Save className="w-4 h-4 mr-1" />{lang === "bn" ? "সংরক্ষণ" : "Save"}</Button></div>
+      </form>
+      {/* Signature lines for print */}
+      <div className="hidden print:grid grid-cols-4 gap-6 mt-12 text-center text-sm">
+        <div><div className="border-t pt-2">{form.prepared_by || "—"}</div><div className="text-xs">{lang === "bn" ? "প্রস্তুতকারী" : "Prepared By"}</div></div>
+        <div><div className="border-t pt-2">{form.checked_by || "—"}</div><div className="text-xs">{lang === "bn" ? "যাচাইকারী" : "Checked By"}</div></div>
+        <div><div className="border-t pt-2">{form.approved_by || "—"}</div><div className="text-xs">{lang === "bn" ? "অনুমোদনকারী" : "Approved By"}</div></div>
+        <div><div className="border-t pt-2">{report.auditor_name}</div><div className="text-xs">{lang === "bn" ? "অডিটর স্বাক্ষর" : "Auditor Signature"}</div><div className="text-xs text-muted-foreground">{form.sign_date && fmt.date(form.sign_date)}</div></div>
+      </div>
+    </Card>
+  );
+}
