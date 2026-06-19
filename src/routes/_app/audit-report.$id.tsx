@@ -192,6 +192,14 @@ function OverviewTab({ report, reportId }: { report: any; reportId: string }) {
   const { lang } = useI18n();
   const fmt = useFmt();
 
+  const { data: checks = [] } = useQuery({
+    queryKey: ["audit_compliance_checks", reportId],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("audit_compliance_checks").select("id,status").eq("audit_report_id", reportId);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
   const { data: findings = [] } = useQuery({
     queryKey: ["audit_findings", reportId],
     queryFn: async () => (await supabase.from("audit_findings").select("*").eq("audit_report_id", reportId)).data ?? [],
@@ -206,18 +214,21 @@ function OverviewTab({ report, reportId }: { report: any; reportId: string }) {
     const pendingF = findings.filter((f: any) => f.status !== "completed").length;
     const completedF = findings.filter((f: any) => f.status === "completed").length;
     const overdueT = tasks.filter((t: any) => t.status !== "completed" && t.due_date && t.due_date < today).length;
-    let pass = 0, total = 0;
-    CHECK_FIELDS.forEach(f => {
-      const s = report[`${f.key}_check_status`];
-      if (s) { total++; if (s === "ok" || s === "pass") pass++; }
-    });
+    let pass = checks.filter((c: any) => c.status === "ok" || c.status === "pass").length;
+    let total = checks.length;
+    if (!total) {
+      CHECK_FIELDS.forEach(f => {
+        const s = report[`${f.key}_check_status`];
+        if (s) { total++; if (s === "ok" || s === "pass") pass++; }
+      });
+    }
     return {
       pendingF, completedF, totalF: findings.length, overdueT,
       pendingT: tasks.filter((t: any) => t.status !== "completed").length,
       completedT: tasks.filter((t: any) => t.status === "completed").length,
       score: total ? Math.round((pass / total) * 100) : 0,
     };
-  }, [findings, tasks, report]);
+  }, [checks, findings, tasks, report]);
 
   return (
     <div className="space-y-4">
