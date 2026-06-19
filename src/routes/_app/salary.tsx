@@ -36,7 +36,7 @@ function SalaryPage() {
       const { error } = await supabase.from("salaries").upsert({
         staff_id: p.staff_id, month, year,
         base_salary: p.base_salary, deductions: p.deductions, bonus: p.bonus,
-        net_paid: net, paid_on: new Date().toISOString().slice(0,10),
+        net_paid: net, paid_on: new Date().toISOString().slice(0,10), payment_status: "paid",
       }, { onConflict: "staff_id,month,year" });
       if (error) throw error;
     },
