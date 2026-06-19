@@ -248,6 +248,7 @@ function InventoryPage() {
               <Badge variant="destructive" className="ml-1.5 h-4 px-1.5 text-[10px]">{fmt.num(pendings.filter((p) => p.status === "pending").length)}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="assets"><Package className="w-3.5 h-3.5 mr-1" /> {lang === "bn" ? "এজেন্ট ব্যাংক সম্পদ" : "Agent Bank Assets"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-4">
