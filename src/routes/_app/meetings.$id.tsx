@@ -337,6 +337,9 @@ function TargetsTab({ meetingId }: { meetingId: string }) {
 function ActionsTab({ meetingId }: { meetingId: string }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({ action: "", responsible: "", deadline: "" });
+  const [bulk, setBulk] = useState("");
+  const [bulkResp, setBulkResp] = useState("");
+  const [bulkDeadline, setBulkDeadline] = useState("");
   const { data = [] } = useQuery({
     queryKey: ["meeting_actions", meetingId],
     queryFn: async () => {
@@ -354,6 +357,19 @@ function ActionsTab({ meetingId }: { meetingId: string }) {
     },
     onSuccess: () => { setForm({ action: "", responsible: "", deadline: "" }); qc.invalidateQueries({ queryKey: ["meeting_actions", meetingId] }); toast.success("Action যোগ হয়েছে + Task তৈরি"); },
   });
+  const bulkAdd = useMutation({
+    mutationFn: async () => {
+      const items = parseBulk(bulk);
+      if (!items.length) return;
+      const rows = items.map((action) => ({ meeting_id: meetingId, action, responsible: bulkResp || null, deadline: bulkDeadline || null, status: "pending" }));
+      const { error } = await supabase.from("meeting_actions").insert(rows);
+      if (error) throw error;
+      const taskRows = items.map((title) => ({ title, category: "meeting", priority: "medium", assigned_to_name: bulkResp || null, deadline: bulkDeadline || null, source_type: "meeting", source_id: meetingId }));
+      await supabase.from("tasks").insert(taskRows);
+    },
+    onSuccess: () => { setBulk(""); setBulkResp(""); setBulkDeadline(""); toast.success("সব অ্যাকশন + টাস্ক যোগ হয়েছে"); qc.invalidateQueries({ queryKey: ["meeting_actions", meetingId] }); },
+    onError: (e: any) => toast.error(e.message),
+  });
   const update = useMutation({ mutationFn: async ({ id, patch }: any) => { await supabase.from("meeting_actions").update(patch).eq("id", id); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["meeting_actions", meetingId] }) });
   const del = useMutation({ mutationFn: async (id: string) => { await supabase.from("meeting_actions").delete().eq("id", id); }, onSuccess: () => qc.invalidateQueries({ queryKey: ["meeting_actions", meetingId] }) });
   return (
@@ -364,12 +380,22 @@ function ActionsTab({ meetingId }: { meetingId: string }) {
         <Input type="date" value={form.deadline} onChange={(e) => setForm({ ...form, deadline: e.target.value })} />
         <Button onClick={() => form.action && add.mutate()}><Plus className="w-4 h-4 mr-1" /> যোগ</Button>
       </div>
+      <div className="border-t pt-3 no-print space-y-2">
+        <Label className="text-xs">একসাথে সিরিয়াল করে যোগ করুন (প্রতি লাইনে একটি অ্যাকশন)</Label>
+        <Textarea rows={4} placeholder={"1. প্রথম অ্যাকশন\n2. দ্বিতীয় অ্যাকশন\n3. তৃতীয় অ্যাকশন"} value={bulk} onChange={(e) => setBulk(e.target.value)} />
+        <div className="flex flex-wrap items-center gap-2">
+          <Input placeholder="দায়িত্বপ্রাপ্ত (সবার জন্য)" value={bulkResp} onChange={(e) => setBulkResp(e.target.value)} className="w-56" />
+          <Input type="date" value={bulkDeadline} onChange={(e) => setBulkDeadline(e.target.value)} className="w-44" />
+          <Button size="sm" onClick={() => bulkAdd.mutate()} disabled={!bulk.trim()}><Plus className="w-4 h-4 mr-1" /> সব যোগ করুন ({parseBulk(bulk).length})</Button>
+        </div>
+      </div>
       <div className="space-y-2">
-        {data.map((a: any) => {
+        {data.map((a: any, i: number) => {
           const dl = daysLeft(a.deadline);
           const done = a.status === "completed";
           return (
             <div key={a.id} className={`flex flex-wrap items-center gap-2 border rounded p-2 ${dl?.tone === "danger" && !done ? "border-destructive/50 bg-destructive/5" : ""}`}>
+              <div className="w-7 text-sm font-mono text-muted-foreground">{i + 1}.</div>
               <div className="flex-1 min-w-[200px]">
                 <div className="font-medium text-sm">{a.action}</div>
                 <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
