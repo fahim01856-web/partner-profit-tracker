@@ -314,6 +314,47 @@ function UpcomingPaymentsPage() {
                 <DialogHeader>
                   <DialogTitle>{form.id ? "এডিট" : "নতুন"} আসন্ন পেমেন্ট</DialogTitle>
                 </DialogHeader>
+                {(() => {
+                  const profileMap = new Map<string, { name: string; mobile: string; account: string; purpose: string }>();
+                  [...rows].sort((a, b) => (a.created_at || "").localeCompare(b.created_at || "")).forEach(r => {
+                    const k = ((r.customer_mobile || "") + "|" + r.customer_name).trim().toLowerCase();
+                    if (!k) return;
+                    profileMap.set(k, {
+                      name: r.customer_name,
+                      mobile: r.customer_mobile || "",
+                      account: r.customer_account_id || "",
+                      purpose: r.purpose || "",
+                    });
+                  });
+                  const profiles = Array.from(profileMap.values());
+                  const uniqBy = <T,>(arr: T[], key: (x: T) => string) => Array.from(new Map(arr.map(x => [key(x), x])).values());
+                  const nameOpts = uniqBy(profiles.filter(p => p.name), p => p.name.toLowerCase());
+                  const mobileOpts = uniqBy(profiles.filter(p => p.mobile), p => p.mobile);
+                  const accountOpts = uniqBy(profiles.filter(p => p.account), p => p.account);
+                  const purposeOpts = Array.from(new Set(rows.map(r => (r.purpose || "").trim()).filter(Boolean)));
+
+                  const applyProfile = (p: { name: string; mobile: string; account: string; purpose: string }) => {
+                    setForm(f => ({
+                      ...f,
+                      customer_name: p.name || f.customer_name,
+                      customer_mobile: p.mobile || f.customer_mobile,
+                      customer_account_id: p.account || f.customer_account_id,
+                      purpose: f.purpose || p.purpose,
+                    }));
+                  };
+
+                  const tryAutoFill = (field: "name" | "mobile" | "account", value: string) => {
+                    const v = value.trim().toLowerCase();
+                    if (!v) return;
+                    const hit = profiles.find(p =>
+                      (field === "name" && p.name.toLowerCase() === v) ||
+                      (field === "mobile" && p.mobile.toLowerCase() === v) ||
+                      (field === "account" && p.account.toLowerCase() === v)
+                    );
+                    if (hit) applyProfile(hit);
+                  };
+
+                  return (
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label>পেমেন্ট তারিখ *</Label>
@@ -324,16 +365,47 @@ function UpcomingPaymentsPage() {
                     <Input type="number" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>কাস্টমার নাম *</Label>
-                    <Input value={form.customer_name} onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))} />
+                    <Label>কাস্টমার নাম * <span className="text-xs text-muted-foreground">({nameOpts.length} previous)</span></Label>
+                    <Input
+                      list="up-name-list"
+                      value={form.customer_name}
+                      onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
+                      onBlur={e => tryAutoFill("name", e.target.value)}
+                      placeholder="টাইপ করুন — পূর্বের কাস্টমার সাজেস্ট হবে"
+                    />
+                    <datalist id="up-name-list">
+                      {nameOpts.map(p => (
+                        <option key={p.name} value={p.name}>{p.mobile ? `📱 ${p.mobile}` : ""}{p.account ? ` · ${p.account}` : ""}</option>
+                      ))}
+                    </datalist>
                   </div>
                   <div className="space-y-1.5">
                     <Label>মোবাইল নাম্বার</Label>
-                    <Input value={form.customer_mobile} onChange={e => setForm(f => ({ ...f, customer_mobile: e.target.value }))} />
+                    <Input
+                      list="up-mobile-list"
+                      value={form.customer_mobile}
+                      onChange={e => setForm(f => ({ ...f, customer_mobile: e.target.value }))}
+                      onBlur={e => tryAutoFill("mobile", e.target.value)}
+                    />
+                    <datalist id="up-mobile-list">
+                      {mobileOpts.map(p => (
+                        <option key={p.mobile} value={p.mobile}>{p.name}</option>
+                      ))}
+                    </datalist>
                   </div>
                   <div className="space-y-1.5">
                     <Label>অ্যাকাউন্ট/কাস্টমার আইডি</Label>
-                    <Input value={form.customer_account_id} onChange={e => setForm(f => ({ ...f, customer_account_id: e.target.value }))} />
+                    <Input
+                      list="up-account-list"
+                      value={form.customer_account_id}
+                      onChange={e => setForm(f => ({ ...f, customer_account_id: e.target.value }))}
+                      onBlur={e => tryAutoFill("account", e.target.value)}
+                    />
+                    <datalist id="up-account-list">
+                      {accountOpts.map(p => (
+                        <option key={p.account} value={p.account}>{p.name}{p.mobile ? ` · ${p.mobile}` : ""}</option>
+                      ))}
+                    </datalist>
                   </div>
                   <div className="space-y-1.5">
                     <Label>স্ট্যাটাস</Label>
@@ -348,13 +420,42 @@ function UpcomingPaymentsPage() {
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label>উদ্দেশ্য / বিবরণ</Label>
-                    <Input value={form.purpose} onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))} />
+                    <Input
+                      list="up-purpose-list"
+                      value={form.purpose}
+                      onChange={e => setForm(f => ({ ...f, purpose: e.target.value }))}
+                    />
+                    <datalist id="up-purpose-list">
+                      {purposeOpts.map(p => <option key={p} value={p} />)}
+                    </datalist>
                   </div>
                   <div className="space-y-1.5 sm:col-span-2">
                     <Label>অতিরিক্ত নোট</Label>
                     <Textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
                   </div>
+                  {profiles.length > 0 && !form.id && (
+                    <div className="sm:col-span-2 rounded-lg border bg-muted/30 p-3">
+                      <div className="text-xs font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                        <Users className="w-3 h-3" /> দ্রুত নির্বাচন — পূর্বের কাস্টমার (সর্বশেষ {Math.min(6, profiles.length)})
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {profiles.slice(-6).reverse().map((p, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => applyProfile(p)}
+                            className="text-xs px-2 py-1 rounded-md border bg-background hover:bg-accent transition"
+                            title={`${p.name}${p.mobile ? " · " + p.mobile : ""}${p.account ? " · " + p.account : ""}`}
+                          >
+                            {p.name}{p.mobile ? ` · ${p.mobile}` : ""}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
+                  );
+                })()}
                 <DialogFooter>
                   <Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button>
                   <Button onClick={save}>{form.id ? "Update" : "Save"}</Button>
