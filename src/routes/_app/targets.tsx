@@ -414,7 +414,94 @@ function TargetsPage() {
           })()}
         </TabsContent>
 
+        <TabsContent value="analytics" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="p-4">
+              <h3 className="font-bold text-sm mb-3"><Activity className="w-4 h-4 inline" /> {lang === "bn" ? "দৈনিক ট্রেন্ড (cumulative)" : "Daily Trend (cumulative)"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={dailyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="day" fontSize={10} /><YAxis fontSize={10} /><Tooltip /><Legend />
+                    <Line type="monotone" dataKey="pace" stroke="#94a3b8" strokeDasharray="5 5" name={lang === "bn" ? "প্রত্যাশিত" : "Expected"} dot={false} />
+                    <Line type="monotone" dataKey="cum" stroke="#10b981" name={lang === "bn" ? "প্রকৃত" : "Actual"} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+            </Card>
+            <Card className="p-4">
+              <h3 className="font-bold text-sm mb-3">🥧 {lang === "bn" ? "ক্যাটাগরি অবদান" : "Category Contribution"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={(e: any) => `${Math.round(e.percent * 100)}%`}>
+                      {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                    </Pie>
+                    <Legend /><Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+            </Card>
+          </div>
+
+          <Card className="p-4">
+            <h3 className="font-bold text-sm mb-3">🔥 {lang === "bn" ? "ঝুঁকি বিশ্লেষণ" : "Risk Analysis"} ({lang === "bn" ? "মাস অতিক্রান্ত" : "Month elapsed"}: {Math.round(monthProgressPct)}%)</h3>
+            <div className="space-y-2">
+              {progress.filter((p) => p.tg.amount > 0 || p.tg.qty > 0).map((p) => {
+                const gapVal = Math.max(0, p.tg.amount - p.ac.amount);
+                const risk = p.pct >= 100 ? "achieved" : p.pct >= monthProgressPct - 5 ? "ontrack" : p.pct >= monthProgressPct - 15 ? "slow" : "risk";
+                const riskMap: any = {
+                  achieved: { label: lang === "bn" ? "অর্জিত" : "Achieved", color: "bg-green-600" },
+                  ontrack: { label: lang === "bn" ? "অন-ট্র্যাক" : "On-Track", color: "bg-blue-600" },
+                  slow: { label: lang === "bn" ? "ধীরগতি" : "Slow", color: "bg-amber-500" },
+                  risk: { label: lang === "bn" ? "ঝুঁকিতে" : "At-Risk", color: "bg-red-600" },
+                };
+                return (
+                  <div key={p.id} className="flex items-center gap-3 p-2 border rounded">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm">{lbl(p)}</span>
+                        <Badge className={riskMap[risk].color}>{riskMap[risk].label}</Badge>
+                      </div>
+                      <Progress value={Math.min(100, p.pct)} className="h-1.5 mt-1" />
+                      <div className="text-xs text-muted-foreground mt-1">৳{fmt.num(p.ac.amount)} / ৳{fmt.num(p.tg.amount)} • {lang === "bn" ? "ঘাটতি" : "Gap"}: ৳{fmt.num(gapVal)} • {lang === "bn" ? "দৈনিক প্রয়োজন" : "Daily need"}: ৳{fmt.num(daysLeft > 0 ? Math.round(gapVal / daysLeft) : 0)}</div>
+                    </div>
+                    <div className="text-right"><div className={`text-xl font-bold ${p.pct >= 100 ? "text-green-600" : p.pct >= monthProgressPct ? "text-blue-600" : "text-red-600"}`}>{Math.round(p.pct)}%</div></div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {staffCatMatrix.length > 0 && (
+            <Card className="p-4">
+              <h3 className="font-bold text-sm mb-3">🗺️ {lang === "bn" ? "স্টাফ × ক্যাটাগরি হিটম্যাপ" : "Staff × Category Heatmap"}</h3>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead className="sticky left-0 bg-background">{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead>{CATEGORIES.map((c) => <TableHead key={c.id} className="text-right text-[10px]">{c.id.slice(0, 8)}</TableHead>)}<TableHead className="text-right">{lang === "bn" ? "মোট" : "Total"}</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {staffCatMatrix.map((row) => {
+                      const max = Math.max(...CATEGORIES.map((c) => row[c.id] || 0), 1);
+                      return (
+                        <TableRow key={row.staff}>
+                          <TableCell className="font-medium sticky left-0 bg-background">{row.staff}</TableCell>
+                          {CATEGORIES.map((c) => {
+                            const v = row[c.id] || 0;
+                            const intensity = v / max;
+                            return <TableCell key={c.id} className="text-right text-xs" style={{ backgroundColor: v > 0 ? `rgba(16,185,129,${0.1 + intensity * 0.5})` : undefined }}>{v > 0 ? fmt.num(v) : "—"}</TableCell>;
+                          })}
+                          <TableCell className="text-right font-bold">{fmt.num(row._total)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="report" className="space-y-4">
+
           <Card className="overflow-hidden print-area">
             <div className="p-4 text-center border-b">
               <div className="font-bold text-lg">{t("bankName")}</div>
