@@ -20,7 +20,12 @@ import {
   FolderOpen, Upload, Eye,
 } from "lucide-react";
 
+const AUDIT_TABS = ["overview", "info", "findings", "tasks", "checks", "documents", "signoff"] as const;
+type AuditTab = (typeof AUDIT_TABS)[number];
+const normalizeTab = (tab: unknown): AuditTab => AUDIT_TABS.includes(tab as AuditTab) ? tab as AuditTab : "overview";
+
 export const Route = createFileRoute("/_app/audit-report/$id")({
+  validateSearch: (search) => ({ tab: normalizeTab(search.tab) }),
   component: AuditReportDetailPage,
   errorComponent: ({ error, reset }) => (
     <div className="p-8 max-w-xl mx-auto text-center space-y-3">
@@ -98,6 +103,7 @@ const FINDING_CATEGORIES = ["Cash", "Expense", "KYC", "Document", "Loan", "HR", 
 /* --------------------- main page --------------------- */
 function AuditReportDetailPage() {
   const { id } = Route.useParams();
+  const { tab } = Route.useSearch();
   const { t, lang } = useI18n();
   const fmt = useFmt();
   const navigate = useNavigate();
@@ -154,7 +160,11 @@ function AuditReportDetailPage() {
         </div>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
+      <Tabs
+        value={tab}
+        onValueChange={(nextTab) => navigate({ to: "/audit-report/$id", params: { id }, search: { tab: normalizeTab(nextTab) } })}
+        className="w-full"
+      >
         <TabsList className="flex flex-wrap h-auto justify-start w-full gap-1 no-print">
           <TabsTrigger value="overview"><LayoutDashboard className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "সারাংশ" : "Overview"}</TabsTrigger>
           <TabsTrigger value="info"><FileText className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "তথ্য" : "Info"}</TabsTrigger>

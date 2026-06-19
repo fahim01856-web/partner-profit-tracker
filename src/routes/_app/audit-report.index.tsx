@@ -274,7 +274,7 @@ function AuditReportListPage() {
                     <Link to="/audit-report/$id" params={{ id: r.id }}><Eye className="w-4 h-4 mr-1" />{lang === "bn" ? "বিস্তারিত" : "Details"}</Link>
                   </Button>
                   <Button asChild size="sm" variant="outline" className="md:w-full">
-                    <Link to="/audit-report/$id" params={{ id: r.id }}><Pencil className="w-4 h-4 mr-1" />{lang === "bn" ? "এডিট" : "Edit"}</Link>
+                    <Link to="/audit-report/$id" params={{ id: r.id }} search={{ tab: "info" }}><Pencil className="w-4 h-4 mr-1" />{lang === "bn" ? "এডিট" : "Edit"}</Link>
                   </Button>
                   <Button size="sm" variant="ghost" className="md:w-full" onClick={() => { if (window.confirm(lang === "bn" ? "নিশ্চিত?" : "Confirm delete?")) del.mutate(r.id); }}>
                     <Trash2 className="w-4 h-4 text-destructive" />
