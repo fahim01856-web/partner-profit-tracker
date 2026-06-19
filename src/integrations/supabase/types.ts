@@ -2053,6 +2053,38 @@ export type Database = {
           },
         ]
       }
+      task_comments: {
+        Row: {
+          author_name: string | null
+          comment: string
+          created_at: string
+          id: string
+          task_id: string
+        }
+        Insert: {
+          author_name?: string | null
+          comment: string
+          created_at?: string
+          id?: string
+          task_id: string
+        }
+        Update: {
+          author_name?: string | null
+          comment?: string
+          created_at?: string
+          id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_comments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       task_history: {
         Row: {
           action: string
@@ -2097,68 +2129,140 @@ export type Database = {
           },
         ]
       }
+      task_templates: {
+        Row: {
+          category: string | null
+          checklist: Json | null
+          created_at: string
+          description: string | null
+          estimated_hours: number | null
+          id: string
+          name: string
+          priority: string | null
+          tags: string[] | null
+          title: string
+        }
+        Insert: {
+          category?: string | null
+          checklist?: Json | null
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name: string
+          priority?: string | null
+          tags?: string[] | null
+          title: string
+        }
+        Update: {
+          category?: string | null
+          checklist?: Json | null
+          created_at?: string
+          description?: string | null
+          estimated_hours?: number | null
+          id?: string
+          name?: string
+          priority?: string | null
+          tags?: string[] | null
+          title?: string
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
+          actual_hours: number | null
           assigned_to: string | null
           assigned_to_name: string | null
           attachment_url: string | null
           category: string
+          checklist: Json | null
+          color: string | null
           completed_on: string | null
           completion_note: string | null
+          cost: number | null
           created_at: string
           created_by: string | null
           deadline: string | null
           description: string | null
+          estimated_hours: number | null
           id: string
+          location: string | null
+          parent_task_id: string | null
           priority: Database["public"]["Enums"]["task_priority"]
+          progress: number
+          recurrence: string | null
           reminder_date: string | null
           source_id: string | null
           source_type: string | null
+          start_date: string | null
           status: Database["public"]["Enums"]["task_status"]
+          tags: string[] | null
           title: string
           updated_at: string
           verified_by: string | null
           verified_on: string | null
         }
         Insert: {
+          actual_hours?: number | null
           assigned_to?: string | null
           assigned_to_name?: string | null
           attachment_url?: string | null
           category?: string
+          checklist?: Json | null
+          color?: string | null
           completed_on?: string | null
           completion_note?: string | null
+          cost?: number | null
           created_at?: string
           created_by?: string | null
           deadline?: string | null
           description?: string | null
+          estimated_hours?: number | null
           id?: string
+          location?: string | null
+          parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          progress?: number
+          recurrence?: string | null
           reminder_date?: string | null
           source_id?: string | null
           source_type?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          tags?: string[] | null
           title: string
           updated_at?: string
           verified_by?: string | null
           verified_on?: string | null
         }
         Update: {
+          actual_hours?: number | null
           assigned_to?: string | null
           assigned_to_name?: string | null
           attachment_url?: string | null
           category?: string
+          checklist?: Json | null
+          color?: string | null
           completed_on?: string | null
           completion_note?: string | null
+          cost?: number | null
           created_at?: string
           created_by?: string | null
           deadline?: string | null
           description?: string | null
+          estimated_hours?: number | null
           id?: string
+          location?: string | null
+          parent_task_id?: string | null
           priority?: Database["public"]["Enums"]["task_priority"]
+          progress?: number
+          recurrence?: string | null
           reminder_date?: string | null
           source_id?: string | null
           source_type?: string | null
+          start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
+          tags?: string[] | null
           title?: string
           updated_at?: string
           verified_by?: string | null
@@ -2170,6 +2274,13 @@ export type Database = {
             columns: ["assigned_to"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_parent_task_id_fkey"
+            columns: ["parent_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
