@@ -164,6 +164,69 @@ function TargetsPage() {
   const totalTarget = progress.reduce((s, p) => s + p.tg.amount, 0);
   const totalAch = progress.reduce((s, p) => s + p.ac.amount, 0);
 
+  // --- Smart metrics ---
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const todayDate = new Date();
+  const isCurrentMonth = todayDate.getFullYear() === year && todayDate.getMonth() + 1 === month;
+  const dayOfMonth = isCurrentMonth ? todayDate.getDate() : daysInMonth;
+  const daysLeft = Math.max(0, daysInMonth - dayOfMonth);
+  const monthProgressPct = (dayOfMonth / daysInMonth) * 100;
+  const overallPct = totalTarget > 0 ? (totalAch / totalTarget) * 100 : 0;
+  const forecast = isCurrentMonth && dayOfMonth > 0 ? (totalAch / dayOfMonth) * daysInMonth : totalAch;
+  const requiredPace = daysLeft > 0 ? Math.max(0, (totalTarget - totalAch) / daysLeft) : 0;
+  const gap = Math.max(0, totalTarget - totalAch);
+
+  const onTrackCount = progress.filter((p) => p.tg.amount > 0 && p.pct >= monthProgressPct - 5).length;
+  const atRiskCount = progress.filter((p) => p.tg.amount > 0 && p.pct < monthProgressPct - 15).length;
+  const achievedCount = progress.filter((p) => p.tg.amount > 0 && p.pct >= 100).length;
+  const activeCatCount = progress.filter((p) => p.tg.amount > 0 || p.tg.qty > 0).length;
+
+  // Previous month for MoM comparison
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const prevTotalAch = useMemo(() => achievements.filter((a) => { const d = new Date(a.date); return d.getFullYear() === prevYear && d.getMonth() + 1 === prevMonth; }).reduce((s, a) => s + Number(a.amount), 0), [achievements, prevMonth, prevYear]);
+  const momGrowth = prevTotalAch > 0 ? ((totalAch - prevTotalAch) / prevTotalAch) * 100 : 0;
+
+  // Daily trend (cumulative achievement vs straight-line target)
+  const dailyTrend = useMemo(() => {
+    const arr: { day: number; cum: number; pace: number }[] = [];
+    let cum = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      cum += achievements.filter((a) => a.date === dayStr).reduce((s, a) => s + Number(a.amount), 0);
+      arr.push({ day: d, cum, pace: (totalTarget / daysInMonth) * d });
+    }
+    return arr;
+  }, [achievements, year, month, daysInMonth, totalTarget]);
+
+  // Staff x Category heatmap data
+  const staffCatMatrix = useMemo(() => {
+    const monthAch = achievements.filter((a) => { const d = new Date(a.date); return d.getFullYear() === year && d.getMonth() + 1 === month; });
+    const staffs = Array.from(new Set(monthAch.map((a) => a.staff_name)));
+    return staffs.map((s) => {
+      const row: any = { staff: s };
+      let total = 0;
+      CATEGORIES.forEach((c) => {
+        const v = monthAch.filter((a) => a.staff_name === s && a.achievement_category === c.id).reduce((sum, a) => sum + Number(a.amount), 0);
+        row[c.id] = v; total += v;
+      });
+      row._total = total;
+      return row;
+    }).sort((a, b) => b._total - a._total);
+  }, [achievements, year, month]);
+
+  const pieData = progress.filter((p) => p.ac.amount > 0).map((p) => ({ name: lang === "bn" ? p.bn : p.en, value: p.ac.amount }));
+  const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#6366f1"];
+
+  function exportCSV() {
+    const headers = ["Category", "Target Amount", "Achieved Amount", "Gap", "Achievement %", "Target Qty", "Achieved Qty"];
+    const rows = progress.map((p) => [lang === "bn" ? p.bn : p.en, p.tg.amount, p.ac.amount, Math.max(0, p.tg.amount - p.ac.amount), Math.round(p.pct), p.tg.qty, p.ac.qty]);
+    rows.push(["TOTAL", totalTarget, totalAch, gap, Math.round(overallPct), 0, 0]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a"); a.href = url; a.download = `target_${MONTHS_EN[month - 1]}_${year}.csv`; a.click(); URL.revokeObjectURL(url);
+  }
+
   const lbl = (c: typeof CATEGORIES[number]) => (lang === "bn" ? c.bn : c.en);
 
   return (
