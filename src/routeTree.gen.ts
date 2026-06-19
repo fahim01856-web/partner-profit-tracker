@@ -36,6 +36,7 @@ import { Route as AppAuditReportRouteImport } from './routes/_app/audit-report'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
 import { Route as AppStaffIdRouteImport } from './routes/_app/staff.$id'
+import { Route as AppAuditReportIdRouteImport } from './routes/_app/audit-report.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -171,13 +172,18 @@ const AppStaffIdRoute = AppStaffIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppStaffRoute,
 } as any)
+const AppAuditReportIdRoute = AppAuditReportIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppAuditReportRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
-  '/audit-report': typeof AppAuditReportRoute
+  '/audit-report': typeof AppAuditReportRouteWithChildren
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -198,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
   '/upcoming-payments': typeof AppUpcomingPaymentsRoute
+  '/audit-report/$id': typeof AppAuditReportIdRoute
   '/staff/$id': typeof AppStaffIdRoute
 }
 export interface FileRoutesByTo {
@@ -205,7 +212,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
-  '/audit-report': typeof AppAuditReportRoute
+  '/audit-report': typeof AppAuditReportRouteWithChildren
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -226,6 +233,7 @@ export interface FileRoutesByTo {
   '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
   '/upcoming-payments': typeof AppUpcomingPaymentsRoute
+  '/audit-report/$id': typeof AppAuditReportIdRoute
   '/staff/$id': typeof AppStaffIdRoute
 }
 export interface FileRoutesById {
@@ -235,7 +243,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/_app/attendance': typeof AppAttendanceRoute
-  '/_app/audit-report': typeof AppAuditReportRoute
+  '/_app/audit-report': typeof AppAuditReportRouteWithChildren
   '/_app/cash-book': typeof AppCashBookRoute
   '/_app/daily-deposit': typeof AppDailyDepositRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/_app/system-monitor': typeof AppSystemMonitorRoute
   '/_app/targets': typeof AppTargetsRoute
   '/_app/upcoming-payments': typeof AppUpcomingPaymentsRoute
+  '/_app/audit-report/$id': typeof AppAuditReportIdRoute
   '/_app/staff/$id': typeof AppStaffIdRoute
 }
 export interface FileRouteTypes {
@@ -286,6 +295,7 @@ export interface FileRouteTypes {
     | '/system-monitor'
     | '/targets'
     | '/upcoming-payments'
+    | '/audit-report/$id'
     | '/staff/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/system-monitor'
     | '/targets'
     | '/upcoming-payments'
+    | '/audit-report/$id'
     | '/staff/$id'
   id:
     | '__root__'
@@ -343,6 +354,7 @@ export interface FileRouteTypes {
     | '/_app/system-monitor'
     | '/_app/targets'
     | '/_app/upcoming-payments'
+    | '/_app/audit-report/$id'
     | '/_app/staff/$id'
   fileRoutesById: FileRoutesById
 }
@@ -543,8 +555,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStaffIdRouteImport
       parentRoute: typeof AppStaffRoute
     }
+    '/_app/audit-report/$id': {
+      id: '/_app/audit-report/$id'
+      path: '/$id'
+      fullPath: '/audit-report/$id'
+      preLoaderRoute: typeof AppAuditReportIdRouteImport
+      parentRoute: typeof AppAuditReportRoute
+    }
   }
 }
+
+interface AppAuditReportRouteChildren {
+  AppAuditReportIdRoute: typeof AppAuditReportIdRoute
+}
+
+const AppAuditReportRouteChildren: AppAuditReportRouteChildren = {
+  AppAuditReportIdRoute: AppAuditReportIdRoute,
+}
+
+const AppAuditReportRouteWithChildren = AppAuditReportRoute._addFileChildren(
+  AppAuditReportRouteChildren,
+)
 
 interface AppStaffRouteChildren {
   AppStaffIdRoute: typeof AppStaffIdRoute
@@ -561,7 +592,7 @@ const AppStaffRouteWithChildren = AppStaffRoute._addFileChildren(
 interface AppRouteChildren {
   AppAgentBankInvestmentRoute: typeof AppAgentBankInvestmentRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
-  AppAuditReportRoute: typeof AppAuditReportRoute
+  AppAuditReportRoute: typeof AppAuditReportRouteWithChildren
   AppCashBookRoute: typeof AppCashBookRoute
   AppDailyDepositRoute: typeof AppDailyDepositRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -587,7 +618,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAgentBankInvestmentRoute: AppAgentBankInvestmentRoute,
   AppAttendanceRoute: AppAttendanceRoute,
-  AppAuditReportRoute: AppAuditReportRoute,
+  AppAuditReportRoute: AppAuditReportRouteWithChildren,
   AppCashBookRoute: AppCashBookRoute,
   AppDailyDepositRoute: AppDailyDepositRoute,
   AppDashboardRoute: AppDashboardRoute,
