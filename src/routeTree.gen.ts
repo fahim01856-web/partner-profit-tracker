@@ -35,6 +35,7 @@ import { Route as AppDocumentsRouteImport } from './routes/_app/documents'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppDailyDepositRouteImport } from './routes/_app/daily-deposit'
 import { Route as AppCashBookRouteImport } from './routes/_app/cash-book'
+import { Route as AppAuditReportRouteImport } from './routes/_app/audit-report'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
 import { Route as AppStaffIndexRouteImport } from './routes/_app/staff.index'
@@ -173,6 +174,11 @@ const AppCashBookRoute = AppCashBookRouteImport.update({
   path: '/cash-book',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAuditReportRoute = AppAuditReportRouteImport.update({
+  id: '/audit-report',
+  path: '/audit-report',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAttendanceRoute = AppAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -189,9 +195,9 @@ const AppStaffIndexRoute = AppStaffIndexRouteImport.update({
   getParentRoute: () => AppStaffRoute,
 } as any)
 const AppAuditReportIndexRoute = AppAuditReportIndexRouteImport.update({
-  id: '/audit-report/',
-  path: '/audit-report/',
-  getParentRoute: () => AppRoute,
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppAuditReportRoute,
 } as any)
 const AppStaffIdRoute = AppStaffIdRouteImport.update({
   id: '/$id',
@@ -209,9 +215,9 @@ const AppKycIdRoute = AppKycIdRouteImport.update({
   getParentRoute: () => AppKycRoute,
 } as any)
 const AppAuditReportIdRoute = AppAuditReportIdRouteImport.update({
-  id: '/audit-report/$id',
-  path: '/audit-report/$id',
-  getParentRoute: () => AppRoute,
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppAuditReportRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -219,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
+  '/audit-report': typeof AppAuditReportRouteWithChildren
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -290,6 +297,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/_app/attendance': typeof AppAttendanceRoute
+  '/_app/audit-report': typeof AppAuditReportRouteWithChildren
   '/_app/cash-book': typeof AppCashBookRoute
   '/_app/daily-deposit': typeof AppDailyDepositRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -327,6 +335,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/agent-bank-investment'
     | '/attendance'
+    | '/audit-report'
     | '/cash-book'
     | '/daily-deposit'
     | '/dashboard'
@@ -397,6 +406,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/agent-bank-investment'
     | '/_app/attendance'
+    | '/_app/audit-report'
     | '/_app/cash-book'
     | '/_app/daily-deposit'
     | '/_app/dashboard'
@@ -618,6 +628,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCashBookRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/audit-report': {
+      id: '/_app/audit-report'
+      path: '/audit-report'
+      fullPath: '/audit-report'
+      preLoaderRoute: typeof AppAuditReportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/attendance': {
       id: '/_app/attendance'
       path: '/attendance'
@@ -641,10 +658,10 @@ declare module '@tanstack/react-router' {
     }
     '/_app/audit-report/': {
       id: '/_app/audit-report/'
-      path: '/audit-report'
+      path: '/'
       fullPath: '/audit-report/'
       preLoaderRoute: typeof AppAuditReportIndexRouteImport
-      parentRoute: typeof AppRoute
+      parentRoute: typeof AppAuditReportRoute
     }
     '/_app/staff/$id': {
       id: '/_app/staff/$id'
@@ -669,13 +686,27 @@ declare module '@tanstack/react-router' {
     }
     '/_app/audit-report/$id': {
       id: '/_app/audit-report/$id'
-      path: '/audit-report/$id'
+      path: '/$id'
       fullPath: '/audit-report/$id'
       preLoaderRoute: typeof AppAuditReportIdRouteImport
-      parentRoute: typeof AppRoute
+      parentRoute: typeof AppAuditReportRoute
     }
   }
 }
+
+interface AppAuditReportRouteChildren {
+  AppAuditReportIdRoute: typeof AppAuditReportIdRoute
+  AppAuditReportIndexRoute: typeof AppAuditReportIndexRoute
+}
+
+const AppAuditReportRouteChildren: AppAuditReportRouteChildren = {
+  AppAuditReportIdRoute: AppAuditReportIdRoute,
+  AppAuditReportIndexRoute: AppAuditReportIndexRoute,
+}
+
+const AppAuditReportRouteWithChildren = AppAuditReportRoute._addFileChildren(
+  AppAuditReportRouteChildren,
+)
 
 interface AppKycRouteChildren {
   AppKycIdRoute: typeof AppKycIdRoute
@@ -717,6 +748,7 @@ const AppStaffRouteWithChildren = AppStaffRoute._addFileChildren(
 interface AppRouteChildren {
   AppAgentBankInvestmentRoute: typeof AppAgentBankInvestmentRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppAuditReportRoute: typeof AppAuditReportRouteWithChildren
   AppCashBookRoute: typeof AppCashBookRoute
   AppDailyDepositRoute: typeof AppDailyDepositRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -740,13 +772,12 @@ interface AppRouteChildren {
   AppTargetsRoute: typeof AppTargetsRoute
   AppTasksRoute: typeof AppTasksRoute
   AppUpcomingPaymentsRoute: typeof AppUpcomingPaymentsRoute
-  AppAuditReportIdRoute: typeof AppAuditReportIdRoute
-  AppAuditReportIndexRoute: typeof AppAuditReportIndexRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
   AppAgentBankInvestmentRoute: AppAgentBankInvestmentRoute,
   AppAttendanceRoute: AppAttendanceRoute,
+  AppAuditReportRoute: AppAuditReportRouteWithChildren,
   AppCashBookRoute: AppCashBookRoute,
   AppDailyDepositRoute: AppDailyDepositRoute,
   AppDashboardRoute: AppDashboardRoute,
@@ -770,8 +801,6 @@ const AppRouteChildren: AppRouteChildren = {
   AppTargetsRoute: AppTargetsRoute,
   AppTasksRoute: AppTasksRoute,
   AppUpcomingPaymentsRoute: AppUpcomingPaymentsRoute,
-  AppAuditReportIdRoute: AppAuditReportIdRoute,
-  AppAuditReportIndexRoute: AppAuditReportIndexRoute,
 }
 
 const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
