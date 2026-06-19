@@ -62,7 +62,13 @@ async function listAll(admin: any, bucket: string, prefix = ""): Promise<FileIte
 
 export const getSystemStats = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
-  .handler(async (): Promise<SystemStats> => {
+  .handler(async ({ context }): Promise<SystemStats> => {
+    const { data: isAdmin } = await context.supabase.rpc("has_role", {
+      _user_id: context.userId,
+      _role: "admin" as any,
+    });
+    if (!isAdmin) throw new Error("Forbidden: admin only");
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     const { data: dbData, error: dbErr } = await supabaseAdmin.rpc("get_system_stats" as any);
