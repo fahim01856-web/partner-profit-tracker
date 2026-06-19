@@ -236,7 +236,10 @@ function TargetsPage() {
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2"><Target className="w-7 h-7 text-primary" />{lang === "bn" ? "মাসিক টার্গেট ও অর্জন" : "Monthly Target & Achievement"}</h1>
           <p className="text-muted-foreground text-sm">{lang === "bn" ? "টার্গেট সেট করুন, অর্জন এন্ট্রি দিন, প্রগ্রেস দেখুন ও প্রিন্ট করুন" : "Set targets, log achievements, track progress & print"}</p>
         </div>
-        <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
+        <div className="flex gap-2 no-print">
+          <Button variant="outline" onClick={exportCSV}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+          <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
+        </div>
       </div>
 
       <div className="flex gap-2 no-print">
@@ -250,11 +253,31 @@ function TargetsPage() {
         </Select>
       </div>
 
+      {/* Smart KPI Dashboard */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "মোট টার্গেট" : "Total Target"}</div><div className="text-lg font-bold">৳{fmt.num(totalTarget)}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "অর্জন" : "Achieved"}</div><div className="text-lg font-bold text-green-600">৳{fmt.num(totalAch)}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "অবশিষ্ট" : "Gap"}</div><div className="text-lg font-bold text-orange-600">৳{fmt.num(gap)}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "অর্জন %" : "Achievement"}</div><div className={`text-lg font-bold ${overallPct >= 100 ? "text-green-600" : overallPct >= monthProgressPct ? "text-blue-600" : "text-red-600"}`}>{Math.round(overallPct)}%</div><Progress value={Math.min(100, overallPct)} className="h-1 mt-1" /></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground"><CalendarIcon className="w-3 h-3 inline" /> {lang === "bn" ? "দিন বাকি" : "Days Left"}</div><div className="text-lg font-bold">{daysLeft}/{daysInMonth}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground"><Zap className="w-3 h-3 inline" /> {lang === "bn" ? "দৈনিক প্রয়োজন" : "Daily Need"}</div><div className="text-lg font-bold text-violet-600">৳{fmt.num(Math.round(requiredPace))}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground"><TrendingUp className="w-3 h-3 inline" /> {lang === "bn" ? "পূর্বাভাস" : "Forecast"}</div><div className={`text-lg font-bold ${forecast >= totalTarget ? "text-green-600" : "text-amber-600"}`}>৳{fmt.num(Math.round(forecast))}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground"><Activity className="w-3 h-3 inline" /> MoM</div><div className={`text-lg font-bold ${momGrowth >= 0 ? "text-green-600" : "text-red-600"}`}>{momGrowth >= 0 ? "+" : ""}{Math.round(momGrowth)}%</div></Card>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <Card className="p-3 border-green-200 bg-green-50/50 dark:bg-green-950/20"><div className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-green-600" /> {lang === "bn" ? "১০০% অর্জিত" : "Achieved 100%"}</div><div className="text-xl font-bold text-green-700">{achievedCount}/{activeCatCount}</div></Card>
+        <Card className="p-3 border-blue-200 bg-blue-50/50 dark:bg-blue-950/20"><div className="text-xs text-muted-foreground">📈 {lang === "bn" ? "অন-ট্র্যাক" : "On-Track"}</div><div className="text-xl font-bold text-blue-700">{onTrackCount}</div></Card>
+        <Card className="p-3 border-red-200 bg-red-50/50 dark:bg-red-950/20"><div className="text-xs text-muted-foreground flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-red-600" /> {lang === "bn" ? "ঝুঁকিতে" : "At-Risk"}</div><div className="text-xl font-bold text-red-700">{atRiskCount}</div></Card>
+        <Card className="p-3 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20"><div className="text-xs text-muted-foreground"><Trophy className="w-3 h-3 inline text-amber-600" /> {lang === "bn" ? "টপ পারফর্মার" : "Top Performer"}</div><div className="text-base font-bold text-amber-700 truncate">{ranking[0]?.name || "—"}</div></Card>
+      </div>
+
       <Tabs defaultValue="setup">
-        <TabsList className="no-print">
+        <TabsList className="no-print flex-wrap h-auto">
           <TabsTrigger value="setup">{lang === "bn" ? "টার্গেট সেটাপ" : "Target Setup"}</TabsTrigger>
           <TabsTrigger value="achieve">{lang === "bn" ? "অর্জন এন্ট্রি" : "Achievement Entry"}</TabsTrigger>
           <TabsTrigger value="progress">{lang === "bn" ? "প্রগ্রেস" : "Progress"}</TabsTrigger>
+          <TabsTrigger value="analytics">📊 {lang === "bn" ? "অ্যানালিটিক্স" : "Analytics"}</TabsTrigger>
           <TabsTrigger value="report">{lang === "bn" ? "মাসিক রিপোর্ট" : "Monthly Report"}</TabsTrigger>
           <TabsTrigger value="yearly">{lang === "bn" ? "বার্ষিক রিপোর্ট" : "Yearly Report"}</TabsTrigger>
           <TabsTrigger value="rank">{lang === "bn" ? "স্টাফ র‍্যাঙ্কিং" : "Staff Ranking"}</TabsTrigger>
