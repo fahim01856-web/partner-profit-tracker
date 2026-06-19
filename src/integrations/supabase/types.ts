@@ -1554,40 +1554,52 @@ export type Database = {
         Row: {
           account_type: string | null
           created_at: string
+          deadline: string | null
           id: string
           month: number
           notes: string | null
+          priority: string | null
           staff_name: string
+          status: string | null
           target_amount: number
           target_category: string
           target_quantity: number
           updated_at: string
+          weight: number | null
           year: number
         }
         Insert: {
           account_type?: string | null
           created_at?: string
+          deadline?: string | null
           id?: string
           month: number
           notes?: string | null
+          priority?: string | null
           staff_name: string
+          status?: string | null
           target_amount?: number
           target_category: string
           target_quantity?: number
           updated_at?: string
+          weight?: number | null
           year: number
         }
         Update: {
           account_type?: string | null
           created_at?: string
+          deadline?: string | null
           id?: string
           month?: number
           notes?: string | null
+          priority?: string | null
           staff_name?: string
+          status?: string | null
           target_amount?: number
           target_category?: string
           target_quantity?: number
           updated_at?: string
+          weight?: number | null
           year?: number
         }
         Relationships: []
