@@ -103,17 +103,31 @@ function AuditReportDetailPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
-  const { data: report, isLoading } = useQuery({
+  const { data: report, isLoading, error } = useQuery({
     queryKey: ["audit_report", id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("audit_reports").select("*").eq("id", id).single();
+      const { data, error } = await supabase.from("audit_reports").select("*").eq("id", id).maybeSingle();
       if (error) throw error;
       return data as any;
     },
+    retry: false,
   });
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading...</div>;
-  if (!report) return <div className="p-8 text-center text-muted-foreground">Not found</div>;
+  if (error) return (
+    <div className="p-8 max-w-xl mx-auto text-center space-y-3">
+      <AlertTriangle className="w-10 h-10 mx-auto text-destructive" />
+      <h2 className="font-semibold">লোড করা যায়নি</h2>
+      <p className="text-sm text-muted-foreground break-all">{(error as any)?.message}</p>
+      <Button onClick={() => navigate({ to: "/audit-report" })}><ArrowLeft className="w-4 h-4 mr-1" />ফিরে যান</Button>
+    </div>
+  );
+  if (!report) return (
+    <div className="p-8 text-center space-y-3">
+      <p className="text-muted-foreground">এই রিপোর্ট পাওয়া যায়নি বা ডিলিট করা হয়েছে।</p>
+      <Button onClick={() => navigate({ to: "/audit-report" })}><ArrowLeft className="w-4 h-4 mr-1" />ফিরে যান</Button>
+    </div>
+  );
 
   return (
     <div className="space-y-5">
