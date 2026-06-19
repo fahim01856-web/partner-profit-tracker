@@ -6,7 +6,7 @@ import {
   LayoutDashboard, TrendingUp, Receipt, Users, ClipboardCheck,
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
   ClipboardList, MessageSquare, Target, FileText, Banknote,
-  BookOpen, FileSignature, Boxes, BookUser, Activity, CalendarClock
+  BookOpen, FileSignature, Boxes, BookUser, Activity, CalendarClock, ShieldCheck
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -42,6 +42,7 @@ export function AppLayout() {
     { to: "/loan-ledger", label: t("nav_loan_ledger"), icon: BookUser },
     { to: "/upcoming-payments", label: t("nav_upcoming_payments"), icon: CalendarClock },
     { to: "/system-monitor", label: t("nav_system_monitor"), icon: Activity },
+    { to: "/audit-report", label: t("nav_audit_report"), icon: ShieldCheck },
   ] as const;
 
   const LangToggle = ({ className = "" }: { className?: string }) => (
