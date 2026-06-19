@@ -13,6 +13,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppUpcomingPaymentsRouteImport } from './routes/_app/upcoming-payments'
+import { Route as AppTasksRouteImport } from './routes/_app/tasks'
 import { Route as AppTargetsRouteImport } from './routes/_app/targets'
 import { Route as AppSystemMonitorRouteImport } from './routes/_app/system-monitor'
 import { Route as AppStaffRouteImport } from './routes/_app/staff'
@@ -24,7 +25,9 @@ import { Route as AppReportsRouteImport } from './routes/_app/reports'
 import { Route as AppPendingWorksRouteImport } from './routes/_app/pending-works'
 import { Route as AppPartnersRouteImport } from './routes/_app/partners'
 import { Route as AppMonthlyReportRouteImport } from './routes/_app/monthly-report'
+import { Route as AppMeetingsRouteImport } from './routes/_app/meetings'
 import { Route as AppLoanLedgerRouteImport } from './routes/_app/loan-ledger'
+import { Route as AppKycRouteImport } from './routes/_app/kyc'
 import { Route as AppInventoryRouteImport } from './routes/_app/inventory'
 import { Route as AppExpenseRouteImport } from './routes/_app/expense'
 import { Route as AppEmployeeAttendanceRouteImport } from './routes/_app/employee-attendance'
@@ -37,6 +40,8 @@ import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
 import { Route as AppStaffIndexRouteImport } from './routes/_app/staff.index'
 import { Route as AppStaffIdRouteImport } from './routes/_app/staff.$id'
+import { Route as AppMeetingsIdRouteImport } from './routes/_app/meetings.$id'
+import { Route as AppKycIdRouteImport } from './routes/_app/kyc.$id'
 import { Route as AppAuditReportIdRouteImport } from './routes/_app/audit-report.$id'
 
 const LoginRoute = LoginRouteImport.update({
@@ -56,6 +61,11 @@ const IndexRoute = IndexRouteImport.update({
 const AppUpcomingPaymentsRoute = AppUpcomingPaymentsRouteImport.update({
   id: '/upcoming-payments',
   path: '/upcoming-payments',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppTasksRoute = AppTasksRouteImport.update({
+  id: '/tasks',
+  path: '/tasks',
   getParentRoute: () => AppRoute,
 } as any)
 const AppTargetsRoute = AppTargetsRouteImport.update({
@@ -113,9 +123,19 @@ const AppMonthlyReportRoute = AppMonthlyReportRouteImport.update({
   path: '/monthly-report',
   getParentRoute: () => AppRoute,
 } as any)
+const AppMeetingsRoute = AppMeetingsRouteImport.update({
+  id: '/meetings',
+  path: '/meetings',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppLoanLedgerRoute = AppLoanLedgerRouteImport.update({
   id: '/loan-ledger',
   path: '/loan-ledger',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppKycRoute = AppKycRouteImport.update({
+  id: '/kyc',
+  path: '/kyc',
   getParentRoute: () => AppRoute,
 } as any)
 const AppInventoryRoute = AppInventoryRouteImport.update({
@@ -178,6 +198,16 @@ const AppStaffIdRoute = AppStaffIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AppStaffRoute,
 } as any)
+const AppMeetingsIdRoute = AppMeetingsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppMeetingsRoute,
+} as any)
+const AppKycIdRoute = AppKycIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppKycRoute,
+} as any)
 const AppAuditReportIdRoute = AppAuditReportIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -197,7 +227,9 @@ export interface FileRoutesByFullPath {
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
   '/inventory': typeof AppInventoryRoute
+  '/kyc': typeof AppKycRouteWithChildren
   '/loan-ledger': typeof AppLoanLedgerRoute
+  '/meetings': typeof AppMeetingsRouteWithChildren
   '/monthly-report': typeof AppMonthlyReportRoute
   '/partners': typeof AppPartnersRoute
   '/pending-works': typeof AppPendingWorksRoute
@@ -209,8 +241,11 @@ export interface FileRoutesByFullPath {
   '/staff': typeof AppStaffRouteWithChildren
   '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
+  '/tasks': typeof AppTasksRoute
   '/upcoming-payments': typeof AppUpcomingPaymentsRoute
   '/audit-report/$id': typeof AppAuditReportIdRoute
+  '/kyc/$id': typeof AppKycIdRoute
+  '/meetings/$id': typeof AppMeetingsIdRoute
   '/staff/$id': typeof AppStaffIdRoute
   '/staff/': typeof AppStaffIndexRoute
 }
@@ -227,7 +262,9 @@ export interface FileRoutesByTo {
   '/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/expense': typeof AppExpenseRoute
   '/inventory': typeof AppInventoryRoute
+  '/kyc': typeof AppKycRouteWithChildren
   '/loan-ledger': typeof AppLoanLedgerRoute
+  '/meetings': typeof AppMeetingsRouteWithChildren
   '/monthly-report': typeof AppMonthlyReportRoute
   '/partners': typeof AppPartnersRoute
   '/pending-works': typeof AppPendingWorksRoute
@@ -238,8 +275,11 @@ export interface FileRoutesByTo {
   '/sms-sending': typeof AppSmsSendingRoute
   '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
+  '/tasks': typeof AppTasksRoute
   '/upcoming-payments': typeof AppUpcomingPaymentsRoute
   '/audit-report/$id': typeof AppAuditReportIdRoute
+  '/kyc/$id': typeof AppKycIdRoute
+  '/meetings/$id': typeof AppMeetingsIdRoute
   '/staff/$id': typeof AppStaffIdRoute
   '/staff': typeof AppStaffIndexRoute
 }
@@ -258,7 +298,9 @@ export interface FileRoutesById {
   '/_app/employee-attendance': typeof AppEmployeeAttendanceRoute
   '/_app/expense': typeof AppExpenseRoute
   '/_app/inventory': typeof AppInventoryRoute
+  '/_app/kyc': typeof AppKycRouteWithChildren
   '/_app/loan-ledger': typeof AppLoanLedgerRoute
+  '/_app/meetings': typeof AppMeetingsRouteWithChildren
   '/_app/monthly-report': typeof AppMonthlyReportRoute
   '/_app/partners': typeof AppPartnersRoute
   '/_app/pending-works': typeof AppPendingWorksRoute
@@ -270,8 +312,11 @@ export interface FileRoutesById {
   '/_app/staff': typeof AppStaffRouteWithChildren
   '/_app/system-monitor': typeof AppSystemMonitorRoute
   '/_app/targets': typeof AppTargetsRoute
+  '/_app/tasks': typeof AppTasksRoute
   '/_app/upcoming-payments': typeof AppUpcomingPaymentsRoute
   '/_app/audit-report/$id': typeof AppAuditReportIdRoute
+  '/_app/kyc/$id': typeof AppKycIdRoute
+  '/_app/meetings/$id': typeof AppMeetingsIdRoute
   '/_app/staff/$id': typeof AppStaffIdRoute
   '/_app/staff/': typeof AppStaffIndexRoute
 }
@@ -290,7 +335,9 @@ export interface FileRouteTypes {
     | '/employee-attendance'
     | '/expense'
     | '/inventory'
+    | '/kyc'
     | '/loan-ledger'
+    | '/meetings'
     | '/monthly-report'
     | '/partners'
     | '/pending-works'
@@ -302,8 +349,11 @@ export interface FileRouteTypes {
     | '/staff'
     | '/system-monitor'
     | '/targets'
+    | '/tasks'
     | '/upcoming-payments'
     | '/audit-report/$id'
+    | '/kyc/$id'
+    | '/meetings/$id'
     | '/staff/$id'
     | '/staff/'
   fileRoutesByTo: FileRoutesByTo
@@ -320,7 +370,9 @@ export interface FileRouteTypes {
     | '/employee-attendance'
     | '/expense'
     | '/inventory'
+    | '/kyc'
     | '/loan-ledger'
+    | '/meetings'
     | '/monthly-report'
     | '/partners'
     | '/pending-works'
@@ -331,8 +383,11 @@ export interface FileRouteTypes {
     | '/sms-sending'
     | '/system-monitor'
     | '/targets'
+    | '/tasks'
     | '/upcoming-payments'
     | '/audit-report/$id'
+    | '/kyc/$id'
+    | '/meetings/$id'
     | '/staff/$id'
     | '/staff'
   id:
@@ -350,7 +405,9 @@ export interface FileRouteTypes {
     | '/_app/employee-attendance'
     | '/_app/expense'
     | '/_app/inventory'
+    | '/_app/kyc'
     | '/_app/loan-ledger'
+    | '/_app/meetings'
     | '/_app/monthly-report'
     | '/_app/partners'
     | '/_app/pending-works'
@@ -362,8 +419,11 @@ export interface FileRouteTypes {
     | '/_app/staff'
     | '/_app/system-monitor'
     | '/_app/targets'
+    | '/_app/tasks'
     | '/_app/upcoming-payments'
     | '/_app/audit-report/$id'
+    | '/_app/kyc/$id'
+    | '/_app/meetings/$id'
     | '/_app/staff/$id'
     | '/_app/staff/'
   fileRoutesById: FileRoutesById
@@ -402,6 +462,13 @@ declare module '@tanstack/react-router' {
       path: '/upcoming-payments'
       fullPath: '/upcoming-payments'
       preLoaderRoute: typeof AppUpcomingPaymentsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/tasks': {
+      id: '/_app/tasks'
+      path: '/tasks'
+      fullPath: '/tasks'
+      preLoaderRoute: typeof AppTasksRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/targets': {
@@ -481,11 +548,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMonthlyReportRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/meetings': {
+      id: '/_app/meetings'
+      path: '/meetings'
+      fullPath: '/meetings'
+      preLoaderRoute: typeof AppMeetingsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/loan-ledger': {
       id: '/_app/loan-ledger'
       path: '/loan-ledger'
       fullPath: '/loan-ledger'
       preLoaderRoute: typeof AppLoanLedgerRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/kyc': {
+      id: '/_app/kyc'
+      path: '/kyc'
+      fullPath: '/kyc'
+      preLoaderRoute: typeof AppKycRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/inventory': {
@@ -572,6 +653,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppStaffIdRouteImport
       parentRoute: typeof AppStaffRoute
     }
+    '/_app/meetings/$id': {
+      id: '/_app/meetings/$id'
+      path: '/$id'
+      fullPath: '/meetings/$id'
+      preLoaderRoute: typeof AppMeetingsIdRouteImport
+      parentRoute: typeof AppMeetingsRoute
+    }
+    '/_app/kyc/$id': {
+      id: '/_app/kyc/$id'
+      path: '/$id'
+      fullPath: '/kyc/$id'
+      preLoaderRoute: typeof AppKycIdRouteImport
+      parentRoute: typeof AppKycRoute
+    }
     '/_app/audit-report/$id': {
       id: '/_app/audit-report/$id'
       path: '/$id'
@@ -592,6 +687,29 @@ const AppAuditReportRouteChildren: AppAuditReportRouteChildren = {
 
 const AppAuditReportRouteWithChildren = AppAuditReportRoute._addFileChildren(
   AppAuditReportRouteChildren,
+)
+
+interface AppKycRouteChildren {
+  AppKycIdRoute: typeof AppKycIdRoute
+}
+
+const AppKycRouteChildren: AppKycRouteChildren = {
+  AppKycIdRoute: AppKycIdRoute,
+}
+
+const AppKycRouteWithChildren =
+  AppKycRoute._addFileChildren(AppKycRouteChildren)
+
+interface AppMeetingsRouteChildren {
+  AppMeetingsIdRoute: typeof AppMeetingsIdRoute
+}
+
+const AppMeetingsRouteChildren: AppMeetingsRouteChildren = {
+  AppMeetingsIdRoute: AppMeetingsIdRoute,
+}
+
+const AppMeetingsRouteWithChildren = AppMeetingsRoute._addFileChildren(
+  AppMeetingsRouteChildren,
 )
 
 interface AppStaffRouteChildren {
@@ -619,7 +737,9 @@ interface AppRouteChildren {
   AppEmployeeAttendanceRoute: typeof AppEmployeeAttendanceRoute
   AppExpenseRoute: typeof AppExpenseRoute
   AppInventoryRoute: typeof AppInventoryRoute
+  AppKycRoute: typeof AppKycRouteWithChildren
   AppLoanLedgerRoute: typeof AppLoanLedgerRoute
+  AppMeetingsRoute: typeof AppMeetingsRouteWithChildren
   AppMonthlyReportRoute: typeof AppMonthlyReportRoute
   AppPartnersRoute: typeof AppPartnersRoute
   AppPendingWorksRoute: typeof AppPendingWorksRoute
@@ -631,6 +751,7 @@ interface AppRouteChildren {
   AppStaffRoute: typeof AppStaffRouteWithChildren
   AppSystemMonitorRoute: typeof AppSystemMonitorRoute
   AppTargetsRoute: typeof AppTargetsRoute
+  AppTasksRoute: typeof AppTasksRoute
   AppUpcomingPaymentsRoute: typeof AppUpcomingPaymentsRoute
 }
 
@@ -645,7 +766,9 @@ const AppRouteChildren: AppRouteChildren = {
   AppEmployeeAttendanceRoute: AppEmployeeAttendanceRoute,
   AppExpenseRoute: AppExpenseRoute,
   AppInventoryRoute: AppInventoryRoute,
+  AppKycRoute: AppKycRouteWithChildren,
   AppLoanLedgerRoute: AppLoanLedgerRoute,
+  AppMeetingsRoute: AppMeetingsRouteWithChildren,
   AppMonthlyReportRoute: AppMonthlyReportRoute,
   AppPartnersRoute: AppPartnersRoute,
   AppPendingWorksRoute: AppPendingWorksRoute,
@@ -657,6 +780,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppStaffRoute: AppStaffRouteWithChildren,
   AppSystemMonitorRoute: AppSystemMonitorRoute,
   AppTargetsRoute: AppTargetsRoute,
+  AppTasksRoute: AppTasksRoute,
   AppUpcomingPaymentsRoute: AppUpcomingPaymentsRoute,
 }
 
@@ -670,13 +794,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
