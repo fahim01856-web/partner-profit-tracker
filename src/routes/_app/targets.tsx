@@ -15,8 +15,8 @@ import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { useFmt } from "@/lib/format";
 import { toast } from "sonner";
-import { Target, Plus, Trash2, Printer, Trophy, TrendingUp, Award, Pencil, X } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from "recharts";
+import { Target, Plus, Trash2, Printer, Trophy, TrendingUp, Award, Pencil, X, Download, AlertTriangle, CheckCircle2, Calendar as CalendarIcon, Zap, Activity } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend, LineChart, Line, PieChart, Pie, Cell } from "recharts";
 
 export const Route = createFileRoute("/_app/targets")({ component: TargetsPage });
 
@@ -164,6 +164,69 @@ function TargetsPage() {
   const totalTarget = progress.reduce((s, p) => s + p.tg.amount, 0);
   const totalAch = progress.reduce((s, p) => s + p.ac.amount, 0);
 
+  // --- Smart metrics ---
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const todayDate = new Date();
+  const isCurrentMonth = todayDate.getFullYear() === year && todayDate.getMonth() + 1 === month;
+  const dayOfMonth = isCurrentMonth ? todayDate.getDate() : daysInMonth;
+  const daysLeft = Math.max(0, daysInMonth - dayOfMonth);
+  const monthProgressPct = (dayOfMonth / daysInMonth) * 100;
+  const overallPct = totalTarget > 0 ? (totalAch / totalTarget) * 100 : 0;
+  const forecast = isCurrentMonth && dayOfMonth > 0 ? (totalAch / dayOfMonth) * daysInMonth : totalAch;
+  const requiredPace = daysLeft > 0 ? Math.max(0, (totalTarget - totalAch) / daysLeft) : 0;
+  const gap = Math.max(0, totalTarget - totalAch);
+
+  const onTrackCount = progress.filter((p) => p.tg.amount > 0 && p.pct >= monthProgressPct - 5).length;
+  const atRiskCount = progress.filter((p) => p.tg.amount > 0 && p.pct < monthProgressPct - 15).length;
+  const achievedCount = progress.filter((p) => p.tg.amount > 0 && p.pct >= 100).length;
+  const activeCatCount = progress.filter((p) => p.tg.amount > 0 || p.tg.qty > 0).length;
+
+  // Previous month for MoM comparison
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const prevTotalAch = useMemo(() => achievements.filter((a) => { const d = new Date(a.date); return d.getFullYear() === prevYear && d.getMonth() + 1 === prevMonth; }).reduce((s, a) => s + Number(a.amount), 0), [achievements, prevMonth, prevYear]);
+  const momGrowth = prevTotalAch > 0 ? ((totalAch - prevTotalAch) / prevTotalAch) * 100 : 0;
+
+  // Daily trend (cumulative achievement vs straight-line target)
+  const dailyTrend = useMemo(() => {
+    const arr: { day: number; cum: number; pace: number }[] = [];
+    let cum = 0;
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dayStr = `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      cum += achievements.filter((a) => a.date === dayStr).reduce((s, a) => s + Number(a.amount), 0);
+      arr.push({ day: d, cum, pace: (totalTarget / daysInMonth) * d });
+    }
+    return arr;
+  }, [achievements, year, month, daysInMonth, totalTarget]);
+
+  // Staff x Category heatmap data
+  const staffCatMatrix = useMemo(() => {
+    const monthAch = achievements.filter((a) => { const d = new Date(a.date); return d.getFullYear() === year && d.getMonth() + 1 === month; });
+    const staffs = Array.from(new Set(monthAch.map((a) => a.staff_name)));
+    return staffs.map((s) => {
+      const row: any = { staff: s };
+      let total = 0;
+      CATEGORIES.forEach((c) => {
+        const v = monthAch.filter((a) => a.staff_name === s && a.achievement_category === c.id).reduce((sum, a) => sum + Number(a.amount), 0);
+        row[c.id] = v; total += v;
+      });
+      row._total = total;
+      return row;
+    }).sort((a, b) => b._total - a._total);
+  }, [achievements, year, month]);
+
+  const pieData = progress.filter((p) => p.ac.amount > 0).map((p) => ({ name: lang === "bn" ? p.bn : p.en, value: p.ac.amount }));
+  const PIE_COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16", "#f97316", "#6366f1"];
+
+  function exportCSV() {
+    const headers = ["Category", "Target Amount", "Achieved Amount", "Gap", "Achievement %", "Target Qty", "Achieved Qty"];
+    const rows = progress.map((p) => [lang === "bn" ? p.bn : p.en, p.tg.amount, p.ac.amount, Math.max(0, p.tg.amount - p.ac.amount), Math.round(p.pct), p.tg.qty, p.ac.qty]);
+    rows.push(["TOTAL", totalTarget, totalAch, gap, Math.round(overallPct), 0, 0]);
+    const csv = [headers, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")).join("\n");
+    const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+    const a = document.createElement("a"); a.href = url; a.download = `target_${MONTHS_EN[month - 1]}_${year}.csv`; a.click(); URL.revokeObjectURL(url);
+  }
+
   const lbl = (c: typeof CATEGORIES[number]) => (lang === "bn" ? c.bn : c.en);
 
   return (
@@ -173,7 +236,10 @@ function TargetsPage() {
           <h1 className="text-2xl sm:text-3xl font-bold flex items-center gap-2"><Target className="w-7 h-7 text-primary" />{lang === "bn" ? "মাসিক টার্গেট ও অর্জন" : "Monthly Target & Achievement"}</h1>
           <p className="text-muted-foreground text-sm">{lang === "bn" ? "টার্গেট সেট করুন, অর্জন এন্ট্রি দিন, প্রগ্রেস দেখুন ও প্রিন্ট করুন" : "Set targets, log achievements, track progress & print"}</p>
         </div>
-        <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
+        <div className="flex gap-2 no-print">
+          <Button variant="outline" onClick={exportCSV}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+          <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" />{lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
+        </div>
       </div>
 
       <div className="flex gap-2 no-print">
@@ -187,11 +253,31 @@ function TargetsPage() {
         </Select>
       </div>
 
+      {/* Smart KPI Dashboard */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "মোট টার্গেট" : "Total Target"}</div><div className="text-lg font-bold">৳{fmt.num(totalTarget)}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "অর্জন" : "Achieved"}</div><div className="text-lg font-bold text-green-600">৳{fmt.num(totalAch)}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "অবশিষ্ট" : "Gap"}</div><div className="text-lg font-bold text-orange-600">৳{fmt.num(gap)}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "অর্জন %" : "Achievement"}</div><div className={`text-lg font-bold ${overallPct >= 100 ? "text-green-600" : overallPct >= monthProgressPct ? "text-blue-600" : "text-red-600"}`}>{Math.round(overallPct)}%</div><Progress value={Math.min(100, overallPct)} className="h-1 mt-1" /></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground"><CalendarIcon className="w-3 h-3 inline" /> {lang === "bn" ? "দিন বাকি" : "Days Left"}</div><div className="text-lg font-bold">{daysLeft}/{daysInMonth}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground"><Zap className="w-3 h-3 inline" /> {lang === "bn" ? "দৈনিক প্রয়োজন" : "Daily Need"}</div><div className="text-lg font-bold text-violet-600">৳{fmt.num(Math.round(requiredPace))}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground"><TrendingUp className="w-3 h-3 inline" /> {lang === "bn" ? "পূর্বাভাস" : "Forecast"}</div><div className={`text-lg font-bold ${forecast >= totalTarget ? "text-green-600" : "text-amber-600"}`}>৳{fmt.num(Math.round(forecast))}</div></Card>
+        <Card className="p-3"><div className="text-[10px] text-muted-foreground"><Activity className="w-3 h-3 inline" /> MoM</div><div className={`text-lg font-bold ${momGrowth >= 0 ? "text-green-600" : "text-red-600"}`}>{momGrowth >= 0 ? "+" : ""}{Math.round(momGrowth)}%</div></Card>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <Card className="p-3 border-green-200 bg-green-50/50 dark:bg-green-950/20"><div className="text-xs text-muted-foreground flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-green-600" /> {lang === "bn" ? "১০০% অর্জিত" : "Achieved 100%"}</div><div className="text-xl font-bold text-green-700">{achievedCount}/{activeCatCount}</div></Card>
+        <Card className="p-3 border-blue-200 bg-blue-50/50 dark:bg-blue-950/20"><div className="text-xs text-muted-foreground">📈 {lang === "bn" ? "অন-ট্র্যাক" : "On-Track"}</div><div className="text-xl font-bold text-blue-700">{onTrackCount}</div></Card>
+        <Card className="p-3 border-red-200 bg-red-50/50 dark:bg-red-950/20"><div className="text-xs text-muted-foreground flex items-center gap-1"><AlertTriangle className="w-3 h-3 text-red-600" /> {lang === "bn" ? "ঝুঁকিতে" : "At-Risk"}</div><div className="text-xl font-bold text-red-700">{atRiskCount}</div></Card>
+        <Card className="p-3 border-amber-200 bg-amber-50/50 dark:bg-amber-950/20"><div className="text-xs text-muted-foreground"><Trophy className="w-3 h-3 inline text-amber-600" /> {lang === "bn" ? "টপ পারফর্মার" : "Top Performer"}</div><div className="text-base font-bold text-amber-700 truncate">{ranking[0]?.name || "—"}</div></Card>
+      </div>
+
       <Tabs defaultValue="setup">
-        <TabsList className="no-print">
+        <TabsList className="no-print flex-wrap h-auto">
           <TabsTrigger value="setup">{lang === "bn" ? "টার্গেট সেটাপ" : "Target Setup"}</TabsTrigger>
           <TabsTrigger value="achieve">{lang === "bn" ? "অর্জন এন্ট্রি" : "Achievement Entry"}</TabsTrigger>
           <TabsTrigger value="progress">{lang === "bn" ? "প্রগ্রেস" : "Progress"}</TabsTrigger>
+          <TabsTrigger value="analytics">📊 {lang === "bn" ? "অ্যানালিটিক্স" : "Analytics"}</TabsTrigger>
           <TabsTrigger value="report">{lang === "bn" ? "মাসিক রিপোর্ট" : "Monthly Report"}</TabsTrigger>
           <TabsTrigger value="yearly">{lang === "bn" ? "বার্ষিক রিপোর্ট" : "Yearly Report"}</TabsTrigger>
           <TabsTrigger value="rank">{lang === "bn" ? "স্টাফ র‍্যাঙ্কিং" : "Staff Ranking"}</TabsTrigger>
@@ -328,7 +414,94 @@ function TargetsPage() {
           })()}
         </TabsContent>
 
+        <TabsContent value="analytics" className="space-y-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="p-4">
+              <h3 className="font-bold text-sm mb-3"><Activity className="w-4 h-4 inline" /> {lang === "bn" ? "দৈনিক ট্রেন্ড (cumulative)" : "Daily Trend (cumulative)"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <LineChart data={dailyTrend}>
+                    <CartesianGrid strokeDasharray="3 3" /><XAxis dataKey="day" fontSize={10} /><YAxis fontSize={10} /><Tooltip /><Legend />
+                    <Line type="monotone" dataKey="pace" stroke="#94a3b8" strokeDasharray="5 5" name={lang === "bn" ? "প্রত্যাশিত" : "Expected"} dot={false} />
+                    <Line type="monotone" dataKey="cum" stroke="#10b981" name={lang === "bn" ? "প্রকৃত" : "Actual"} strokeWidth={2} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+            </Card>
+            <Card className="p-4">
+              <h3 className="font-bold text-sm mb-3">🥧 {lang === "bn" ? "ক্যাটাগরি অবদান" : "Category Contribution"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} label={(e: any) => `${Math.round(e.percent * 100)}%`}>
+                      {pieData.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                    </Pie>
+                    <Legend /><Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+            </Card>
+          </div>
+
+          <Card className="p-4">
+            <h3 className="font-bold text-sm mb-3">🔥 {lang === "bn" ? "ঝুঁকি বিশ্লেষণ" : "Risk Analysis"} ({lang === "bn" ? "মাস অতিক্রান্ত" : "Month elapsed"}: {Math.round(monthProgressPct)}%)</h3>
+            <div className="space-y-2">
+              {progress.filter((p) => p.tg.amount > 0 || p.tg.qty > 0).map((p) => {
+                const gapVal = Math.max(0, p.tg.amount - p.ac.amount);
+                const risk = p.pct >= 100 ? "achieved" : p.pct >= monthProgressPct - 5 ? "ontrack" : p.pct >= monthProgressPct - 15 ? "slow" : "risk";
+                const riskMap: any = {
+                  achieved: { label: lang === "bn" ? "অর্জিত" : "Achieved", color: "bg-green-600" },
+                  ontrack: { label: lang === "bn" ? "অন-ট্র্যাক" : "On-Track", color: "bg-blue-600" },
+                  slow: { label: lang === "bn" ? "ধীরগতি" : "Slow", color: "bg-amber-500" },
+                  risk: { label: lang === "bn" ? "ঝুঁকিতে" : "At-Risk", color: "bg-red-600" },
+                };
+                return (
+                  <div key={p.id} className="flex items-center gap-3 p-2 border rounded">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium text-sm">{lbl(p)}</span>
+                        <Badge className={riskMap[risk].color}>{riskMap[risk].label}</Badge>
+                      </div>
+                      <Progress value={Math.min(100, p.pct)} className="h-1.5 mt-1" />
+                      <div className="text-xs text-muted-foreground mt-1">৳{fmt.num(p.ac.amount)} / ৳{fmt.num(p.tg.amount)} • {lang === "bn" ? "ঘাটতি" : "Gap"}: ৳{fmt.num(gapVal)} • {lang === "bn" ? "দৈনিক প্রয়োজন" : "Daily need"}: ৳{fmt.num(daysLeft > 0 ? Math.round(gapVal / daysLeft) : 0)}</div>
+                    </div>
+                    <div className="text-right"><div className={`text-xl font-bold ${p.pct >= 100 ? "text-green-600" : p.pct >= monthProgressPct ? "text-blue-600" : "text-red-600"}`}>{Math.round(p.pct)}%</div></div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+
+          {staffCatMatrix.length > 0 && (
+            <Card className="p-4">
+              <h3 className="font-bold text-sm mb-3">🗺️ {lang === "bn" ? "স্টাফ × ক্যাটাগরি হিটম্যাপ" : "Staff × Category Heatmap"}</h3>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader><TableRow><TableHead className="sticky left-0 bg-background">{lang === "bn" ? "স্টাফ" : "Staff"}</TableHead>{CATEGORIES.map((c) => <TableHead key={c.id} className="text-right text-[10px]">{c.id.slice(0, 8)}</TableHead>)}<TableHead className="text-right">{lang === "bn" ? "মোট" : "Total"}</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {staffCatMatrix.map((row) => {
+                      const max = Math.max(...CATEGORIES.map((c) => row[c.id] || 0), 1);
+                      return (
+                        <TableRow key={row.staff}>
+                          <TableCell className="font-medium sticky left-0 bg-background">{row.staff}</TableCell>
+                          {CATEGORIES.map((c) => {
+                            const v = row[c.id] || 0;
+                            const intensity = v / max;
+                            return <TableCell key={c.id} className="text-right text-xs" style={{ backgroundColor: v > 0 ? `rgba(16,185,129,${0.1 + intensity * 0.5})` : undefined }}>{v > 0 ? fmt.num(v) : "—"}</TableCell>;
+                          })}
+                          <TableCell className="text-right font-bold">{fmt.num(row._total)}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          )}
+        </TabsContent>
+
         <TabsContent value="report" className="space-y-4">
+
           <Card className="overflow-hidden print-area">
             <div className="p-4 text-center border-b">
               <div className="font-bold text-lg">{t("bankName")}</div>
