@@ -177,9 +177,17 @@ function AgendaTab({ meetingId }: { meetingId: string }) {
   );
 }
 
+function parseBulk(text: string): string[] {
+  return text
+    .split("\n")
+    .map((l) => l.replace(/^\s*(\d+[\.\)\-:]|[-•*])\s*/, "").trim())
+    .filter(Boolean);
+}
+
 function ProblemsTab({ meetingId }: { meetingId: string }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({ problem: "", raised_by: "", status: "open", resolution: "" });
+  const [bulk, setBulk] = useState("");
   const { data = [] } = useQuery({
     queryKey: ["meeting_problems", meetingId],
     queryFn: async () => {
@@ -191,6 +199,17 @@ function ProblemsTab({ meetingId }: { meetingId: string }) {
   const add = useMutation({
     mutationFn: async () => { const { error } = await supabase.from("meeting_problems").insert({ meeting_id: meetingId, ...form }); if (error) throw error; },
     onSuccess: () => { setForm({ problem: "", raised_by: "", status: "open", resolution: "" }); qc.invalidateQueries({ queryKey: ["meeting_problems", meetingId] }); },
+  });
+  const bulkAdd = useMutation({
+    mutationFn: async () => {
+      const items = parseBulk(bulk);
+      if (!items.length) return;
+      const rows = items.map((problem) => ({ meeting_id: meetingId, problem, status: "open" }));
+      const { error } = await supabase.from("meeting_problems").insert(rows);
+      if (error) throw error;
+    },
+    onSuccess: () => { setBulk(""); toast.success("সব সমস্যা যোগ হয়েছে"); qc.invalidateQueries({ queryKey: ["meeting_problems", meetingId] }); },
+    onError: (e: any) => toast.error(e.message),
   });
   const update = useMutation({
     mutationFn: async ({ id, patch }: any) => { await supabase.from("meeting_problems").update(patch).eq("id", id); },
@@ -204,10 +223,16 @@ function ProblemsTab({ meetingId }: { meetingId: string }) {
         <Input placeholder="উত্থাপনকারী" value={form.raised_by} onChange={(e) => setForm({ ...form, raised_by: e.target.value })} />
         <Button onClick={() => form.problem && add.mutate()}><Plus className="w-4 h-4 mr-1" /> যোগ</Button>
       </div>
+      <div className="border-t pt-3 no-print">
+        <Label className="text-xs">একসাথে সিরিয়াল করে যোগ করুন (প্রতি লাইনে একটি সমস্যা)</Label>
+        <Textarea rows={4} placeholder={"1. প্রথম সমস্যা\n2. দ্বিতীয় সমস্যা\n3. তৃতীয় সমস্যা"} value={bulk} onChange={(e) => setBulk(e.target.value)} className="mt-1" />
+        <Button size="sm" className="mt-2" onClick={() => bulkAdd.mutate()} disabled={!bulk.trim()}><Plus className="w-4 h-4 mr-1" /> সব যোগ করুন ({parseBulk(bulk).length})</Button>
+      </div>
       <div className="space-y-2">
-        {data.map((p: any) => (
+        {data.map((p: any, i: number) => (
           <div key={p.id} className="border rounded p-3 space-y-2">
             <div className="flex items-start justify-between gap-2">
+              <div className="w-7 text-sm font-mono text-muted-foreground pt-0.5">{i + 1}.</div>
               <div className="flex-1">
                 <div className="font-medium">{p.problem}</div>
                 <div className="text-xs text-muted-foreground">{p.raised_by || "—"}</div>
