@@ -196,6 +196,47 @@ export type Database = {
           },
         ]
       }
+      audit_compliance_checks: {
+        Row: {
+          audit_report_id: string
+          created_at: string
+          id: string
+          note: string | null
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audit_report_id: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audit_report_id?: string
+          created_at?: string
+          id?: string
+          note?: string | null
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_compliance_checks_audit_report_id_fkey"
+            columns: ["audit_report_id"]
+            isOneToOne: false
+            referencedRelation: "audit_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_findings: {
         Row: {
           audit_report_id: string | null
