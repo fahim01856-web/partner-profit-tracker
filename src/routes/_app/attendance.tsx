@@ -63,7 +63,7 @@ function AttendancePage() {
               <div key={s.id} className="flex items-center justify-between gap-3 p-3 rounded-lg border">
                 <div>
                   <div className="font-semibold">{s.name}</div>
-                  <div className="text-xs text-muted-foreground">{s.position}</div>
+                  <div className="text-xs text-muted-foreground">{s.position}{s.nid ? ` · NID: ${s.nid}` : ""}</div>
                 </div>
                 <div className="flex gap-1 flex-wrap">
                   {STATUSES.map(st => (
