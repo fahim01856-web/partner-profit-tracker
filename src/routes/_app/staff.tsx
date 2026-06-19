@@ -248,7 +248,7 @@ function StaffPage() {
 
               <div className="flex gap-2 pt-2 border-t">
                 <Button asChild size="sm" className="flex-1">
-                  <Link to="/staff/$id" params={{ id: r.id }}><Eye className="w-3 h-3 mr-1" /> {t("view") || "Profile"}</Link>
+                  <Link to="/staff/$id" params={{ id: r.id }}><Eye className="w-3 h-3 mr-1" /> Profile</Link>
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => startEdit(r)}><Pencil className="w-3 h-3" /></Button>
                 <Button size="sm" variant="ghost" onClick={() => onDelete(r.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
