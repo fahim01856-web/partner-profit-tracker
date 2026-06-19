@@ -164,8 +164,14 @@ function OverviewTab({ staffId, staff }: { staffId: string; staff: any }) {
   });
 
   const aStats = { present: 0, absent: 0, late: 0, leave: 0 };
-  att.forEach((r: any) => { if (r.status in aStats) (aStats as any)[r.status]++; });
-  const totalPaid = salaries.filter((s: any) => s.payment_status === "paid").reduce((a: number, r: any) => a + Number(r.net_paid || 0), 0);
+  att.forEach((r: any) => {
+    if (r.status === "present") aStats.present++;
+    else if (r.status === "absent") aStats.absent++;
+    else if (r.status === "late") aStats.late++;
+    else if (r.status === "leave" || String(r.status).endsWith("_leave")) aStats.leave++;
+  });
+  const paidSalaries = salaries.filter((s: any) => s.payment_status === "paid" || s.paid_on || Number(s.net_paid || 0) > 0);
+  const totalPaid = paidSalaries.reduce((a: number, r: any) => a + Number(r.net_paid || 0), 0);
   const lastSal = salaries[0];
   const avgRating = perf.length ? perf.reduce((s: number, r: any) => s + Number(r.rating || 0), 0) / perf.length : 0;
   const expiringSoon = docs.filter((d: any) => d.expiry_date && new Date(d.expiry_date) < new Date(Date.now() + 30 * 86400000));
@@ -452,7 +458,9 @@ function SalaryTab({ staffId }: { staffId: string }) {
       return data;
     },
   });
-  const totalPaid = rows.filter((r: any) => r.payment_status === "paid").reduce((s: number, r: any) => s + Number(r.net_paid || 0), 0);
+  const totalPaid = rows
+    .filter((r: any) => r.payment_status === "paid" || r.paid_on || Number(r.net_paid || 0) > 0)
+    .reduce((s: number, r: any) => s + Number(r.net_paid || 0), 0);
   return (
     <div className="space-y-4">
       <Card className="p-4 flex items-center justify-between flex-wrap gap-3">

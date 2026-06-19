@@ -35,6 +35,7 @@ import { Route as AppCashBookRouteImport } from './routes/_app/cash-book'
 import { Route as AppAuditReportRouteImport } from './routes/_app/audit-report'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
+import { Route as AppStaffIndexRouteImport } from './routes/_app/staff.index'
 import { Route as AppStaffIdRouteImport } from './routes/_app/staff.$id'
 import { Route as AppAuditReportIdRouteImport } from './routes/_app/audit-report.$id'
 
@@ -167,6 +168,11 @@ const AppAgentBankInvestmentRoute = AppAgentBankInvestmentRouteImport.update({
   path: '/agent-bank-investment',
   getParentRoute: () => AppRoute,
 } as any)
+const AppStaffIndexRoute = AppStaffIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AppStaffRoute,
+} as any)
 const AppStaffIdRoute = AppStaffIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/upcoming-payments': typeof AppUpcomingPaymentsRoute
   '/audit-report/$id': typeof AppAuditReportIdRoute
   '/staff/$id': typeof AppStaffIdRoute
+  '/staff/': typeof AppStaffIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -229,12 +236,12 @@ export interface FileRoutesByTo {
   '/salary-sheet': typeof AppSalarySheetRoute
   '/signature-cards': typeof AppSignatureCardsRoute
   '/sms-sending': typeof AppSmsSendingRoute
-  '/staff': typeof AppStaffRouteWithChildren
   '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
   '/upcoming-payments': typeof AppUpcomingPaymentsRoute
   '/audit-report/$id': typeof AppAuditReportIdRoute
   '/staff/$id': typeof AppStaffIdRoute
+  '/staff': typeof AppStaffIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -266,6 +273,7 @@ export interface FileRoutesById {
   '/_app/upcoming-payments': typeof AppUpcomingPaymentsRoute
   '/_app/audit-report/$id': typeof AppAuditReportIdRoute
   '/_app/staff/$id': typeof AppStaffIdRoute
+  '/_app/staff/': typeof AppStaffIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -297,6 +305,7 @@ export interface FileRouteTypes {
     | '/upcoming-payments'
     | '/audit-report/$id'
     | '/staff/$id'
+    | '/staff/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -320,12 +329,12 @@ export interface FileRouteTypes {
     | '/salary-sheet'
     | '/signature-cards'
     | '/sms-sending'
-    | '/staff'
     | '/system-monitor'
     | '/targets'
     | '/upcoming-payments'
     | '/audit-report/$id'
     | '/staff/$id'
+    | '/staff'
   id:
     | '__root__'
     | '/'
@@ -356,6 +365,7 @@ export interface FileRouteTypes {
     | '/_app/upcoming-payments'
     | '/_app/audit-report/$id'
     | '/_app/staff/$id'
+    | '/_app/staff/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -548,6 +558,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgentBankInvestmentRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/staff/': {
+      id: '/_app/staff/'
+      path: '/'
+      fullPath: '/staff/'
+      preLoaderRoute: typeof AppStaffIndexRouteImport
+      parentRoute: typeof AppStaffRoute
+    }
     '/_app/staff/$id': {
       id: '/_app/staff/$id'
       path: '/$id'
@@ -579,10 +596,12 @@ const AppAuditReportRouteWithChildren = AppAuditReportRoute._addFileChildren(
 
 interface AppStaffRouteChildren {
   AppStaffIdRoute: typeof AppStaffIdRoute
+  AppStaffIndexRoute: typeof AppStaffIndexRoute
 }
 
 const AppStaffRouteChildren: AppStaffRouteChildren = {
   AppStaffIdRoute: AppStaffIdRoute,
+  AppStaffIndexRoute: AppStaffIndexRoute,
 }
 
 const AppStaffRouteWithChildren = AppStaffRoute._addFileChildren(
