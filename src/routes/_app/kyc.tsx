@@ -58,7 +58,7 @@ function KycList() {
 
   const create = useMutation({
     mutationFn: async () => {
-      const { data, error } = await supabase.from("kyc_profiles").insert(form).select().single();
+      const { data, error } = await supabase.from("kyc_profiles").insert(form as any).select().single();
       if (error) throw error;
       // seed default checklist
       const items = CHECKLIST_DEFAULT.map((c) => ({ kyc_id: data.id, item_key: c.key, item_label: c.label, checked: false }));
