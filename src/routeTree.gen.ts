@@ -35,6 +35,7 @@ import { Route as AppCashBookRouteImport } from './routes/_app/cash-book'
 import { Route as AppAuditReportRouteImport } from './routes/_app/audit-report'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
+import { Route as AppStaffIdRouteImport } from './routes/_app/staff.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -165,6 +166,11 @@ const AppAgentBankInvestmentRoute = AppAgentBankInvestmentRouteImport.update({
   path: '/agent-bank-investment',
   getParentRoute: () => AppRoute,
 } as any)
+const AppStaffIdRoute = AppStaffIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => AppStaffRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -188,10 +194,11 @@ export interface FileRoutesByFullPath {
   '/salary-sheet': typeof AppSalarySheetRoute
   '/signature-cards': typeof AppSignatureCardsRoute
   '/sms-sending': typeof AppSmsSendingRoute
-  '/staff': typeof AppStaffRoute
+  '/staff': typeof AppStaffRouteWithChildren
   '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
   '/upcoming-payments': typeof AppUpcomingPaymentsRoute
+  '/staff/$id': typeof AppStaffIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -215,10 +222,11 @@ export interface FileRoutesByTo {
   '/salary-sheet': typeof AppSalarySheetRoute
   '/signature-cards': typeof AppSignatureCardsRoute
   '/sms-sending': typeof AppSmsSendingRoute
-  '/staff': typeof AppStaffRoute
+  '/staff': typeof AppStaffRouteWithChildren
   '/system-monitor': typeof AppSystemMonitorRoute
   '/targets': typeof AppTargetsRoute
   '/upcoming-payments': typeof AppUpcomingPaymentsRoute
+  '/staff/$id': typeof AppStaffIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -244,10 +252,11 @@ export interface FileRoutesById {
   '/_app/salary-sheet': typeof AppSalarySheetRoute
   '/_app/signature-cards': typeof AppSignatureCardsRoute
   '/_app/sms-sending': typeof AppSmsSendingRoute
-  '/_app/staff': typeof AppStaffRoute
+  '/_app/staff': typeof AppStaffRouteWithChildren
   '/_app/system-monitor': typeof AppSystemMonitorRoute
   '/_app/targets': typeof AppTargetsRoute
   '/_app/upcoming-payments': typeof AppUpcomingPaymentsRoute
+  '/_app/staff/$id': typeof AppStaffIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -277,6 +286,7 @@ export interface FileRouteTypes {
     | '/system-monitor'
     | '/targets'
     | '/upcoming-payments'
+    | '/staff/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -304,6 +314,7 @@ export interface FileRouteTypes {
     | '/system-monitor'
     | '/targets'
     | '/upcoming-payments'
+    | '/staff/$id'
   id:
     | '__root__'
     | '/'
@@ -332,6 +343,7 @@ export interface FileRouteTypes {
     | '/_app/system-monitor'
     | '/_app/targets'
     | '/_app/upcoming-payments'
+    | '/_app/staff/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -524,8 +536,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAgentBankInvestmentRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/staff/$id': {
+      id: '/_app/staff/$id'
+      path: '/$id'
+      fullPath: '/staff/$id'
+      preLoaderRoute: typeof AppStaffIdRouteImport
+      parentRoute: typeof AppStaffRoute
+    }
   }
 }
+
+interface AppStaffRouteChildren {
+  AppStaffIdRoute: typeof AppStaffIdRoute
+}
+
+const AppStaffRouteChildren: AppStaffRouteChildren = {
+  AppStaffIdRoute: AppStaffIdRoute,
+}
+
+const AppStaffRouteWithChildren = AppStaffRoute._addFileChildren(
+  AppStaffRouteChildren,
+)
 
 interface AppRouteChildren {
   AppAgentBankInvestmentRoute: typeof AppAgentBankInvestmentRoute
@@ -547,7 +578,7 @@ interface AppRouteChildren {
   AppSalarySheetRoute: typeof AppSalarySheetRoute
   AppSignatureCardsRoute: typeof AppSignatureCardsRoute
   AppSmsSendingRoute: typeof AppSmsSendingRoute
-  AppStaffRoute: typeof AppStaffRoute
+  AppStaffRoute: typeof AppStaffRouteWithChildren
   AppSystemMonitorRoute: typeof AppSystemMonitorRoute
   AppTargetsRoute: typeof AppTargetsRoute
   AppUpcomingPaymentsRoute: typeof AppUpcomingPaymentsRoute
@@ -573,7 +604,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppSalarySheetRoute: AppSalarySheetRoute,
   AppSignatureCardsRoute: AppSignatureCardsRoute,
   AppSmsSendingRoute: AppSmsSendingRoute,
-  AppStaffRoute: AppStaffRoute,
+  AppStaffRoute: AppStaffRouteWithChildren,
   AppSystemMonitorRoute: AppSystemMonitorRoute,
   AppTargetsRoute: AppTargetsRoute,
   AppUpcomingPaymentsRoute: AppUpcomingPaymentsRoute,

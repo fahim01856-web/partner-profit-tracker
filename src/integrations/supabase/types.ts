@@ -343,6 +343,7 @@ export type Database = {
           file_name: string | null
           file_url: string | null
           id: string
+          staff_id: string | null
           title: string
           updated_at: string
           uploaded_by: string | null
@@ -355,6 +356,7 @@ export type Database = {
           file_name?: string | null
           file_url?: string | null
           id?: string
+          staff_id?: string | null
           title: string
           updated_at?: string
           uploaded_by?: string | null
@@ -367,11 +369,20 @@ export type Database = {
           file_name?: string | null
           file_url?: string | null
           id?: string
+          staff_id?: string | null
           title?: string
           updated_at?: string
           uploaded_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "documents_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       expense_categories: {
         Row: {
@@ -1205,6 +1216,97 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      staff_activity_log: {
+        Row: {
+          action: string
+          category: string
+          created_at: string
+          details: string | null
+          id: string
+          performed_by: string | null
+          staff_id: string
+        }
+        Insert: {
+          action: string
+          category?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          performed_by?: string | null
+          staff_id: string
+        }
+        Update: {
+          action?: string
+          category?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          performed_by?: string | null
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_activity_log_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      staff_performance: {
+        Row: {
+          comments: string | null
+          created_at: string
+          goals: string | null
+          id: string
+          period: string
+          rating: number
+          review_date: string
+          reviewer: string | null
+          staff_id: string
+          strengths: string | null
+          updated_at: string
+          weaknesses: string | null
+        }
+        Insert: {
+          comments?: string | null
+          created_at?: string
+          goals?: string | null
+          id?: string
+          period?: string
+          rating?: number
+          review_date?: string
+          reviewer?: string | null
+          staff_id: string
+          strengths?: string | null
+          updated_at?: string
+          weaknesses?: string | null
+        }
+        Update: {
+          comments?: string | null
+          created_at?: string
+          goals?: string | null
+          id?: string
+          period?: string
+          rating?: number
+          review_date?: string
+          reviewer?: string | null
+          staff_id?: string
+          strengths?: string | null
+          updated_at?: string
+          weaknesses?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_performance_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       upcoming_payments: {
         Row: {
