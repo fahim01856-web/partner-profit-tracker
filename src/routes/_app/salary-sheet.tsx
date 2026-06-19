@@ -303,7 +303,7 @@ function SalarySheetPage() {
                         </div>
                       </td>
                       <td className="border border-black p-1 font-semibold whitespace-nowrap">{s.name}</td>
-                      <td className="border border-black p-1 text-center font-mono">{s.id.slice(0, 6).toUpperCase()}</td>
+                      <td className="border border-black p-1 text-center font-mono">{s.nid ?? "—"}</td>
                       <td className="border border-black p-1 text-center whitespace-nowrap">{s.phone ?? "—"}</td>
                       <td className="border border-black p-1 text-center whitespace-nowrap">{s.joining_date ? fmt.date(s.joining_date) : "—"}</td>
                       <td className="border border-black p-1 whitespace-nowrap">{s.position ?? "—"}</td>
