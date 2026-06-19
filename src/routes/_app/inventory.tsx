@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useFmt } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Boxes, Plus, Trash2, Pencil, Printer, Save, AlertTriangle, PackageCheck, PackageMinus, Package, ClipboardList, Check, X } from "lucide-react";
+import { Boxes, Plus, Trash2, Pencil, Printer, Save, AlertTriangle, PackageCheck, PackageMinus, Package, ClipboardList, Check, X, Monitor, Laptop, Cpu, HardDrive, Keyboard, Mouse, Wifi, Router, Smartphone, Tablet, Camera, Headphones, Speaker, Tv, Lightbulb, Fan, Cable, BatteryCharging, Plug, Armchair, Sofa, Building2, Briefcase, FileText, BookOpen, Sparkles, Search, Layers, TrendingUp, Hash } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_app/inventory")({ component: InventoryPage });
@@ -567,10 +567,57 @@ function InventoryPage() {
 
 type Asset = { id: string; name: string; category: string | null; quantity: number; note: string | null };
 
+const ASSET_PRESETS: { name: { bn: string; en: string }; category: string; icon: any }[] = [
+  { name: { bn: "কম্পিউটার", en: "Computer" }, category: "Electronics", icon: Monitor },
+  { name: { bn: "ল্যাপটপ", en: "Laptop" }, category: "Electronics", icon: Laptop },
+  { name: { bn: "প্রিন্টার", en: "Printer" }, category: "Electronics", icon: Printer },
+  { name: { bn: "স্ক্যানার", en: "Scanner" }, category: "Electronics", icon: HardDrive },
+  { name: { bn: "কীবোর্ড", en: "Keyboard" }, category: "Accessories", icon: Keyboard },
+  { name: { bn: "মাউস", en: "Mouse" }, category: "Accessories", icon: Mouse },
+  { name: { bn: "রাউটার", en: "Router" }, category: "Networking", icon: Router },
+  { name: { bn: "ওয়াইফাই", en: "Wi-Fi" }, category: "Networking", icon: Wifi },
+  { name: { bn: "মোবাইল", en: "Mobile" }, category: "Electronics", icon: Smartphone },
+  { name: { bn: "ট্যাবলেট", en: "Tablet" }, category: "Electronics", icon: Tablet },
+  { name: { bn: "ক্যামেরা", en: "Camera" }, category: "Security", icon: Camera },
+  { name: { bn: "হেডফোন", en: "Headphone" }, category: "Accessories", icon: Headphones },
+  { name: { bn: "স্পিকার", en: "Speaker" }, category: "Accessories", icon: Speaker },
+  { name: { bn: "টিভি", en: "TV" }, category: "Electronics", icon: Tv },
+  { name: { bn: "লাইট", en: "Light" }, category: "Utility", icon: Lightbulb },
+  { name: { bn: "ফ্যান", en: "Fan" }, category: "Utility", icon: Fan },
+  { name: { bn: "ক্যাবল", en: "Cable" }, category: "Accessories", icon: Cable },
+  { name: { bn: "ইউপিএস", en: "UPS" }, category: "Power", icon: BatteryCharging },
+  { name: { bn: "মাল্টিপ্লাগ", en: "Multi-plug" }, category: "Power", icon: Plug },
+  { name: { bn: "চেয়ার", en: "Chair" }, category: "Furniture", icon: Armchair },
+  { name: { bn: "সোফা", en: "Sofa" }, category: "Furniture", icon: Sofa },
+  { name: { bn: "টেবিল", en: "Table" }, category: "Furniture", icon: Building2 },
+  { name: { bn: "ব্রিফকেস", en: "Briefcase" }, category: "Office", icon: Briefcase },
+  { name: { bn: "ফাইল", en: "File" }, category: "Office", icon: FileText },
+  { name: { bn: "রেজিস্টার", en: "Register" }, category: "Office", icon: BookOpen },
+];
+
+function iconFor(name: string) {
+  const p = ASSET_PRESETS.find((x) => x.name.bn === name || x.name.en.toLowerCase() === name.toLowerCase());
+  return p?.icon ?? Package;
+}
+
+const CATEGORY_TONES: Record<string, string> = {
+  Electronics: "from-blue-500/15 to-cyan-500/10 text-blue-700 border-blue-300/40",
+  Accessories: "from-purple-500/15 to-pink-500/10 text-purple-700 border-purple-300/40",
+  Networking: "from-emerald-500/15 to-teal-500/10 text-emerald-700 border-emerald-300/40",
+  Security: "from-red-500/15 to-orange-500/10 text-red-700 border-red-300/40",
+  Utility: "from-amber-500/15 to-yellow-500/10 text-amber-700 border-amber-300/40",
+  Power: "from-lime-500/15 to-green-500/10 text-lime-700 border-lime-300/40",
+  Furniture: "from-stone-500/15 to-zinc-500/10 text-stone-700 border-stone-300/40",
+  Office: "from-indigo-500/15 to-violet-500/10 text-indigo-700 border-indigo-300/40",
+};
+const toneFor = (cat?: string | null) => CATEGORY_TONES[cat ?? ""] ?? "from-slate-500/15 to-slate-400/10 text-slate-700 border-slate-300/40";
+
 function AssetsPanel({ lang, t, fmt }: { lang: string; t: (k: any) => string; fmt: { num: (n: number) => string } }) {
   const qc = useQueryClient();
   const [form, setForm] = useState({ id: null as string | null, name: "", category: "", quantity: "1", note: "" });
   const [search, setSearch] = useState("");
+  const [view, setView] = useState<"grid" | "list">("grid");
+  const [catFilter, setCatFilter] = useState<string>("all");
 
   const { data: assets = [] } = useQuery({
     queryKey: ["agent_bank_assets"],
@@ -602,99 +649,241 @@ function AssetsPanel({ lang, t, fmt }: { lang: string; t: (k: any) => string; fm
     onError: (e: any) => toast.error(e.message || "Error"),
   });
 
+  const adjustQty = useMutation({
+    mutationFn: async ({ id, delta }: { id: string; delta: number }) => {
+      const item = assets.find((a) => a.id === id);
+      if (!item) return;
+      const next = Math.max(0, Number(item.quantity || 0) + delta);
+      const { error } = await (supabase as any).from("agent_bank_assets").update({ quantity: next }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["agent_bank_assets"] }),
+  });
+
   const del = useMutation({
     mutationFn: async (id: string) => { const { error } = await (supabase as any).from("agent_bank_assets").delete().eq("id", id); if (error) throw error; },
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["agent_bank_assets"] }); toast.success(t("deleted")); },
   });
 
+  const categories = Array.from(new Set(assets.map((a) => a.category).filter(Boolean))) as string[];
+
   const filtered = assets.filter((a) => {
     const q = search.trim().toLowerCase();
-    if (!q) return true;
-    return a.name.toLowerCase().includes(q) || (a.category ?? "").toLowerCase().includes(q);
+    const matchQ = !q || a.name.toLowerCase().includes(q) || (a.category ?? "").toLowerCase().includes(q);
+    const matchC = catFilter === "all" || (a.category ?? "") === catFilter;
+    return matchQ && matchC;
   });
 
   const totalQty = assets.reduce((s, a) => s + Number(a.quantity || 0), 0);
   const totalItems = assets.length;
+  const lowStock = assets.filter((a) => Number(a.quantity || 0) > 0 && Number(a.quantity || 0) <= 2).length;
+  const outOfStock = assets.filter((a) => Number(a.quantity || 0) === 0).length;
+
+  const applyPreset = (p: typeof ASSET_PRESETS[number]) => {
+    setForm((f) => ({ ...f, name: lang === "bn" ? p.name.bn : p.name.en, category: p.category }));
+  };
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-3">
-          <div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট আইটেম" : "Total Items"}</div>
-          <div className="text-2xl font-bold text-primary">{fmt.num(totalItems)}</div>
-        </Card>
-        <Card className="p-3">
-          <div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট পরিমাণ" : "Total Quantity"}</div>
-          <div className="text-2xl font-bold text-primary">{fmt.num(totalQty)}</div>
-        </Card>
+      {/* Stat tiles */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        {[
+          { label: lang === "bn" ? "মোট আইটেম" : "Total Items", value: totalItems, Icon: Layers, tone: "from-blue-500 to-cyan-500" },
+          { label: lang === "bn" ? "মোট পরিমাণ" : "Total Qty", value: totalQty, Icon: Hash, tone: "from-emerald-500 to-teal-500" },
+          { label: lang === "bn" ? "কম স্টক" : "Low Stock", value: lowStock, Icon: TrendingUp, tone: "from-amber-500 to-orange-500" },
+          { label: lang === "bn" ? "স্টক শেষ" : "Out of Stock", value: outOfStock, Icon: AlertTriangle, tone: "from-rose-500 to-red-500" },
+        ].map((s, i) => (
+          <Card key={i} className="relative overflow-hidden p-4 border-0 shadow-sm">
+            <div className={`absolute inset-0 bg-gradient-to-br ${s.tone} opacity-90`} />
+            <div className="relative flex items-center justify-between text-white">
+              <div>
+                <div className="text-[11px] uppercase tracking-wider opacity-90">{s.label}</div>
+                <div className="text-3xl font-extrabold tabular-nums">{fmt.num(s.value)}</div>
+              </div>
+              <s.Icon className="w-9 h-9 opacity-80" />
+            </div>
+          </Card>
+        ))}
       </div>
 
-      <Card className="p-4">
-        <h3 className="font-semibold mb-3 flex items-center gap-2"><Plus className="w-4 h-4 text-primary" /> {form.id ? t("edit") : (lang === "bn" ? "নতুন সম্পদ যোগ করুন" : "Add New Asset")}</h3>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <div className="md:col-span-2">
-            <Label>{lang === "bn" ? "নাম" : "Name"} *</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={lang === "bn" ? "যেমন: কম্পিউটার, প্রিন্টার" : "e.g. Computer, Printer"} />
+      {/* Add / Edit form */}
+      <Card className="relative overflow-hidden border-primary/20">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5 pointer-events-none" />
+        <div className="relative p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              {form.id ? t("edit") : (lang === "bn" ? "নতুন সম্পদ যোগ করুন" : "Add New Asset")}
+            </h3>
+            {form.id && <span className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary">{lang === "bn" ? "এডিট মোড" : "Edit mode"}</span>}
           </div>
-          <div>
-            <Label>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</Label>
-            <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder={lang === "bn" ? "ইলেকট্রনিকস" : "Electronics"} />
+
+          {/* Quick presets */}
+          <div className="mb-3">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1.5">{lang === "bn" ? "দ্রুত নির্বাচন" : "Quick presets"}</div>
+            <div className="flex flex-wrap gap-1.5">
+              {ASSET_PRESETS.map((p) => {
+                const Icon = p.icon;
+                return (
+                  <button
+                    key={p.name.en}
+                    type="button"
+                    onClick={() => applyPreset(p)}
+                    className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border bg-background/60 hover:bg-primary hover:text-primary-foreground hover:border-primary transition text-xs"
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {lang === "bn" ? p.name.bn : p.name.en}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div>
-            <Label>{lang === "bn" ? "পরিমাণ (পিস)" : "Quantity (pcs)"}</Label>
-            <Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
+            <div className="md:col-span-3">
+              <Label>{lang === "bn" ? "নাম" : "Name"} *</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={lang === "bn" ? "যেমন: কম্পিউটার, প্রিন্টার" : "e.g. Computer, Printer"} />
+            </div>
+            <div className="md:col-span-2">
+              <Label>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</Label>
+              <Input list="asset-cats" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder={lang === "bn" ? "ইলেকট্রনিকস" : "Electronics"} />
+              <datalist id="asset-cats">
+                {Object.keys(CATEGORY_TONES).map((c) => <option key={c} value={c} />)}
+              </datalist>
+            </div>
+            <div>
+              <Label>{lang === "bn" ? "পরিমাণ" : "Qty"}</Label>
+              <div className="flex items-center gap-1">
+                <Button type="button" size="sm" variant="outline" onClick={() => setForm({ ...form, quantity: String(Math.max(0, Number(form.quantity || 0) - 1)) })}>−</Button>
+                <Input type="number" className="text-center" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+                <Button type="button" size="sm" variant="outline" onClick={() => setForm({ ...form, quantity: String(Number(form.quantity || 0) + 1) })}>+</Button>
+              </div>
+            </div>
+            <div className="md:col-span-6">
+              <Label>{t("note")}</Label>
+              <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder={lang === "bn" ? "ব্র্যান্ড, মডেল, সিরিয়াল ইত্যাদি" : "Brand, model, serial, etc."} />
+            </div>
           </div>
-          <div className="md:col-span-4">
-            <Label>{t("note")}</Label>
-            <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          <div className="flex justify-end gap-2 mt-3">
+            {form.id && <Button variant="outline" onClick={() => setForm({ id: null, name: "", category: "", quantity: "1", note: "" })}>{t("cancel_edit")}</Button>}
+            <Button onClick={() => save.mutate()} disabled={save.isPending} className="bg-gradient-to-r from-primary to-primary/80"><Save className="w-4 h-4" /> {t("save")}</Button>
           </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-3">
-          {form.id && <Button variant="outline" onClick={() => setForm({ id: null, name: "", category: "", quantity: "1", note: "" })}>{t("cancel_edit")}</Button>}
-          <Button onClick={() => save.mutate()} disabled={save.isPending}><Save className="w-4 h-4" /> {t("save")}</Button>
         </div>
       </Card>
 
-      <Card className="p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          <h3 className="font-semibold">{lang === "bn" ? "সম্পদ তালিকা" : "Assets List"}</h3>
-          <Input className="w-full md:w-64" placeholder={lang === "bn" ? "সার্চ..." : "Search..."} value={search} onChange={(e) => setSearch(e.target.value)} />
-        </div>
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{lang === "bn" ? "নাম" : "Name"}</TableHead>
-                <TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>
-                <TableHead className="text-right">{lang === "bn" ? "পরিমাণ" : "Qty"}</TableHead>
-                <TableHead>{t("note")}</TableHead>
-                <TableHead className="text-right no-print">{lang === "bn" ? "অ্যাকশন" : "Actions"}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 ? (
-                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-sm py-6">{lang === "bn" ? "কোনো সম্পদ নেই" : "No assets"}</TableCell></TableRow>
-              ) : filtered.map((a) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-medium">{a.name}</TableCell>
-                  <TableCell>{a.category ?? "—"}</TableCell>
-                  <TableCell className="text-right font-semibold">{fmt.num(a.quantity)}</TableCell>
-                  <TableCell className="text-xs">{a.note ?? "—"}</TableCell>
-                  <TableCell className="text-right no-print">
-                    <div className="inline-flex gap-1">
-                      <Button size="sm" variant="ghost" onClick={() => setForm({ id: a.id, name: a.name, category: a.category ?? "", quantity: String(a.quantity), note: a.note ?? "" })}><Pencil className="w-3.5 h-3.5" /></Button>
-                      <Button size="sm" variant="ghost" onClick={() => { if (confirm(t("confirm_delete"))) del.mutate(a.id); }}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      {/* Toolbar */}
+      <Card className="p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative flex-1 min-w-[200px]">
+            <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input className="pl-8" placeholder={lang === "bn" ? "নাম বা ক্যাটাগরি সার্চ..." : "Search name or category..."} value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <Select value={catFilter} onValueChange={setCatFilter}>
+            <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{lang === "bn" ? "সব ক্যাটাগরি" : "All categories"}</SelectItem>
+              {categories.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+            </SelectContent>
+          </Select>
+          <div className="inline-flex rounded-md border overflow-hidden">
+            <button type="button" onClick={() => setView("grid")} className={`px-3 py-1.5 text-xs ${view === "grid" ? "bg-primary text-primary-foreground" : "bg-background"}`}>{lang === "bn" ? "গ্রিড" : "Grid"}</button>
+            <button type="button" onClick={() => setView("list")} className={`px-3 py-1.5 text-xs ${view === "list" ? "bg-primary text-primary-foreground" : "bg-background"}`}>{lang === "bn" ? "লিস্ট" : "List"}</button>
+          </div>
         </div>
       </Card>
+
+      {/* Items */}
+      {view === "grid" ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+          {filtered.length === 0 ? (
+            <Card className="col-span-full p-10 text-center text-muted-foreground text-sm">
+              <Package className="w-10 h-10 mx-auto mb-2 opacity-50" />
+              {lang === "bn" ? "কোনো সম্পদ নেই" : "No assets yet"}
+            </Card>
+          ) : filtered.map((a) => {
+            const Icon = iconFor(a.name);
+            const qty = Number(a.quantity || 0);
+            const stockTone = qty === 0 ? "bg-rose-500" : qty <= 2 ? "bg-amber-500" : "bg-emerald-500";
+            return (
+              <Card key={a.id} className={`relative overflow-hidden border bg-gradient-to-br ${toneFor(a.category)} hover:shadow-lg transition group`}>
+                <div className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="w-11 h-11 rounded-xl bg-white/70 backdrop-blur flex items-center justify-center shadow-sm">
+                      <Icon className="w-5 h-5" />
+                    </div>
+                    <span className={`inline-flex items-center gap-1 text-[10px] uppercase px-2 py-0.5 rounded-full text-white ${stockTone}`}>
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      {qty === 0 ? (lang === "bn" ? "শেষ" : "Empty") : qty <= 2 ? (lang === "bn" ? "কম" : "Low") : (lang === "bn" ? "ভালো" : "OK")}
+                    </span>
+                  </div>
+                  <div className="mt-3">
+                    <div className="font-semibold leading-tight">{a.name}</div>
+                    <div className="text-[11px] opacity-70">{a.category ?? "—"}</div>
+                  </div>
+                  <div className="mt-3 flex items-end justify-between">
+                    <div>
+                      <div className="text-[10px] uppercase opacity-70">{lang === "bn" ? "পরিমাণ" : "Quantity"}</div>
+                      <div className="text-3xl font-extrabold tabular-nums">{fmt.num(qty)}</div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button size="icon" variant="outline" className="h-7 w-7 bg-white/70" onClick={() => adjustQty.mutate({ id: a.id, delta: -1 })}>−</Button>
+                      <Button size="icon" variant="outline" className="h-7 w-7 bg-white/70" onClick={() => adjustQty.mutate({ id: a.id, delta: 1 })}>+</Button>
+                    </div>
+                  </div>
+                  {a.note && <div className="mt-2 text-[11px] opacity-80 line-clamp-2">{a.note}</div>}
+                  <div className="mt-3 flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition">
+                    <Button size="sm" variant="ghost" className="h-7 bg-white/60" onClick={() => setForm({ id: a.id, name: a.name, category: a.category ?? "", quantity: String(a.quantity), note: a.note ?? "" })}><Pencil className="w-3.5 h-3.5" /></Button>
+                    <Button size="sm" variant="ghost" className="h-7 bg-white/60" onClick={() => { if (confirm(t("confirm_delete"))) del.mutate(a.id); }}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
+        <Card className="p-2">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{lang === "bn" ? "নাম" : "Name"}</TableHead>
+                  <TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>
+                  <TableHead className="text-right">{lang === "bn" ? "পরিমাণ" : "Qty"}</TableHead>
+                  <TableHead>{t("note")}</TableHead>
+                  <TableHead className="text-right no-print">{lang === "bn" ? "অ্যাকশন" : "Actions"}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filtered.length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-sm py-6">{lang === "bn" ? "কোনো সম্পদ নেই" : "No assets"}</TableCell></TableRow>
+                ) : filtered.map((a) => {
+                  const Icon = iconFor(a.name);
+                  return (
+                    <TableRow key={a.id}>
+                      <TableCell className="font-medium"><span className="inline-flex items-center gap-2"><Icon className="w-4 h-4 text-primary" />{a.name}</span></TableCell>
+                      <TableCell>{a.category ? <span className={`text-xs px-2 py-0.5 rounded-full border bg-gradient-to-br ${toneFor(a.category)}`}>{a.category}</span> : "—"}</TableCell>
+                      <TableCell className="text-right font-semibold tabular-nums">{fmt.num(a.quantity)}</TableCell>
+                      <TableCell className="text-xs">{a.note ?? "—"}</TableCell>
+                      <TableCell className="text-right no-print">
+                        <div className="inline-flex gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => adjustQty.mutate({ id: a.id, delta: -1 })}>−</Button>
+                          <Button size="sm" variant="ghost" onClick={() => adjustQty.mutate({ id: a.id, delta: 1 })}>+</Button>
+                          <Button size="sm" variant="ghost" onClick={() => setForm({ id: a.id, name: a.name, category: a.category ?? "", quantity: String(a.quantity), note: a.note ?? "" })}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => { if (confirm(t("confirm_delete"))) del.mutate(a.id); }}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </Card>
+      )}
     </div>
   );
 }
+
 
 
 function FilterBar({ fType, setFType, fFrom, setFFrom, fTo, setFTo, lang, items, itemLabel }: any) {
