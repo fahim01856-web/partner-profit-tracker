@@ -668,7 +668,7 @@ function AssetsPanel({ lang, t, fmt }: { lang: string; t: (k: any) => string; fm
                 <TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>
                 <TableHead className="text-right">{lang === "bn" ? "পরিমাণ" : "Qty"}</TableHead>
                 <TableHead>{t("note")}</TableHead>
-                <TableHead className="text-right no-print">{t("actions" as any) || ""}</TableHead>
+                <TableHead className="text-right no-print">{lang === "bn" ? "অ্যাকশন" : "Actions"}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
