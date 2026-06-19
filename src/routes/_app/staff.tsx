@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { useFmt } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { useState, useRef } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Pencil, X, Upload, Phone, Mail, MapPin, Calendar, IdCard, User as UserIcon } from "lucide-react";
+import { Plus, Trash2, Pencil, X, Upload, Phone, Mail, MapPin, Calendar, IdCard, User as UserIcon, Eye } from "lucide-react";
 
 export const Route = createFileRoute("/_app/staff")({ component: StaffPage });
 
@@ -247,7 +247,10 @@ function StaffPage() {
               </div>
 
               <div className="flex gap-2 pt-2 border-t">
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => startEdit(r)}><Pencil className="w-3 h-3 mr-1" /> {t("edit")}</Button>
+                <Button asChild size="sm" className="flex-1">
+                  <Link to="/staff/$id" params={{ id: r.id }}><Eye className="w-3 h-3 mr-1" /> {t("view") || "Profile"}</Link>
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => startEdit(r)}><Pencil className="w-3 h-3" /></Button>
                 <Button size="sm" variant="ghost" onClick={() => onDelete(r.id)}><Trash2 className="w-4 h-4 text-destructive" /></Button>
               </div>
             </Card>
