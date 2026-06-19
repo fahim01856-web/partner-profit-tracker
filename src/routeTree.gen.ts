@@ -32,6 +32,7 @@ import { Route as AppDocumentsRouteImport } from './routes/_app/documents'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppDailyDepositRouteImport } from './routes/_app/daily-deposit'
 import { Route as AppCashBookRouteImport } from './routes/_app/cash-book'
+import { Route as AppAuditReportRouteImport } from './routes/_app/audit-report'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
 
@@ -149,6 +150,11 @@ const AppCashBookRoute = AppCashBookRouteImport.update({
   path: '/cash-book',
   getParentRoute: () => AppRoute,
 } as any)
+const AppAuditReportRoute = AppAuditReportRouteImport.update({
+  id: '/audit-report',
+  path: '/audit-report',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAttendanceRoute = AppAttendanceRouteImport.update({
   id: '/attendance',
   path: '/attendance',
@@ -165,6 +171,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
+  '/audit-report': typeof AppAuditReportRoute
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -191,6 +198,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
+  '/audit-report': typeof AppAuditReportRoute
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -219,6 +227,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/_app/attendance': typeof AppAttendanceRoute
+  '/_app/audit-report': typeof AppAuditReportRoute
   '/_app/cash-book': typeof AppCashBookRoute
   '/_app/daily-deposit': typeof AppDailyDepositRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -247,6 +256,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/agent-bank-investment'
     | '/attendance'
+    | '/audit-report'
     | '/cash-book'
     | '/daily-deposit'
     | '/dashboard'
@@ -273,6 +283,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/agent-bank-investment'
     | '/attendance'
+    | '/audit-report'
     | '/cash-book'
     | '/daily-deposit'
     | '/dashboard'
@@ -300,6 +311,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/agent-bank-investment'
     | '/_app/attendance'
+    | '/_app/audit-report'
     | '/_app/cash-book'
     | '/_app/daily-deposit'
     | '/_app/dashboard'
@@ -491,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCashBookRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/audit-report': {
+      id: '/_app/audit-report'
+      path: '/audit-report'
+      fullPath: '/audit-report'
+      preLoaderRoute: typeof AppAuditReportRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/attendance': {
       id: '/_app/attendance'
       path: '/attendance'
@@ -511,6 +530,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppAgentBankInvestmentRoute: typeof AppAgentBankInvestmentRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
+  AppAuditReportRoute: typeof AppAuditReportRoute
   AppCashBookRoute: typeof AppCashBookRoute
   AppDailyDepositRoute: typeof AppDailyDepositRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -536,6 +556,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAgentBankInvestmentRoute: AppAgentBankInvestmentRoute,
   AppAttendanceRoute: AppAttendanceRoute,
+  AppAuditReportRoute: AppAuditReportRoute,
   AppCashBookRoute: AppCashBookRoute,
   AppDailyDepositRoute: AppDailyDepositRoute,
   AppDashboardRoute: AppDashboardRoute,
