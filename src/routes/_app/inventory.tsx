@@ -248,6 +248,7 @@ function InventoryPage() {
               <Badge variant="destructive" className="ml-1.5 h-4 px-1.5 text-[10px]">{fmt.num(pendings.filter((p) => p.status === "pending").length)}</Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="assets"><Package className="w-3.5 h-3.5 mr-1" /> {lang === "bn" ? "এজেন্ট ব্যাংক সম্পদ" : "Agent Bank Assets"}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-4">
@@ -555,10 +556,146 @@ function InventoryPage() {
             </div>
           </Card>
         </TabsContent>
+
+        <TabsContent value="assets" className="mt-4">
+          <AssetsPanel lang={lang} t={t} fmt={fmt} />
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
+
+type Asset = { id: string; name: string; category: string | null; quantity: number; note: string | null };
+
+function AssetsPanel({ lang, t, fmt }: { lang: string; t: (k: any) => string; fmt: { num: (n: number) => string } }) {
+  const qc = useQueryClient();
+  const [form, setForm] = useState({ id: null as string | null, name: "", category: "", quantity: "1", note: "" });
+  const [search, setSearch] = useState("");
+
+  const { data: assets = [] } = useQuery({
+    queryKey: ["agent_bank_assets"],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).from("agent_bank_assets").select("*").order("name", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as Asset[];
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const qty = Number(form.quantity || 0);
+      if (!form.name.trim()) throw new Error(lang === "bn" ? "নাম দিন" : "Name required");
+      const payload = { name: form.name.trim(), category: form.category.trim() || null, quantity: qty, note: form.note.trim() || null };
+      if (form.id) {
+        const { error } = await (supabase as any).from("agent_bank_assets").update(payload).eq("id", form.id);
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase as any).from("agent_bank_assets").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["agent_bank_assets"] });
+      toast.success(t("save") + " ✓");
+      setForm({ id: null, name: "", category: "", quantity: "1", note: "" });
+    },
+    onError: (e: any) => toast.error(e.message || "Error"),
+  });
+
+  const del = useMutation({
+    mutationFn: async (id: string) => { const { error } = await (supabase as any).from("agent_bank_assets").delete().eq("id", id); if (error) throw error; },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["agent_bank_assets"] }); toast.success(t("deleted")); },
+  });
+
+  const filtered = assets.filter((a) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return a.name.toLowerCase().includes(q) || (a.category ?? "").toLowerCase().includes(q);
+  });
+
+  const totalQty = assets.reduce((s, a) => s + Number(a.quantity || 0), 0);
+  const totalItems = assets.length;
+
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3">
+        <Card className="p-3">
+          <div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট আইটেম" : "Total Items"}</div>
+          <div className="text-2xl font-bold text-primary">{fmt.num(totalItems)}</div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট পরিমাণ" : "Total Quantity"}</div>
+          <div className="text-2xl font-bold text-primary">{fmt.num(totalQty)}</div>
+        </Card>
+      </div>
+
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3 flex items-center gap-2"><Plus className="w-4 h-4 text-primary" /> {form.id ? t("edit") : (lang === "bn" ? "নতুন সম্পদ যোগ করুন" : "Add New Asset")}</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div className="md:col-span-2">
+            <Label>{lang === "bn" ? "নাম" : "Name"} *</Label>
+            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={lang === "bn" ? "যেমন: কম্পিউটার, প্রিন্টার" : "e.g. Computer, Printer"} />
+          </div>
+          <div>
+            <Label>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</Label>
+            <Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} placeholder={lang === "bn" ? "ইলেকট্রনিকস" : "Electronics"} />
+          </div>
+          <div>
+            <Label>{lang === "bn" ? "পরিমাণ (পিস)" : "Quantity (pcs)"}</Label>
+            <Input type="number" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+          </div>
+          <div className="md:col-span-4">
+            <Label>{t("note")}</Label>
+            <Textarea rows={2} value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-3">
+          {form.id && <Button variant="outline" onClick={() => setForm({ id: null, name: "", category: "", quantity: "1", note: "" })}>{t("cancel_edit")}</Button>}
+          <Button onClick={() => save.mutate()} disabled={save.isPending}><Save className="w-4 h-4" /> {t("save")}</Button>
+        </div>
+      </Card>
+
+      <Card className="p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+          <h3 className="font-semibold">{lang === "bn" ? "সম্পদ তালিকা" : "Assets List"}</h3>
+          <Input className="w-full md:w-64" placeholder={lang === "bn" ? "সার্চ..." : "Search..."} value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{lang === "bn" ? "নাম" : "Name"}</TableHead>
+                <TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>
+                <TableHead className="text-right">{lang === "bn" ? "পরিমাণ" : "Qty"}</TableHead>
+                <TableHead>{t("note")}</TableHead>
+                <TableHead className="text-right no-print">{lang === "bn" ? "অ্যাকশন" : "Actions"}</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground text-sm py-6">{lang === "bn" ? "কোনো সম্পদ নেই" : "No assets"}</TableCell></TableRow>
+              ) : filtered.map((a) => (
+                <TableRow key={a.id}>
+                  <TableCell className="font-medium">{a.name}</TableCell>
+                  <TableCell>{a.category ?? "—"}</TableCell>
+                  <TableCell className="text-right font-semibold">{fmt.num(a.quantity)}</TableCell>
+                  <TableCell className="text-xs">{a.note ?? "—"}</TableCell>
+                  <TableCell className="text-right no-print">
+                    <div className="inline-flex gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => setForm({ id: a.id, name: a.name, category: a.category ?? "", quantity: String(a.quantity), note: a.note ?? "" })}><Pencil className="w-3.5 h-3.5" /></Button>
+                      <Button size="sm" variant="ghost" onClick={() => { if (confirm(t("confirm_delete"))) del.mutate(a.id); }}><Trash2 className="w-3.5 h-3.5 text-red-600" /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
 
 function FilterBar({ fType, setFType, fFrom, setFFrom, fTo, setFTo, lang, items, itemLabel }: any) {
   return (
