@@ -16,7 +16,7 @@ import { toast } from "sonner";
 import {
   ArrowLeft, User as UserIcon, Phone, Mail, MapPin, Calendar, IdCard,
   Wallet, ClipboardCheck, FileText, Star, Activity, Plus, Trash2,
-  Briefcase, TrendingUp, Clock, FileCheck, Pencil
+  Briefcase, TrendingUp, Clock, FileCheck, Pencil, LayoutDashboard
 } from "lucide-react";
 
 export const Route = createFileRoute("/_app/staff/$id")({ component: StaffProfilePage });
