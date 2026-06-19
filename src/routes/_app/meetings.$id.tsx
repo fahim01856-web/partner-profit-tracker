@@ -12,7 +12,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
-import { ArrowLeft, Plus, Trash2, Printer, FileText, Target as TargetIcon, AlertTriangle, ListChecks, Users as UsersIcon } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Printer, FileText, Target as TargetIcon, AlertTriangle, ListChecks, Users as UsersIcon, History, CalendarClock, Save } from "lucide-react";
+
+function daysLeft(due?: string | null): { n: number; label: string; tone: "ok" | "warn" | "danger" | "done" } | null {
+  if (!due) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const d = new Date(due); d.setHours(0, 0, 0, 0);
+  const n = Math.round((d.getTime() - today.getTime()) / 86400000);
+  if (n < 0) return { n, label: `${Math.abs(n)} দিন অতিক্রান্ত`, tone: "danger" };
+  if (n === 0) return { n, label: "আজই শেষ দিন", tone: "warn" };
+  if (n <= 3) return { n, label: `${n} দিন বাকি`, tone: "warn" };
+  return { n, label: `${n} দিন বাকি`, tone: "ok" };
+}
 
 export const Route = createFileRoute("/_app/meetings/$id")({ component: MeetingDetail });
 
@@ -37,7 +48,16 @@ function MeetingDetail() {
     onSuccess: () => { toast.success("আপডেট হয়েছে"); qc.invalidateQueries({ queryKey: ["meeting", id] }); qc.invalidateQueries({ queryKey: ["meetings"] }); },
   });
 
+  const [summary, setSummary] = useState<string>("");
+  const [nextDate, setNextDate] = useState<string>("");
+  // sync local state when meeting loads
+  if (mtg && summary === "" && (mtg.summary || "") !== "" && summary !== mtg.summary) {
+    // no-op: initialized below via key trick
+  }
+
   if (!mtg) return <div className="p-8">লোড হচ্ছে...</div>;
+
+  const nl = daysLeft(mtg.next_meeting_date);
 
   return (
     <div className="space-y-4 print:space-y-2">
@@ -51,6 +71,7 @@ function MeetingDetail() {
           <div>
             <h1 className="text-2xl font-bold">{mtg.title}</h1>
             <div className="text-sm text-muted-foreground mt-1">{mtg.meeting_date} {mtg.meeting_time || ""} • {mtg.location || "—"} • সভাপতি: {mtg.chairperson || "—"}</div>
+            <Badge variant="outline" className="mt-2 text-[10px]">{mtg.meeting_type}</Badge>
           </div>
           <Select value={mtg.status} onValueChange={(v) => updateMtg.mutate({ status: v })}>
             <SelectTrigger className="w-40 no-print"><SelectValue /></SelectTrigger>
@@ -63,7 +84,25 @@ function MeetingDetail() {
           </Select>
           <Badge className="print:inline-block hidden">{mtg.status}</Badge>
         </div>
-        {mtg.summary && <div className="mt-3 text-sm bg-muted/50 p-3 rounded">{mtg.summary}</div>}
+
+        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <Label className="text-xs flex items-center gap-1"><CalendarClock className="w-3 h-3" /> পরবর্তী মিটিং তারিখ</Label>
+            <div className="flex gap-2 mt-1">
+              <Input type="date" defaultValue={mtg.next_meeting_date || ""} onChange={(e) => setNextDate(e.target.value)} className="no-print" />
+              <Button size="sm" variant="outline" onClick={() => updateMtg.mutate({ next_meeting_date: nextDate || null })} className="no-print"><Save className="w-3 h-3" /></Button>
+            </div>
+            {nl && <div className={`text-xs mt-1 ${nl.tone === "danger" ? "text-destructive" : nl.tone === "warn" ? "text-amber-600" : "text-green-600"}`}>{nl.label}</div>}
+          </div>
+          <div>
+            <Label className="text-xs">সারসংক্ষেপ / Minutes of Meeting (MoM)</Label>
+            <div className="flex gap-2 mt-1">
+              <Textarea rows={3} defaultValue={mtg.summary || ""} onChange={(e) => setSummary(e.target.value)} className="no-print" placeholder="মিটিং-এর সিদ্ধান্ত, আলোচনা, নোট..." />
+              <Button size="sm" variant="outline" onClick={() => updateMtg.mutate({ summary: summary })} className="no-print self-start"><Save className="w-3 h-3" /></Button>
+            </div>
+            {mtg.summary && <div className="text-xs mt-1 bg-muted/50 p-2 rounded print:block hidden whitespace-pre-wrap">{mtg.summary}</div>}
+          </div>
+        </div>
       </Card>
 
       <Tabs defaultValue="agenda" className="space-y-4">
@@ -73,6 +112,7 @@ function MeetingDetail() {
           <TabsTrigger value="targets"><TargetIcon className="w-4 h-4 mr-1" /> Targets</TabsTrigger>
           <TabsTrigger value="actions"><ListChecks className="w-4 h-4 mr-1" /> Action Plan</TabsTrigger>
           <TabsTrigger value="attendees"><UsersIcon className="w-4 h-4 mr-1" /> Attendees</TabsTrigger>
+          <TabsTrigger value="previous"><History className="w-4 h-4 mr-1" /> Previous Review</TabsTrigger>
           <TabsTrigger value="summary">Progress</TabsTrigger>
         </TabsList>
 
@@ -81,6 +121,7 @@ function MeetingDetail() {
         <TabsContent value="targets"><TargetsTab meetingId={id} /></TabsContent>
         <TabsContent value="actions"><ActionsTab meetingId={id} /></TabsContent>
         <TabsContent value="attendees"><AttendeesTab meetingId={id} /></TabsContent>
+        <TabsContent value="previous"><PreviousReviewTab currentDate={mtg.meeting_date} /></TabsContent>
         <TabsContent value="summary"><SummaryTab meetingId={id} /></TabsContent>
       </Tabs>
     </div>
@@ -213,22 +254,33 @@ function TargetsTab({ meetingId }: { meetingId: string }) {
         <Button onClick={() => form.target && add.mutate()}><Plus className="w-4 h-4 mr-1" /> যোগ</Button>
       </div>
       <div className="space-y-3">
-        {data.map((t: any) => (
-          <div key={t.id} className="border rounded p-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1">
-                <div className="font-medium">{t.target}</div>
-                <div className="text-xs text-muted-foreground">{t.assigned_to || "—"} • Due: {t.due_date || "—"}</div>
+        {data.map((t: any) => {
+          const dl = daysLeft(t.due_date);
+          const done = (t.achievement_percent || 0) >= 100;
+          return (
+            <div key={t.id} className={`border rounded p-3 ${dl?.tone === "danger" && !done ? "border-destructive/50 bg-destructive/5" : ""}`}>
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex-1">
+                  <div className="font-medium">{t.target}</div>
+                  <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+                    <span>{t.assigned_to || "—"}</span>
+                    <span>• Due: {t.due_date || "—"}</span>
+                    {dl && !done && <Badge variant={dl.tone === "danger" ? "destructive" : dl.tone === "warn" ? "secondary" : "outline"} className="text-[10px]">{dl.label}</Badge>}
+                    {done && <Badge className="text-[10px] bg-green-600">সম্পন্ন</Badge>}
+                  </div>
+                </div>
+                <Button size="sm" variant="ghost" onClick={() => del.mutate(t.id)} className="no-print"><Trash2 className="w-3 h-3 text-destructive" /></Button>
               </div>
-              <Button size="sm" variant="ghost" onClick={() => del.mutate(t.id)} className="no-print"><Trash2 className="w-3 h-3 text-destructive" /></Button>
+              <div className="mt-2 flex items-center gap-3">
+                <Progress value={t.achievement_percent} className="flex-1" />
+                <Input type="number" min={0} max={100} defaultValue={t.achievement_percent} onBlur={(e) => update.mutate({ id: t.id, patch: { achievement_percent: Math.min(100, Math.max(0, Number(e.target.value) || 0)) } })} className="w-20 no-print" />
+                <span className="text-sm font-mono">{t.achievement_percent}%</span>
+              </div>
+              <Textarea placeholder="মন্তব্য / Remarks" rows={1} defaultValue={t.remarks || ""} onBlur={(e) => e.target.value !== (t.remarks || "") && update.mutate({ id: t.id, patch: { remarks: e.target.value } })} className="mt-2 no-print" />
+              {t.remarks && <div className="text-xs mt-1 print:block hidden">📝 {t.remarks}</div>}
             </div>
-            <div className="mt-2 flex items-center gap-3">
-              <Progress value={t.achievement_percent} className="flex-1" />
-              <Input type="number" min={0} max={100} defaultValue={t.achievement_percent} onBlur={(e) => update.mutate({ id: t.id, patch: { achievement_percent: Math.min(100, Math.max(0, Number(e.target.value) || 0)) } })} className="w-20 no-print" />
-              <span className="text-sm font-mono">{t.achievement_percent}%</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {data.length === 0 && <div className="text-sm text-muted-foreground text-center py-4">কোনো লক্ষ্য নেই</div>}
       </div>
     </Card>
@@ -266,25 +318,33 @@ function ActionsTab({ meetingId }: { meetingId: string }) {
         <Button onClick={() => form.action && add.mutate()}><Plus className="w-4 h-4 mr-1" /> যোগ</Button>
       </div>
       <div className="space-y-2">
-        {data.map((a: any) => (
-          <div key={a.id} className="flex items-center gap-2 border rounded p-2">
-            <div className="flex-1">
-              <div className="font-medium text-sm">{a.action}</div>
-              <div className="text-xs text-muted-foreground">{a.responsible || "—"} • Due: {a.deadline || "—"}</div>
+        {data.map((a: any) => {
+          const dl = daysLeft(a.deadline);
+          const done = a.status === "completed";
+          return (
+            <div key={a.id} className={`flex flex-wrap items-center gap-2 border rounded p-2 ${dl?.tone === "danger" && !done ? "border-destructive/50 bg-destructive/5" : ""}`}>
+              <div className="flex-1 min-w-[200px]">
+                <div className="font-medium text-sm">{a.action}</div>
+                <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-2">
+                  <span>{a.responsible || "—"}</span>
+                  <span>• Due: {a.deadline || "—"}</span>
+                  {dl && !done && <Badge variant={dl.tone === "danger" ? "destructive" : dl.tone === "warn" ? "secondary" : "outline"} className="text-[10px]">{dl.label}</Badge>}
+                </div>
+              </div>
+              <Select value={a.status} onValueChange={(v) => update.mutate({ id: a.id, patch: { status: v, completed_on: v === "completed" ? new Date().toISOString().slice(0, 10) : null } })}>
+                <SelectTrigger className="w-36 no-print"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="overdue">Overdue</SelectItem>
+                </SelectContent>
+              </Select>
+              <Badge className="print:inline-block hidden">{a.status}</Badge>
+              <Button size="sm" variant="ghost" onClick={() => del.mutate(a.id)} className="no-print"><Trash2 className="w-3 h-3 text-destructive" /></Button>
             </div>
-            <Select value={a.status} onValueChange={(v) => update.mutate({ id: a.id, patch: { status: v, completed_on: v === "completed" ? new Date().toISOString().slice(0, 10) : null } })}>
-              <SelectTrigger className="w-36 no-print"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="in_progress">In Progress</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
-                <SelectItem value="overdue">Overdue</SelectItem>
-              </SelectContent>
-            </Select>
-            <Badge className="print:inline-block hidden">{a.status}</Badge>
-            <Button size="sm" variant="ghost" onClick={() => del.mutate(a.id)} className="no-print"><Trash2 className="w-3 h-3 text-destructive" /></Button>
-          </div>
-        ))}
+          );
+        })}
         {data.length === 0 && <div className="text-sm text-muted-foreground text-center py-4">কোনো অ্যাকশন নেই</div>}
       </div>
     </Card>
@@ -316,7 +376,7 @@ function AttendeesTab({ meetingId }: { meetingId: string }) {
   return (
     <Card className="p-4 space-y-3">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-2 no-print">
-        <Select onValueChange={(v) => { const s = staff.find((x: any) => x.id === v); if (s) add.mutate({ staff_id: s.id, name: s.name, role: s.designation }); }}>
+        <Select onValueChange={(v) => { const s = staff.find((x: any) => x.id === v); if (s) add.mutate({ staff_id: s.id, name: s.name, role: s.position }); }}>
           <SelectTrigger><SelectValue placeholder="স্টাফ থেকে যোগ করুন" /></SelectTrigger>
           <SelectContent>{staff.map((s: any) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
         </Select>
@@ -364,5 +424,92 @@ function SummaryTab({ meetingId }: { meetingId: string }) {
       <Card className="p-4"><div className="text-sm text-muted-foreground">গড় লক্ষ্য অর্জন</div><div className="text-2xl font-bold">{avgTarget}%</div><Progress className="mt-2" value={avgTarget} /></Card>
       <Card className="p-4"><div className="text-sm text-muted-foreground">সমস্যা সমাধান</div><div className="text-2xl font-bold">{resolved}/{problems.length}</div><Progress className="mt-2" value={problems.length ? (resolved / problems.length) * 100 : 0} /></Card>
     </div>
+  );
+}
+
+function PreviousReviewTab({ currentDate }: { currentDate: string }) {
+  const { data: prev } = useQuery({
+    queryKey: ["meeting_prev", currentDate],
+    queryFn: async () => {
+      const { data } = await supabase.from("meetings").select("*").lt("meeting_date", currentDate).order("meeting_date", { ascending: false }).limit(1).maybeSingle();
+      return data;
+    },
+  });
+  const { data: actions = [] } = useQuery({
+    enabled: !!prev?.id,
+    queryKey: ["meeting_prev_actions", prev?.id],
+    queryFn: async () => { const { data } = await supabase.from("meeting_actions").select("*").eq("meeting_id", prev!.id); return data || []; },
+  });
+  const { data: targets = [] } = useQuery({
+    enabled: !!prev?.id,
+    queryKey: ["meeting_prev_targets", prev?.id],
+    queryFn: async () => { const { data } = await supabase.from("meeting_targets").select("*").eq("meeting_id", prev!.id); return data || []; },
+  });
+  const { data: problems = [] } = useQuery({
+    enabled: !!prev?.id,
+    queryKey: ["meeting_prev_problems", prev?.id],
+    queryFn: async () => { const { data } = await supabase.from("meeting_problems").select("*").eq("meeting_id", prev!.id); return data || []; },
+  });
+
+  if (!prev) return <Card className="p-6 text-center text-muted-foreground">পূর্বের কোনো মিটিং পাওয়া যায়নি</Card>;
+
+  const pendingActions = actions.filter((a: any) => a.status !== "completed");
+  const openProblems = problems.filter((p: any) => p.status !== "resolved");
+  const incompleteTargets = targets.filter((t: any) => (t.achievement_percent || 0) < 100);
+
+  return (
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-semibold">{prev.title}</div>
+          <div className="text-xs text-muted-foreground">{prev.meeting_date} • {prev.meeting_type}</div>
+        </div>
+        <Button asChild size="sm" variant="outline" className="no-print"><Link to="/meetings/$id" params={{ id: prev.id }}>পূর্ণ বিবরণ</Link></Button>
+      </div>
+
+      <div>
+        <div className="font-medium text-sm mb-2 flex items-center gap-2"><ListChecks className="w-4 h-4" /> অসম্পূর্ণ অ্যাকশন ({pendingActions.length})</div>
+        <div className="space-y-1">
+          {pendingActions.length === 0 && <div className="text-xs text-muted-foreground">সব সম্পন্ন ✓</div>}
+          {pendingActions.map((a: any) => {
+            const dl = daysLeft(a.deadline);
+            return (
+              <div key={a.id} className="flex items-center gap-2 text-sm border-b pb-1">
+                <div className="flex-1">{a.action} <span className="text-xs text-muted-foreground">— {a.responsible || "—"}</span></div>
+                {dl && <Badge variant={dl.tone === "danger" ? "destructive" : "secondary"} className="text-[10px]">{dl.label}</Badge>}
+                <Badge variant="outline" className="text-[10px]">{a.status}</Badge>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <div className="font-medium text-sm mb-2 flex items-center gap-2"><TargetIcon className="w-4 h-4" /> অসম্পূর্ণ লক্ষ্য ({incompleteTargets.length})</div>
+        <div className="space-y-1">
+          {incompleteTargets.length === 0 && <div className="text-xs text-muted-foreground">সব অর্জিত ✓</div>}
+          {incompleteTargets.map((t: any) => (
+            <div key={t.id} className="flex items-center gap-2 text-sm border-b pb-1">
+              <div className="flex-1">{t.target} <span className="text-xs text-muted-foreground">— {t.assigned_to || "—"}</span></div>
+              <Progress value={t.achievement_percent} className="w-24" />
+              <span className="text-xs font-mono w-10 text-right">{t.achievement_percent}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="font-medium text-sm mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> অমীমাংসিত সমস্যা ({openProblems.length})</div>
+        <div className="space-y-1">
+          {openProblems.length === 0 && <div className="text-xs text-muted-foreground">সব সমাধান হয়েছে ✓</div>}
+          {openProblems.map((p: any) => (
+            <div key={p.id} className="flex items-center gap-2 text-sm border-b pb-1">
+              <div className="flex-1">{p.problem} <span className="text-xs text-muted-foreground">— {p.raised_by || "—"}</span></div>
+              <Badge variant="secondary" className="text-[10px]">{p.status}</Badge>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
   );
 }
