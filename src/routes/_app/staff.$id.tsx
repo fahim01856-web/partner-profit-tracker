@@ -97,8 +97,9 @@ function StaffProfilePage() {
         </div>
       </Card>
 
-      <Tabs defaultValue="profile" className="w-full">
+      <Tabs defaultValue="overview" className="w-full">
         <TabsList className="flex flex-wrap h-auto justify-start w-full gap-1">
+          <TabsTrigger value="overview"><LayoutDashboard className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "সারাংশ" : "Overview"}</TabsTrigger>
           <TabsTrigger value="profile"><UserIcon className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "প্রোফাইল" : "Profile"}</TabsTrigger>
           <TabsTrigger value="attendance"><ClipboardCheck className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "হাজিরা" : "Attendance"}</TabsTrigger>
           <TabsTrigger value="leave"><Calendar className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "ছুটি" : "Leave"}</TabsTrigger>
@@ -108,6 +109,7 @@ function StaffProfilePage() {
           <TabsTrigger value="activity"><Activity className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "লগ" : "Activity"}</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="overview"><OverviewTab staffId={id} staff={staff} /></TabsContent>
         <TabsContent value="profile"><ProfileTab staff={staff} /></TabsContent>
         <TabsContent value="attendance"><AttendanceTab staffId={id} /></TabsContent>
         <TabsContent value="leave"><LeaveTab staffId={id} /></TabsContent>
