@@ -196,6 +196,217 @@ export type Database = {
           },
         ]
       }
+      audit_findings: {
+        Row: {
+          audit_report_id: string | null
+          category: string
+          corrective_action: string | null
+          created_at: string
+          deadline: string | null
+          details: string | null
+          evidence_name: string | null
+          evidence_url: string | null
+          id: string
+          recommendation: string | null
+          resolved_date: string | null
+          responsible_person: string | null
+          risk_level: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          audit_report_id?: string | null
+          category?: string
+          corrective_action?: string | null
+          created_at?: string
+          deadline?: string | null
+          details?: string | null
+          evidence_name?: string | null
+          evidence_url?: string | null
+          id?: string
+          recommendation?: string | null
+          resolved_date?: string | null
+          responsible_person?: string | null
+          risk_level?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          audit_report_id?: string | null
+          category?: string
+          corrective_action?: string | null
+          created_at?: string
+          deadline?: string | null
+          details?: string | null
+          evidence_name?: string | null
+          evidence_url?: string | null
+          id?: string
+          recommendation?: string | null
+          resolved_date?: string | null
+          responsible_person?: string | null
+          risk_level?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_findings_audit_report_id_fkey"
+            columns: ["audit_report_id"]
+            isOneToOne: false
+            referencedRelation: "audit_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_reports: {
+        Row: {
+          approved_by: string | null
+          attendance_check_note: string | null
+          attendance_check_status: string | null
+          audit_date: string
+          audit_type: string
+          auditor_name: string
+          cash_check_note: string | null
+          cash_check_status: string | null
+          checked_by: string | null
+          created_at: string
+          document_check_note: string | null
+          document_check_status: string | null
+          id: string
+          kyc_check_note: string | null
+          kyc_check_status: string | null
+          pending_check_note: string | null
+          pending_check_status: string | null
+          period_end: string | null
+          period_start: string | null
+          prepared_by: string | null
+          remarks: string | null
+          salary_check_note: string | null
+          salary_check_status: string | null
+          sign_date: string | null
+          signature_check_note: string | null
+          signature_check_status: string | null
+          updated_at: string
+          voucher_check_note: string | null
+          voucher_check_status: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          attendance_check_note?: string | null
+          attendance_check_status?: string | null
+          audit_date?: string
+          audit_type?: string
+          auditor_name: string
+          cash_check_note?: string | null
+          cash_check_status?: string | null
+          checked_by?: string | null
+          created_at?: string
+          document_check_note?: string | null
+          document_check_status?: string | null
+          id?: string
+          kyc_check_note?: string | null
+          kyc_check_status?: string | null
+          pending_check_note?: string | null
+          pending_check_status?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          prepared_by?: string | null
+          remarks?: string | null
+          salary_check_note?: string | null
+          salary_check_status?: string | null
+          sign_date?: string | null
+          signature_check_note?: string | null
+          signature_check_status?: string | null
+          updated_at?: string
+          voucher_check_note?: string | null
+          voucher_check_status?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          attendance_check_note?: string | null
+          attendance_check_status?: string | null
+          audit_date?: string
+          audit_type?: string
+          auditor_name?: string
+          cash_check_note?: string | null
+          cash_check_status?: string | null
+          checked_by?: string | null
+          created_at?: string
+          document_check_note?: string | null
+          document_check_status?: string | null
+          id?: string
+          kyc_check_note?: string | null
+          kyc_check_status?: string | null
+          pending_check_note?: string | null
+          pending_check_status?: string | null
+          period_end?: string | null
+          period_start?: string | null
+          prepared_by?: string | null
+          remarks?: string | null
+          salary_check_note?: string | null
+          salary_check_status?: string | null
+          sign_date?: string | null
+          signature_check_note?: string | null
+          signature_check_status?: string | null
+          updated_at?: string
+          voucher_check_note?: string | null
+          voucher_check_status?: string | null
+        }
+        Relationships: []
+      }
+      audit_tasks: {
+        Row: {
+          assigned_to: string | null
+          audit_report_id: string | null
+          completion_date: string | null
+          created_at: string
+          due_date: string | null
+          id: string
+          notes: string | null
+          priority: string
+          status: string
+          task_name: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          audit_report_id?: string | null
+          completion_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          status?: string
+          task_name: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string | null
+          audit_report_id?: string | null
+          completion_date?: string | null
+          created_at?: string
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          priority?: string
+          status?: string
+          task_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_tasks_audit_report_id_fkey"
+            columns: ["audit_report_id"]
+            isOneToOne: false
+            referencedRelation: "audit_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_book_entries: {
         Row: {
           amount: number
