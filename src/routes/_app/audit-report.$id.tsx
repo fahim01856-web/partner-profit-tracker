@@ -20,7 +20,26 @@ import {
   FolderOpen, Upload, Eye,
 } from "lucide-react";
 
-export const Route = createFileRoute("/_app/audit-report/$id")({ component: AuditReportDetailPage });
+export const Route = createFileRoute("/_app/audit-report/$id")({
+  component: AuditReportDetailPage,
+  errorComponent: ({ error, reset }) => (
+    <div className="p-8 max-w-xl mx-auto text-center space-y-3">
+      <AlertTriangle className="w-10 h-10 mx-auto text-destructive" />
+      <h2 className="font-semibold text-lg">অডিট রিপোর্ট লোড করা যায়নি</h2>
+      <p className="text-sm text-muted-foreground break-all">{error?.message || "Unknown error"}</p>
+      <div className="flex justify-center gap-2">
+        <Button variant="outline" onClick={() => reset()}>আবার চেষ্টা</Button>
+        <Button asChild><a href="/audit-report"><ArrowLeft className="w-4 h-4 mr-1" />ফিরে যান</a></Button>
+      </div>
+    </div>
+  ),
+  notFoundComponent: () => (
+    <div className="p-8 text-center space-y-3">
+      <p className="text-muted-foreground">এই অডিট রিপোর্ট পাওয়া যায়নি।</p>
+      <Button asChild><a href="/audit-report"><ArrowLeft className="w-4 h-4 mr-1" />ফিরে যান</a></Button>
+    </div>
+  ),
+});
 
 /* --------------------- constants --------------------- */
 const STATUS_OPTIONS = ["ok", "warning", "fail"] as const;
