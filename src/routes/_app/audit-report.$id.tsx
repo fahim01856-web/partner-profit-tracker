@@ -108,6 +108,7 @@ function AuditReportDetailPage() {
   const fmt = useFmt();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [activeTab, setActiveTab] = useState<AuditTab>(tab);
 
   const { data: report, isLoading, error } = useQuery({
     queryKey: ["audit_report", id],
@@ -161,8 +162,8 @@ function AuditReportDetailPage() {
       </div>
 
       <Tabs
-        value={tab}
-        onValueChange={(nextTab) => navigate({ to: "/audit-report/$id", params: { id }, search: { tab: normalizeTab(nextTab) } })}
+        value={activeTab}
+        onValueChange={(nextTab) => setActiveTab(normalizeTab(nextTab))}
         className="w-full"
       >
         <TabsList className="flex flex-wrap h-auto justify-start w-full gap-1 no-print">
