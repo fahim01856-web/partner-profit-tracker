@@ -95,6 +95,36 @@ export type Database = {
         }
         Relationships: []
       }
+      agent_bank_assets: {
+        Row: {
+          category: string | null
+          created_at: string
+          id: string
+          name: string
+          note: string | null
+          quantity: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          note?: string | null
+          quantity?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          note?: string | null
+          quantity?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agent_bank_investments: {
         Row: {
           amount: number
