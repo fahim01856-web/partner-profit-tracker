@@ -305,7 +305,7 @@ function AttendeesTab({ meetingId }: { meetingId: string }) {
   });
   const { data: staff = [] } = useQuery({
     queryKey: ["staff_list"],
-    queryFn: async () => { const { data } = await supabase.from("staff").select("id,name,designation").order("name"); return data || []; },
+    queryFn: async () => { const { data } = await supabase.from("staff").select("id,name,position").order("name"); return (data as any[]) || []; },
   });
   const add = useMutation({
     mutationFn: async (payload: any) => { const { error } = await supabase.from("meeting_attendees").insert({ meeting_id: meetingId, ...payload }); if (error) throw error; },
