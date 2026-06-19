@@ -426,3 +426,90 @@ function SummaryTab({ meetingId }: { meetingId: string }) {
     </div>
   );
 }
+
+function PreviousReviewTab({ currentDate }: { currentDate: string }) {
+  const { data: prev } = useQuery({
+    queryKey: ["meeting_prev", currentDate],
+    queryFn: async () => {
+      const { data } = await supabase.from("meetings").select("*").lt("meeting_date", currentDate).order("meeting_date", { ascending: false }).limit(1).maybeSingle();
+      return data;
+    },
+  });
+  const { data: actions = [] } = useQuery({
+    enabled: !!prev?.id,
+    queryKey: ["meeting_prev_actions", prev?.id],
+    queryFn: async () => { const { data } = await supabase.from("meeting_actions").select("*").eq("meeting_id", prev!.id); return data || []; },
+  });
+  const { data: targets = [] } = useQuery({
+    enabled: !!prev?.id,
+    queryKey: ["meeting_prev_targets", prev?.id],
+    queryFn: async () => { const { data } = await supabase.from("meeting_targets").select("*").eq("meeting_id", prev!.id); return data || []; },
+  });
+  const { data: problems = [] } = useQuery({
+    enabled: !!prev?.id,
+    queryKey: ["meeting_prev_problems", prev?.id],
+    queryFn: async () => { const { data } = await supabase.from("meeting_problems").select("*").eq("meeting_id", prev!.id); return data || []; },
+  });
+
+  if (!prev) return <Card className="p-6 text-center text-muted-foreground">পূর্বের কোনো মিটিং পাওয়া যায়নি</Card>;
+
+  const pendingActions = actions.filter((a: any) => a.status !== "completed");
+  const openProblems = problems.filter((p: any) => p.status !== "resolved");
+  const incompleteTargets = targets.filter((t: any) => (t.achievement_percent || 0) < 100);
+
+  return (
+    <Card className="p-4 space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-semibold">{prev.title}</div>
+          <div className="text-xs text-muted-foreground">{prev.meeting_date} • {prev.meeting_type}</div>
+        </div>
+        <Button asChild size="sm" variant="outline" className="no-print"><Link to="/meetings/$id" params={{ id: prev.id }}>পূর্ণ বিবরণ</Link></Button>
+      </div>
+
+      <div>
+        <div className="font-medium text-sm mb-2 flex items-center gap-2"><ListChecks className="w-4 h-4" /> অসম্পূর্ণ অ্যাকশন ({pendingActions.length})</div>
+        <div className="space-y-1">
+          {pendingActions.length === 0 && <div className="text-xs text-muted-foreground">সব সম্পন্ন ✓</div>}
+          {pendingActions.map((a: any) => {
+            const dl = daysLeft(a.deadline);
+            return (
+              <div key={a.id} className="flex items-center gap-2 text-sm border-b pb-1">
+                <div className="flex-1">{a.action} <span className="text-xs text-muted-foreground">— {a.responsible || "—"}</span></div>
+                {dl && <Badge variant={dl.tone === "danger" ? "destructive" : "secondary"} className="text-[10px]">{dl.label}</Badge>}
+                <Badge variant="outline" className="text-[10px]">{a.status}</Badge>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div>
+        <div className="font-medium text-sm mb-2 flex items-center gap-2"><TargetIcon className="w-4 h-4" /> অসম্পূর্ণ লক্ষ্য ({incompleteTargets.length})</div>
+        <div className="space-y-1">
+          {incompleteTargets.length === 0 && <div className="text-xs text-muted-foreground">সব অর্জিত ✓</div>}
+          {incompleteTargets.map((t: any) => (
+            <div key={t.id} className="flex items-center gap-2 text-sm border-b pb-1">
+              <div className="flex-1">{t.target} <span className="text-xs text-muted-foreground">— {t.assigned_to || "—"}</span></div>
+              <Progress value={t.achievement_percent} className="w-24" />
+              <span className="text-xs font-mono w-10 text-right">{t.achievement_percent}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <div className="font-medium text-sm mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4" /> অমীমাংসিত সমস্যা ({openProblems.length})</div>
+        <div className="space-y-1">
+          {openProblems.length === 0 && <div className="text-xs text-muted-foreground">সব সমাধান হয়েছে ✓</div>}
+          {openProblems.map((p: any) => (
+            <div key={p.id} className="flex items-center gap-2 text-sm border-b pb-1">
+              <div className="flex-1">{p.problem} <span className="text-xs text-muted-foreground">— {p.raised_by || "—"}</span></div>
+              <Badge variant="secondary" className="text-[10px]">{p.status}</Badge>
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
+  );
+}
