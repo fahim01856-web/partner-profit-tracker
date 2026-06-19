@@ -83,23 +83,28 @@ export function AppLayout() {
           </div>
         </div>
         <nav className="flex-1 overflow-y-auto p-3 flex flex-col gap-1 overscroll-contain">
-          {nav.map(({ to, label, icon: Icon }) => {
+          {nav.map((item, idx) => {
+            const { to, label, icon: Icon } = item;
+            const group = (item as any).group as string | undefined;
+            const prevGroup = (nav[idx - 1] as any)?.group as string | undefined;
             const active = path === to;
             return (
-              <Link
-                key={to}
-                to={to}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors w-full",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold"
-                    : "hover:bg-sidebar-accent/60"
+              <div key={to} className="contents">
+                {group && group !== prevGroup && (
+                  <div className="px-3 pt-3 pb-1 text-[10px] uppercase tracking-wider font-semibold opacity-60">{group}</div>
                 )}
-              >
-                <Icon className="w-4 h-4 shrink-0" />
-                <span className="truncate">{label}</span>
-              </Link>
+                <Link
+                  to={to}
+                  onClick={() => setOpen(false)}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors w-full",
+                    active ? "bg-sidebar-accent text-sidebar-accent-foreground font-semibold" : "hover:bg-sidebar-accent/60"
+                  )}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{label}</span>
+                </Link>
+              </div>
             );
           })}
         </nav>
