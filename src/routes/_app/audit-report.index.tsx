@@ -59,7 +59,7 @@ function AuditReportListPage() {
     queryKey: ["audit_reports", filterMonth, filterYear, filterAuditor, filterType, filterStatus],
     queryFn: async () => {
       let q = supabase.from("audit_reports")
-        .select("*, audit_findings(id, status, deadline), audit_tasks(id, status, due_date)")
+        .select("*, audit_findings(id, status, deadline), audit_tasks(id, status, due_date), audit_compliance_checks(id, status)")
         .order("audit_date", { ascending: false });
       if (filterYear) {
         const ys = `${filterYear}-01-01`, ye = `${filterYear}-12-31`;
@@ -94,10 +94,16 @@ function AuditReportListPage() {
       (r.audit_tasks || []).forEach((t: any) => {
         if (t.status !== "completed" && t.due_date && t.due_date < today) overdueTasks++;
       });
-      CHECK_KEYS.forEach(k => {
-        const s = r[`${k}_check_status`];
-        if (s) { totalChecks++; if (s === "pass" || s === "ok") passedChecks++; }
-      });
+      const checks = r.audit_compliance_checks || [];
+      if (checks.length) {
+        totalChecks += checks.length;
+        passedChecks += checks.filter((c: any) => c.status === "pass" || c.status === "ok").length;
+      } else {
+        CHECK_KEYS.forEach(k => {
+          const s = r[`${k}_check_status`];
+          if (s) { totalChecks++; if (s === "pass" || s === "ok") passedChecks++; }
+        });
+      }
     });
     const compliance = totalChecks ? Math.round((passedChecks / totalChecks) * 100) : 0;
     return { totalReports: reports.length, totalFindings, pendingFindings, completedFindings, overdueTasks, compliance };
@@ -239,10 +245,16 @@ function AuditReportListPage() {
           const completedTasks = tasks.filter((t: any) => t.status === "completed").length;
           const pendingTasks = tasks.length - completedTasks;
           let pass = 0, total = 0;
-          CHECK_KEYS.forEach(k => {
-            const s = r[`${k}_check_status`];
-            if (s) { total++; if (s === "pass" || s === "ok") pass++; }
-          });
+          const checks = r.audit_compliance_checks || [];
+          if (checks.length) {
+            total = checks.length;
+            pass = checks.filter((c: any) => c.status === "pass" || c.status === "ok").length;
+          } else {
+            CHECK_KEYS.forEach(k => {
+              const s = r[`${k}_check_status`];
+              if (s) { total++; if (s === "pass" || s === "ok") pass++; }
+            });
+          }
           const compliance = total ? Math.round((pass / total) * 100) : 0;
           return (
             <Card key={r.id} className="p-4 hover:border-primary transition-colors">
