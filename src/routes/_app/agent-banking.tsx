@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +16,13 @@ import { toast } from "sonner";
 import {
   Plus, Trash2, Pencil, Save, FileDown, Banknote, TrendingUp, Percent,
   Wallet, Calendar, BarChart3, X, ArrowUp, ArrowDown, Trophy, TrendingDown,
-  Activity, Minus,
+  Activity, Minus, Camera, Sparkles, Loader2,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
+import { ocrAgentBankingBalances } from "@/lib/ab-ocr.functions";
 
 export const Route = createFileRoute("/_app/agent-banking")({ component: AgentBankingPage });
 
