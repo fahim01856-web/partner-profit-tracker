@@ -337,7 +337,12 @@ function MonthlyReportPage() {
         const negativeMonths = cur.filter((v) => v < 0).length;
         const prevYearTotal = prev.reduce((s, v) => s + v, 0);
         const yoyChange = prevYearTotal === 0 ? 0 : ((yearlyTotal - prevYearTotal) / Math.abs(prevYearTotal)) * 100;
-        const chartData = cur.map((v, i) => ({ month: monthNames[i], thisYear: v, lastYear: prev[i] }));
+        const momDiff = thisMonthProfit - lastMonthProfit;
+        const monthDiffs = cur.map((v, i) => {
+          const prevV = i === 0 ? prev[11] : cur[i - 1];
+          return { month: monthNames[i], profit: v, diff: v - prevV };
+        });
+        const chartData = cur.map((v, i) => ({ month: monthNames[i], thisYear: v, lastYear: prev[i], diff: monthDiffs[i].diff }));
         const hasAny = cur.some((v) => v !== 0) || prev.some((v) => v !== 0);
         return (
           <div className="space-y-3 no-print">
@@ -346,6 +351,7 @@ function MonthlyReportPage() {
               <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "এই মাসের লাভ" : "This Month"}</div><div className={`text-lg font-bold ${thisMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(thisMonthProfit)}</div></Card>
               <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "গত মাসের লাভ" : "Last Month"}</div><div className={`text-lg font-bold ${lastMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(lastMonthProfit)}</div></Card>
               <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "পরিবর্তন (MoM)" : "Change (MoM)"}</div><div className={`text-lg font-bold flex items-center gap-1 ${change >= 0 ? "text-success" : "text-destructive"}`}>{change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{change.toFixed(1)}%</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "পার্থক্য (গত মাস হতে)" : "Diff vs Last Month"}</div><div className={`text-lg font-bold flex items-center gap-1 ${momDiff >= 0 ? "text-success" : "text-destructive"}`}>{momDiff >= 0 ? "+" : ""}{fmt.bdt(momDiff)}</div></Card>
               <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "গড় মাসিক লাভ" : "Average Profit"}</div><div className={`text-lg font-bold ${avgProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(avgProfit)}</div></Card>
               <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "বার্ষিক মোট" : "Yearly Total"} ({fmt.num(year)})</div><div className={`text-lg font-bold ${yearlyTotal >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(yearlyTotal)}</div></Card>
               <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "বার্ষিক পরিবর্তন (YoY)" : "Change (YoY)"}</div><div className={`text-lg font-bold flex items-center gap-1 ${yoyChange >= 0 ? "text-success" : "text-destructive"}`}>{yoyChange >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{yoyChange.toFixed(1)}%</div></Card>
@@ -372,6 +378,32 @@ function MonthlyReportPage() {
                     </ResponsiveContainer>
                   </div>
                 </ClientOnly>
+              </Card>
+            )}
+
+
+            {hasAny && (
+              <Card className="p-4">
+                <h3 className="font-semibold mb-3 text-sm">{lang === "bn" ? "মাসভিত্তিক পার্থক্য" : "Month-over-Month Difference"} ({fmt.num(year)})</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead><tr className="border-b text-left"><th className="py-1.5 pr-2">{lang === "bn" ? "মাস" : "Month"}</th><th className="py-1.5 pr-2 text-right">{lang === "bn" ? "লাভ" : "Profit"}</th><th className="py-1.5 pr-2 text-right">{lang === "bn" ? "পার্থক্য" : "Diff"}</th><th className="py-1.5 text-right">%</th></tr></thead>
+                    <tbody>
+                      {monthDiffs.map((m, i) => {
+                        const prevV = i === 0 ? prev[11] : cur[i - 1];
+                        const pct = prevV === 0 ? 0 : (m.diff / Math.abs(prevV)) * 100;
+                        return (
+                          <tr key={i} className="border-b last:border-0">
+                            <td className="py-1.5 pr-2">{m.month}</td>
+                            <td className={`py-1.5 pr-2 text-right ${m.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(m.profit)}</td>
+                            <td className={`py-1.5 pr-2 text-right ${m.diff >= 0 ? "text-success" : "text-destructive"}`}>{m.diff >= 0 ? "+" : ""}{fmt.bdt(m.diff)}</td>
+                            <td className={`py-1.5 text-right ${m.diff >= 0 ? "text-success" : "text-destructive"}`}>{prevV === 0 ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </Card>
             )}
           </div>
