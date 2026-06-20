@@ -204,6 +204,77 @@ function InventoryPage() {
   const filteredReceipts = receipts.filter((r) => (fType === "all" || r.item_type === fType) && inDateRange(r.date));
   const filteredDist = distributions.filter((r) => (fType === "all" || r.item_type === fType) && inDateRange(r.date));
 
+  // ---------- Smart analytics ----------
+  const analytics = useMemo(() => {
+    const now = new Date();
+    const ym = now.toISOString().slice(0, 7);
+    const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastYm = lastDate.toISOString().slice(0, 7);
+    const monthLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+    const inMonth = (d: string, m: string) => (d ?? "").startsWith(m);
+    const mRecv = receipts.filter((r) => inMonth(r.date, ym)).reduce((s, r) => s + Number(r.quantity), 0);
+    const mDist = distributions.filter((r) => inMonth(r.date, ym)).reduce((s, r) => s + Number(r.quantity), 0);
+    const lmDist = distributions.filter((r) => inMonth(r.date, lastYm)).reduce((s, r) => s + Number(r.quantity), 0);
+    const distMoMPct = lmDist > 0 ? ((mDist - lmDist) / lmDist) * 100 : 0;
+
+    const totalStock = items.reduce((s, it) => s + stock(it), 0);
+    const pendingTotal = pendings.filter((p) => p.status === "pending").reduce((s, p) => s + Number(p.quantity), 0);
+
+    // 30-day trend
+    const trend: { day: string; recv: number; dist: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      const recv = receipts.filter((r) => r.date === ds).reduce((s, r) => s + Number(r.quantity), 0);
+      const dist = distributions.filter((r) => r.date === ds).reduce((s, r) => s + Number(r.quantity), 0);
+      trend.push({ day: ds.slice(5), recv, dist });
+    }
+
+    // Per-item daily avg over last 30d & days of stock left
+    const perItem = items.map((it) => {
+      const dist30 = distributions.filter((d) => d.item_type === it && d.date >= new Date(now.getTime() - 30 * 86400000).toISOString().slice(0, 10)).reduce((s, r) => s + Number(r.quantity), 0);
+      const avg = dist30 / 30;
+      const s = stock(it);
+      const daysLeft = avg > 0 ? Math.floor(s / avg) : null;
+      const totalRecv = sumBy(receipts, it);
+      const totalDist = sumBy(distributions, it);
+      const capacity = totalRecv > 0 ? (s / totalRecv) * 100 : 0;
+      return { it, stock: s, avg, daysLeft, totalRecv, totalDist, capacity, pending: pendingCount(it) };
+    });
+
+    // Top customers (by total qty distributed)
+    const custMap = new Map<string, { name: string; account: string; qty: number; count: number }>();
+    distributions.forEach((d) => {
+      const k = `${d.customer_name}|${d.account_number}`;
+      const e = custMap.get(k) ?? { name: d.customer_name, account: d.account_number, qty: 0, count: 0 };
+      e.qty += Number(d.quantity); e.count += 1;
+      custMap.set(k, e);
+    });
+    const topCustomers = Array.from(custMap.values()).sort((a, b) => b.qty - a.qty).slice(0, 5);
+
+    // Busiest day this month
+    const dayMap = new Map<string, number>();
+    distributions.filter((d) => inMonth(d.date, ym)).forEach((d) => dayMap.set(d.date, (dayMap.get(d.date) ?? 0) + Number(d.quantity)));
+    const busiest = Array.from(dayMap.entries()).sort((a, b) => b[1] - a[1])[0];
+
+    // Item-share of distributions this month
+    const itemShare = items.map((it) => ({
+      it,
+      label: itemLabel(it),
+      qty: distributions.filter((d) => d.item_type === it && inMonth(d.date, ym)).reduce((s, r) => s + Number(r.quantity), 0),
+    }));
+
+    return { monthLabel, mRecv, mDist, lmDist, distMoMPct, totalStock, pendingTotal, trend, perItem, topCustomers, busiest, itemShare };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [receipts, distributions, pendings]);
+
+  const ITEM_GRADIENTS: Record<ItemType, string> = {
+    mtdr: "linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(199 89% 48%) 100%)",
+    mmpdsa: "linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(292 76% 55%) 100%)",
+    cheque_book: "linear-gradient(135deg, hsl(160 70% 40%) 0%, hsl(180 65% 38%) 100%)",
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3 no-print">
