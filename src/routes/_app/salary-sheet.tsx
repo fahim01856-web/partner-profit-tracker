@@ -540,3 +540,31 @@ function SummaryCard({ label, value, accent }: { label: string; value: string; a
     </Card>
   );
 }
+
+function MiniMetric({ icon, label, value, sub, tone = "default" }: { icon: React.ReactNode; label: string; value: string; sub?: string; tone?: "default" | "success" | "warn" | "danger" }) {
+  const toneCls =
+    tone === "success" ? "text-success border-success/30 bg-success/5" :
+    tone === "warn" ? "text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/10" :
+    tone === "danger" ? "text-destructive border-destructive/30 bg-destructive/5" :
+    "text-foreground border-border bg-muted/40";
+  return (
+    <div className={cn("rounded-lg border p-2.5", toneCls)}>
+      <div className="flex items-center gap-1.5 text-[11px] font-medium opacity-80">{icon}{label}</div>
+      <div className="text-base font-bold mt-0.5">{value}</div>
+      {sub && <div className="text-[10px] opacity-70 mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function InsightChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border bg-background/60 px-2.5 py-2">
+      <span className="shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
+        <div className="text-xs font-semibold truncate">{value}</div>
+      </div>
+    </div>
+  );
+}
+
