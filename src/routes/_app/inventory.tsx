@@ -13,8 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useFmt } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Boxes, Plus, Trash2, Pencil, Printer, Save, AlertTriangle, PackageCheck, PackageMinus, Package, ClipboardList, Check, X, Monitor, Laptop, Cpu, HardDrive, Keyboard, Mouse, Wifi, Router, Smartphone, Tablet, Camera, Headphones, Speaker, Tv, Lightbulb, Fan, Cable, BatteryCharging, Plug, Armchair, Sofa, Building2, Briefcase, FileText, BookOpen, Sparkles, Search, Layers, TrendingUp, Hash } from "lucide-react";
+import { Boxes, Plus, Trash2, Pencil, Printer, Save, AlertTriangle, PackageCheck, PackageMinus, Package, ClipboardList, Check, X, Monitor, Laptop, Cpu, HardDrive, Keyboard, Mouse, Wifi, Router, Smartphone, Tablet, Camera, Headphones, Speaker, Tv, Lightbulb, Fan, Cable, BatteryCharging, Plug, Armchair, Sofa, Building2, Briefcase, FileText, BookOpen, Sparkles, Search, Layers, TrendingUp, TrendingDown, Hash, Activity, Clock, Users, Calendar, Crown, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/_app/inventory")({ component: InventoryPage });
 
@@ -203,6 +204,77 @@ function InventoryPage() {
   const filteredReceipts = receipts.filter((r) => (fType === "all" || r.item_type === fType) && inDateRange(r.date));
   const filteredDist = distributions.filter((r) => (fType === "all" || r.item_type === fType) && inDateRange(r.date));
 
+  // ---------- Smart analytics ----------
+  const analytics = useMemo(() => {
+    const now = new Date();
+    const ym = now.toISOString().slice(0, 7);
+    const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastYm = lastDate.toISOString().slice(0, 7);
+    const monthLabel = now.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
+    const inMonth = (d: string, m: string) => (d ?? "").startsWith(m);
+    const mRecv = receipts.filter((r) => inMonth(r.date, ym)).reduce((s, r) => s + Number(r.quantity), 0);
+    const mDist = distributions.filter((r) => inMonth(r.date, ym)).reduce((s, r) => s + Number(r.quantity), 0);
+    const lmDist = distributions.filter((r) => inMonth(r.date, lastYm)).reduce((s, r) => s + Number(r.quantity), 0);
+    const distMoMPct = lmDist > 0 ? ((mDist - lmDist) / lmDist) * 100 : 0;
+
+    const totalStock = items.reduce((s, it) => s + stock(it), 0);
+    const pendingTotal = pendings.filter((p) => p.status === "pending").reduce((s, p) => s + Number(p.quantity), 0);
+
+    // 30-day trend
+    const trend: { day: string; recv: number; dist: number }[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(now); d.setDate(now.getDate() - i);
+      const ds = d.toISOString().slice(0, 10);
+      const recv = receipts.filter((r) => r.date === ds).reduce((s, r) => s + Number(r.quantity), 0);
+      const dist = distributions.filter((r) => r.date === ds).reduce((s, r) => s + Number(r.quantity), 0);
+      trend.push({ day: ds.slice(5), recv, dist });
+    }
+
+    // Per-item daily avg over last 30d & days of stock left
+    const perItem = items.map((it) => {
+      const dist30 = distributions.filter((d) => d.item_type === it && d.date >= new Date(now.getTime() - 30 * 86400000).toISOString().slice(0, 10)).reduce((s, r) => s + Number(r.quantity), 0);
+      const avg = dist30 / 30;
+      const s = stock(it);
+      const daysLeft = avg > 0 ? Math.floor(s / avg) : null;
+      const totalRecv = sumBy(receipts, it);
+      const totalDist = sumBy(distributions, it);
+      const capacity = totalRecv > 0 ? (s / totalRecv) * 100 : 0;
+      return { it, stock: s, avg, daysLeft, totalRecv, totalDist, capacity, pending: pendingCount(it) };
+    });
+
+    // Top customers (by total qty distributed)
+    const custMap = new Map<string, { name: string; account: string; qty: number; count: number }>();
+    distributions.forEach((d) => {
+      const k = `${d.customer_name}|${d.account_number}`;
+      const e = custMap.get(k) ?? { name: d.customer_name, account: d.account_number, qty: 0, count: 0 };
+      e.qty += Number(d.quantity); e.count += 1;
+      custMap.set(k, e);
+    });
+    const topCustomers = Array.from(custMap.values()).sort((a, b) => b.qty - a.qty).slice(0, 5);
+
+    // Busiest day this month
+    const dayMap = new Map<string, number>();
+    distributions.filter((d) => inMonth(d.date, ym)).forEach((d) => dayMap.set(d.date, (dayMap.get(d.date) ?? 0) + Number(d.quantity)));
+    const busiest = Array.from(dayMap.entries()).sort((a, b) => b[1] - a[1])[0];
+
+    // Item-share of distributions this month
+    const itemShare = items.map((it) => ({
+      it,
+      label: itemLabel(it),
+      qty: distributions.filter((d) => d.item_type === it && inMonth(d.date, ym)).reduce((s, r) => s + Number(r.quantity), 0),
+    }));
+
+    return { monthLabel, mRecv, mDist, lmDist, distMoMPct, totalStock, pendingTotal, trend, perItem, topCustomers, busiest, itemShare };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [receipts, distributions, pendings]);
+
+  const ITEM_GRADIENTS: Record<ItemType, string> = {
+    mtdr: "linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(199 89% 48%) 100%)",
+    mmpdsa: "linear-gradient(135deg, hsl(262 83% 58%) 0%, hsl(292 76% 55%) 100%)",
+    cheque_book: "linear-gradient(135deg, hsl(160 70% 40%) 0%, hsl(180 65% 38%) 100%)",
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-start justify-between gap-3 no-print">
@@ -213,22 +285,63 @@ function InventoryPage() {
         <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4" /> {t("print")}</Button>
       </div>
 
-      {/* Stock cards */}
+      {/* Hero KPI strip */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-4 relative overflow-hidden border-0 text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.78) 100%)" }}>
+          <Layers className="absolute -right-3 -top-3 w-20 h-20 opacity-15" />
+          <div className="text-xs uppercase tracking-wide opacity-90">{lang === "bn" ? "মোট স্টক" : "Total Stock"}</div>
+          <div className="text-3xl font-extrabold mt-1">{fmt.num(analytics.totalStock)}</div>
+          <div className="text-[11px] opacity-90 mt-1">{lang === "bn" ? "৩ আইটেম সম্মিলিত" : "Across 3 items"}</div>
+        </Card>
+        <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(160 70% 38%) 0%, hsl(150 70% 42%) 100%)" }}>
+          <PackageCheck className="absolute -right-3 -top-3 w-20 h-20 opacity-15" />
+          <div className="text-xs uppercase tracking-wide opacity-90">{lang === "bn" ? "এই মাসে প্রাপ্ত" : "Received this month"}</div>
+          <div className="text-3xl font-extrabold mt-1">{fmt.num(analytics.mRecv)}</div>
+          <div className="text-[11px] opacity-90 mt-1">{analytics.monthLabel}</div>
+        </Card>
+        <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(340 82% 52%) 0%, hsl(0 84% 55%) 100%)" }}>
+          <PackageMinus className="absolute -right-3 -top-3 w-20 h-20 opacity-15" />
+          <div className="text-xs uppercase tracking-wide opacity-90">{lang === "bn" ? "এই মাসে বিতরণ" : "Distributed this month"}</div>
+          <div className="text-3xl font-extrabold mt-1">{fmt.num(analytics.mDist)}</div>
+          <div className="text-[11px] opacity-95 mt-1 flex items-center gap-1">
+            {analytics.distMoMPct >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {analytics.distMoMPct >= 0 ? "+" : ""}{fmt.num(Math.round(analytics.distMoMPct))}% vs last month
+          </div>
+        </Card>
+        <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(15 90% 50%) 100%)" }}>
+          <ClipboardList className="absolute -right-3 -top-3 w-20 h-20 opacity-15" />
+          <div className="text-xs uppercase tracking-wide opacity-90">{lang === "bn" ? "পেন্ডিং অনুরোধ" : "Pending requests"}</div>
+          <div className="text-3xl font-extrabold mt-1">{fmt.num(analytics.pendingTotal)}</div>
+          <div className="text-[11px] opacity-95 mt-1">{fmt.num(pendings.filter((p) => p.status === "pending").length)} {lang === "bn" ? "জন কাস্টমার" : "customers"}</div>
+        </Card>
+      </div>
+
+      {/* Stock cards — gorgeous per-item */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {items.map((it) => {
-          const s = stock(it);
+        {analytics.perItem.map(({ it, stock: s, avg, daysLeft, totalRecv, totalDist, capacity, pending }) => {
           const low = s <= LOW_STOCK;
           return (
-            <Card key={it} className={`p-4 ${low ? "border-red-400 bg-red-50/40" : ""}`}>
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold flex items-center gap-1.5"><Package className="w-4 h-4 text-primary" /> {itemLabel(it)}</div>
-                {low && <span className="inline-flex items-center gap-1 text-[11px] text-red-600 font-medium"><AlertTriangle className="w-3 h-3" /> {lang === "bn" ? "স্টক কম" : "Low Stock"}</span>}
+            <Card key={it} className="p-0 overflow-hidden relative group hover:shadow-lg transition">
+              <div className="p-4 text-white relative" style={{ background: ITEM_GRADIENTS[it] }}>
+                <Package className="absolute right-3 top-3 w-12 h-12 opacity-15" />
+                <div className="text-xs uppercase tracking-wider opacity-90">{itemLabel(it)}</div>
+                <div className="flex items-end justify-between mt-1">
+                  <div className="text-4xl font-extrabold">{fmt.num(s)}</div>
+                  {low && <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-white/25 backdrop-blur px-2 py-0.5 rounded-full"><AlertTriangle className="w-3 h-3" />{lang === "bn" ? "স্টক কম" : "LOW"}</span>}
+                </div>
+                <div className="mt-2 h-1.5 rounded-full bg-white/25 overflow-hidden">
+                  <div className="h-full bg-white/90" style={{ width: `${Math.min(100, Math.max(2, capacity))}%` }} />
+                </div>
+                <div className="text-[10px] opacity-90 mt-1">{fmt.num(Math.round(capacity))}% {lang === "bn" ? "ক্যাপাসিটি অবশিষ্ট" : "of capacity"}</div>
               </div>
-              <div className={`text-3xl font-bold mt-2 ${low ? "text-red-600" : "text-primary"}`}>{fmt.num(s)}</div>
-              <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
-                <div className="text-emerald-700"><PackageCheck className="w-3 h-3 inline" /> {lang === "bn" ? "প্রাপ্ত" : "Recv"}: <b>{fmt.num(sumBy(receipts, it))}</b></div>
-                <div className="text-red-700"><PackageMinus className="w-3 h-3 inline" /> {lang === "bn" ? "বিতরণ" : "Dist"}: <b>{fmt.num(sumBy(distributions, it))}</b></div>
-                <div className="text-amber-700"><ClipboardList className="w-3 h-3 inline" /> {lang === "bn" ? "পেন্ডিং" : "Pend"}: <b>{fmt.num(pendingCount(it))}</b></div>
+              <div className="p-3 grid grid-cols-2 gap-2 text-xs bg-card">
+                <div className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-primary" /><span className="text-muted-foreground">{lang === "bn" ? "দৈনিক গড়" : "Avg/day"}:</span> <b>{fmt.num(Math.round(avg * 10) / 10)}</b></div>
+                <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-amber-600" /><span className="text-muted-foreground">{lang === "bn" ? "স্টক চলবে" : "Lasts"}:</span> <b>{daysLeft === null ? "∞" : `${fmt.num(daysLeft)} ${lang === "bn" ? "দিন" : "d"}`}</b></div>
+                <div className="flex items-center gap-1.5 text-emerald-700"><PackageCheck className="w-3.5 h-3.5" /><span className="opacity-80">{lang === "bn" ? "প্রাপ্ত" : "Recv"}:</span> <b>{fmt.num(totalRecv)}</b></div>
+                <div className="flex items-center gap-1.5 text-red-700"><PackageMinus className="w-3.5 h-3.5" /><span className="opacity-80">{lang === "bn" ? "বিতরণ" : "Dist"}:</span> <b>{fmt.num(totalDist)}</b></div>
+                {pending > 0 && (
+                  <div className="col-span-2 flex items-center gap-1.5 text-amber-700 border-t pt-2 mt-1"><ClipboardList className="w-3.5 h-3.5" />{lang === "bn" ? "পেন্ডিং" : "Pending"}: <b>{fmt.num(pending)}</b></div>
+                )}
               </div>
             </Card>
           );
@@ -251,9 +364,85 @@ function InventoryPage() {
           <TabsTrigger value="assets"><Package className="w-3.5 h-3.5 mr-1" /> {lang === "bn" ? "এজেন্ট ব্যাংক সম্পদ" : "Agent Bank Assets"}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="mt-4">
+        <TabsContent value="dashboard" className="mt-4 space-y-4">
+          {/* 30-day trend chart */}
           <Card className="p-4">
-            <h3 className="font-semibold mb-3">{lang === "bn" ? "সর্বশেষ ১০টি লেনদেন" : "Last 10 Transactions"}</h3>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h3 className="font-semibold flex items-center gap-2"><Activity className="w-4 h-4 text-primary" /> {lang === "bn" ? "৩০ দিনের প্রবণতা" : "30-Day Trend"}</h3>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> {lang === "bn" ? "প্রাপ্ত" : "Received"}</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> {lang === "bn" ? "বিতরণ" : "Distributed"}</span>
+              </div>
+            </div>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={analytics.trend} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gRecv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(160 70% 40%)" stopOpacity={0.45} /><stop offset="100%" stopColor="hsl(160 70% 40%)" stopOpacity={0} /></linearGradient>
+                    <linearGradient id="gDist" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(340 82% 52%)" stopOpacity={0.45} /><stop offset="100%" stopColor="hsl(340 82% 52%)" stopOpacity={0} /></linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+                  <RTooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <Area type="monotone" dataKey="recv" stroke="hsl(160 70% 40%)" fill="url(#gRecv)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="dist" stroke="hsl(340 82% 52%)" fill="url(#gDist)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> {lang === "bn" ? "এই মাসে বিতরণ — আইটেম-ভিত্তিক" : "Distribution this month — by item"}</h3>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics.itemShare} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+                    <RTooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                    <Bar dataKey="qty" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              {analytics.busiest && (
+                <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-rose-500" />{lang === "bn" ? "সবচেয়ে ব্যস্ত দিন" : "Busiest day"}: <b className="text-foreground">{fmt.date(analytics.busiest[0])}</b> — {fmt.num(analytics.busiest[1])} {lang === "bn" ? "বিতরণ" : "distributed"}</div>
+              )}
+            </Card>
+
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Crown className="w-4 h-4 text-amber-500" /> {lang === "bn" ? "শীর্ষ কাস্টমার" : "Top Customers"}</h3>
+              {analytics.topCustomers.length === 0 ? (
+                <div className="text-sm text-muted-foreground py-6 text-center">{t("noEntries")}</div>
+              ) : (
+                <div className="space-y-2">
+                  {analytics.topCustomers.map((c, i) => {
+                    const maxQ = analytics.topCustomers[0].qty;
+                    const pct = maxQ > 0 ? (c.qty / maxQ) * 100 : 0;
+                    return (
+                      <div key={c.account + i}>
+                        <div className="flex items-center justify-between text-sm mb-1 gap-2">
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${i === 0 ? "bg-amber-500" : i === 1 ? "bg-slate-400" : i === 2 ? "bg-orange-700" : "bg-muted-foreground"}`}>{fmt.num(i + 1)}</span>
+                            <span className="truncate">
+                              <span className="font-medium">{c.name}</span>
+                              <span className="text-xs text-muted-foreground font-mono ml-1">{c.account}</span>
+                            </span>
+                          </span>
+                          <span className="font-bold text-primary shrink-0">{fmt.num(c.qty)}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg, hsl(var(--primary)), hsl(292 76% 55%))" }} /></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> {lang === "bn" ? "সর্বশেষ ১০টি লেনদেন" : "Last 10 Transactions"}</h3>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -271,9 +460,9 @@ function InventoryPage() {
                     .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10).map((row) => (
                       <TableRow key={row.id}>
                         <TableCell>{fmt.date(row.date)}</TableCell>
-                        <TableCell>{row.kind === "received" ? <span className="text-emerald-700">{lang === "bn" ? "প্রাপ্ত" : "Received"}</span> : <span className="text-red-700">{lang === "bn" ? "বিতরণ" : "Distributed"}</span>}</TableCell>
+                        <TableCell>{row.kind === "received" ? <Badge className="bg-emerald-600 hover:bg-emerald-600">{lang === "bn" ? "প্রাপ্ত" : "Received"}</Badge> : <Badge variant="destructive">{lang === "bn" ? "বিতরণ" : "Distributed"}</Badge>}</TableCell>
                         <TableCell>{itemLabel(row.item_type as ItemType)}</TableCell>
-                        <TableCell className="text-right font-semibold">{fmt.num(row.quantity)}</TableCell>
+                        <TableCell className={`text-right font-semibold ${row.kind === "received" ? "text-emerald-700" : "text-rose-700"}`}>{row.kind === "received" ? "+" : "−"}{fmt.num(row.quantity)}</TableCell>
                         <TableCell className="text-xs">{row.details}</TableCell>
                       </TableRow>
                     ))}
