@@ -57,6 +57,7 @@ function ReportsPage() {
           <TabsTrigger value="remit" className="gap-1.5"><Globe2 className="w-4 h-4" /> {lang === "bn" ? "ফরেন রেমিট্যান্স" : "Foreign Remittance"}</TabsTrigger>
           <TabsTrigger value="ao" className="gap-1.5"><BookPlus className="w-4 h-4" /> {lang === "bn" ? "একাউন্ট ওপেনিং" : "Account Opening"}</TabsTrigger>
           <TabsTrigger value="tin" className="gap-1.5"><FileCheck2 className="w-4 h-4" /> {lang === "bn" ? "টিন ই-রিটার্ন" : "TIN E-Return"}</TabsTrigger>
+          <TabsTrigger value="inactive" className="gap-1.5"><UserX className="w-4 h-4" /> {lang === "bn" ? "ইনএক্টিভ একাউন্ট" : "Inactive Accounts"}</TabsTrigger>
           <TabsTrigger value="center" className="gap-1.5"><FolderOpen className="w-4 h-4" /> {lang === "bn" ? "রিপোর্ট সেন্টার" : "Report Center"}</TabsTrigger>
         </TabsList>
 
@@ -64,7 +65,9 @@ function ReportsPage() {
         <TabsContent value="remit"><RemittanceTab /></TabsContent>
         <TabsContent value="ao"><AccountOpeningTab /></TabsContent>
         <TabsContent value="tin"><TinEReturnTab /></TabsContent>
+        <TabsContent value="inactive"><InactiveAccountsTab /></TabsContent>
         <TabsContent value="center"><ReportCenterTab /></TabsContent>
+
       </Tabs>
     </div>
   );
