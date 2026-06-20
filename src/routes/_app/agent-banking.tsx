@@ -14,7 +14,8 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import {
   Plus, Trash2, Pencil, Save, FileDown, Banknote, TrendingUp, Percent,
-  Wallet, Calendar, BarChart3, X,
+  Wallet, Calendar, BarChart3, X, ArrowUp, ArrowDown, Trophy, TrendingDown,
+  Activity, Minus,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
