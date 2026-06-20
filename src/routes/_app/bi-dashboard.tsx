@@ -12,7 +12,8 @@ import { analyzeBusiness, askBusiness } from "@/lib/bi-dashboard.functions";
 import {
   Brain, Sparkles, TrendingUp, TrendingDown, Wallet, AlertTriangle,
   Lightbulb, RefreshCw, Send, Target, Users, Package, ClipboardList,
-  Activity, Loader2, MessageSquare, ShieldAlert, Gauge,
+  Activity, Loader2, MessageSquare, ShieldAlert, Gauge, Printer,
+  Crown, ShieldCheck, FileCheck2, HeartPulse, Bell, Building2, Banknote,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
