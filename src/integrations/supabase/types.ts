@@ -14,6 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      ab_account_balances: {
+        Row: {
+          account_type: string
+          balance: number
+          created_at: string
+          date: string
+          id: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_type: string
+          balance?: number
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_type?: string
+          balance?: number
+          created_at?: string
+          date?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ab_income_entries: {
+        Row: {
+          amount: number
+          created_at: string
+          date: string
+          id: string
+          income_type: string
+          note: string | null
+          source: string | null
+          updated_at: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          income_type: string
+          note?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          date?: string
+          id?: string
+          income_type?: string
+          note?: string | null
+          source?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ab_profit_slabs: {
+        Row: {
+          account_type: string
+          created_at: string
+          id: string
+          max_amount: number | null
+          min_amount: number
+          sort_order: number
+          updated_at: string
+          yearly_percent: number
+        }
+        Insert: {
+          account_type: string
+          created_at?: string
+          id?: string
+          max_amount?: number | null
+          min_amount?: number
+          sort_order?: number
+          updated_at?: string
+          yearly_percent?: number
+        }
+        Update: {
+          account_type?: string
+          created_at?: string
+          id?: string
+          max_amount?: number | null
+          min_amount?: number
+          sort_order?: number
+          updated_at?: string
+          yearly_percent?: number
+        }
+        Relationships: []
+      }
       account_opening_entries: {
         Row: {
           account_type: string
