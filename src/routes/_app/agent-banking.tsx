@@ -110,6 +110,32 @@ function AgentBankingPage() {
   }, [incomes]);
   const totalIncome = Object.values(incomeByType).reduce((s, n) => s + n, 0);
 
+  // ===== Daily income aggregation =====
+  const dailyIncome = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const i of incomes) m.set(i.date, (m.get(i.date) || 0) + Number(i.amount));
+    return Array.from(m.entries()).map(([date, total]) => ({ date, total })).sort((a, b) => a.date.localeCompare(b.date));
+  }, [incomes]);
+
+  const incomeStats = useMemo(() => {
+    if (dailyIncome.length === 0) {
+      return { today: 0, yesterday: 0, changePct: 0, maxDay: null as null | { date: string; total: number }, minDay: null as null | { date: string; total: number }, avg7: 0, avg30: 0 };
+    }
+    const today = todayStr();
+    const yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+    const todayTotal = dailyIncome.find((d) => d.date === today)?.total ?? 0;
+    const yestTotal = dailyIncome.find((d) => d.date === yest)?.total ?? 0;
+    const changePct = yestTotal > 0 ? ((todayTotal - yestTotal) / yestTotal) * 100 : (todayTotal > 0 ? 100 : 0);
+    const sorted = [...dailyIncome].sort((a, b) => b.total - a.total);
+    const maxDay = sorted[0];
+    const minDay = sorted[sorted.length - 1];
+    const last7 = dailyIncome.slice(-7);
+    const last30 = dailyIncome.slice(-30);
+    const avg7 = last7.reduce((s, d) => s + d.total, 0) / (last7.length || 1);
+    const avg30 = last30.reduce((s, d) => s + d.total, 0) / (last30.length || 1);
+    return { today: todayTotal, yesterday: yestTotal, changePct, maxDay, minDay, avg7, avg30 };
+  }, [dailyIncome]);
+
   // ===== Monthly aggregation =====
   const monthlyIncome = useMemo(() => {
     const m = new Map<string, { month: string; Online: number; Remittance: number; Other: number; total: number }>();
@@ -122,6 +148,13 @@ function AgentBankingPage() {
     }
     return Array.from(m.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
   }, [incomes]);
+
+  const monthChangePct = useMemo(() => {
+    if (monthlyIncome.length < 2) return 0;
+    const cur = monthlyIncome[monthlyIncome.length - 1].total;
+    const prev = monthlyIncome[monthlyIncome.length - 2].total;
+    return prev > 0 ? ((cur - prev) / prev) * 100 : (cur > 0 ? 100 : 0);
+  }, [monthlyIncome]);
 
   return (
     <div className="space-y-4">
@@ -144,6 +177,38 @@ function AgentBankingPage() {
         <KpiCard label="Monthly Profit (est.)" value={fmtBDT(monthlyProfit)} icon={Calendar} grad="from-amber-500 to-orange-600" />
         <KpiCard label="Total Income (all-time)" value={fmtBDT(totalIncome)} icon={BarChart3} grad="from-fuchsia-500 to-pink-600" />
       </div>
+
+      {/* Daily Income Analytics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <MiniStat label="Today's Income" value={fmtBDT(incomeStats.today)} tone="blue" />
+        <MiniStat label="Yesterday" value={fmtBDT(incomeStats.yesterday)} tone="slate" />
+        <MiniStat
+          label="Day-over-Day"
+          value={`${incomeStats.changePct >= 0 ? "▲" : "▼"} ${Math.abs(incomeStats.changePct).toFixed(1)}%`}
+          tone={incomeStats.changePct >= 0 ? "green" : "red"}
+        />
+        <MiniStat label="7-Day Avg" value={fmtBDT(incomeStats.avg7)} tone="amber" />
+        <MiniStat
+          label="Highest Day"
+          value={incomeStats.maxDay ? fmtBDT(incomeStats.maxDay.total) : "—"}
+          sub={incomeStats.maxDay?.date}
+          tone="green"
+        />
+        <MiniStat
+          label="Lowest Day"
+          value={incomeStats.minDay ? fmtBDT(incomeStats.minDay.total) : "—"}
+          sub={incomeStats.minDay?.date}
+          tone="red"
+        />
+        <MiniStat label="30-Day Avg" value={fmtBDT(incomeStats.avg30)} tone="blue" />
+        <MiniStat
+          label="Month-over-Month"
+          value={`${monthChangePct >= 0 ? "▲" : "▼"} ${Math.abs(monthChangePct).toFixed(1)}%`}
+          tone={monthChangePct >= 0 ? "green" : "red"}
+        />
+      </div>
+
+
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap h-auto">
@@ -182,6 +247,24 @@ function AgentBankingPage() {
     </div>
   );
 }
+/* ============ Mini stat chip ============ */
+function MiniStat({ label, value, sub, tone = "blue" }: { label: string; value: string; sub?: string; tone?: "blue" | "green" | "red" | "amber" | "slate" }) {
+  const toneCls = {
+    blue: "bg-blue-500/10 text-blue-700 dark:text-blue-300 border-blue-500/20",
+    green: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/20",
+    red: "bg-red-500/10 text-red-700 dark:text-red-300 border-red-500/20",
+    amber: "bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/20",
+    slate: "bg-slate-500/10 text-slate-700 dark:text-slate-300 border-slate-500/20",
+  }[tone];
+  return (
+    <div className={`rounded-lg border p-2.5 ${toneCls}`}>
+      <div className="text-[10px] font-medium opacity-80 truncate">{label}</div>
+      <div className="text-sm font-bold truncate">{value}</div>
+      {sub && <div className="text-[10px] opacity-70 truncate">{sub}</div>}
+    </div>
+  );
+}
+
 
 /* ============ KPI ============ */
 function KpiCard({
