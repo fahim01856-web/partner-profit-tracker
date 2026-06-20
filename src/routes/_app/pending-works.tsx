@@ -652,6 +652,7 @@ function PendingWorksPage() {
           </Table>
         </div>
       </Card>
+      )}
 
       <Dialog open={manageOpen} onOpenChange={(o) => { setManageOpen(o); if (!o) setEditingCat(null); }}>
         <DialogContent className="max-w-lg">
