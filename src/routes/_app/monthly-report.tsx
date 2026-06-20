@@ -316,11 +316,18 @@ function MonthlyReportPage() {
         };
         const cur = profitByMonth(year);
         const prev = profitByMonth(year - 1);
-        const thisMonthProfit = cur[month - 1];
-        const lastMonthIdx = month === 1 ? 11 : month - 2;
-        const lastMonthYearArr = month === 1 ? prev : cur;
-        const lastMonthProfit = lastMonthYearArr[lastMonthIdx];
+        // Shift by one: "This Month" = previous completed month (profit lands next month)
+        const thisIdxRaw = month - 2; // month is 1..12, so prev month index is month-2
+        const thisYearArr = thisIdxRaw < 0 ? prev : cur;
+        const thisMonthIdx = (thisIdxRaw + 12) % 12;
+        const thisMonthProfit = thisYearArr[thisMonthIdx];
+        const lastIdxRaw = month - 3;
+        const lastYearArr = lastIdxRaw < 0 ? prev : cur;
+        const lastMonthIdx = (lastIdxRaw + 12) % 12;
+        const lastMonthProfit = lastYearArr[lastMonthIdx];
         const change = lastMonthProfit === 0 ? 0 : ((thisMonthProfit - lastMonthProfit) / Math.abs(lastMonthProfit)) * 100;
+        const thisMonthName = monthNames[thisMonthIdx];
+        const lastMonthName = monthNames[lastMonthIdx];
         const yearlyTotal = cur.reduce((s, v) => s + v, 0);
         const activeIdx = cur.map((v, i) => ({ v, i })).filter((x) => x.v !== 0);
         const hasActive = activeIdx.length > 0;
