@@ -407,7 +407,7 @@ function TemplateQuickUse({ template, onClose }: { template: any; onClose: () =>
 
   const html = useMemo(() => buildDocumentHtml({
     bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি",
-    outlet: "এজেন্ট আউটলেট, ফকির বাজার, বুড়িচং, কুমিল্লা",
+    outlet: "ফকিরবাজার এজেন্ট আউটলেট ১২১/১১, বুড়িচং, কুমিল্লা",
     bodyHtml: template.body_html || "",
     fields,
   }), [template, fields]);
@@ -870,7 +870,7 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const previewHtml = buildDocumentHtml({ bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি", outlet: "এজেন্ট আউটলেট, ফকির বাজার, বুড়িচং, কুমিল্লা", bodyHtml: v.body_html, fields: mergedFields });
+  const previewHtml = buildDocumentHtml({ bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি", outlet: "ফকিরবাজার এজেন্ট আউটলেট ১২১/১১, বুড়িচং, কুমিল্লা", bodyHtml: v.body_html, fields: mergedFields });
 
   return (
     <Dialog open onOpenChange={onClose}>
