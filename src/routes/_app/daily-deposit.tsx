@@ -384,6 +384,39 @@ function DailyDepositPage() {
         </div>
       </div>
 
+      {/* ===== GORGEOUS HERO BANNER ===== */}
+      <Card className="relative overflow-hidden border-0 text-white shadow-xl no-print"
+        style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, #6366f1 50%, #8b5cf6 100%)" }}>
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.4) 0, transparent 40%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.3) 0, transparent 40%)",
+        }} />
+        <div className="relative p-5 md:p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="col-span-2 md:col-span-2">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wider opacity-90">
+              <Sparkles className="w-4 h-4" /> {lang === "bn" ? "মোট ডিপোজিট পজিশন" : "Total Deposit Position"}
+            </div>
+            <div className="text-3xl md:text-5xl font-extrabold mt-2 tracking-tight">{fmt.bdt(insights.totalEver)}</div>
+            <div className="text-xs opacity-90 mt-2 flex items-center gap-3">
+              <span className="inline-flex items-center gap-1"><Activity className="w-3.5 h-3.5" /> {fmt.num(all.length)} {lang === "bn" ? "এন্ট্রি" : "entries"}</span>
+              <span className="inline-flex items-center gap-1"><Flame className="w-3.5 h-3.5" /> {fmt.num(insights.trailing)} {lang === "bn" ? "দিন বৃদ্ধি" : "day growth streak"}</span>
+            </div>
+          </div>
+          <div className="bg-white/15 backdrop-blur rounded-lg p-3">
+            <div className="text-[10px] uppercase tracking-wider opacity-90">{lang === "bn" ? "এই মাস" : "This Month"}</div>
+            <div className="text-xl font-bold mt-1">{fmt.bdt(insights.thisTotal)}</div>
+            <div className={`text-[11px] mt-1 inline-flex items-center gap-1 ${insights.momPct >= 0 ? "" : ""}`}>
+              {insights.momPct >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+              {Math.abs(insights.momPct).toFixed(1)}% {lang === "bn" ? "vs গত মাস" : "vs last month"}
+            </div>
+          </div>
+          <div className="bg-white/15 backdrop-blur rounded-lg p-3">
+            <div className="text-[10px] uppercase tracking-wider opacity-90 inline-flex items-center gap-1"><Target className="w-3 h-3" /> {lang === "bn" ? "প্রজেকশন" : "Projection"}</div>
+            <div className="text-xl font-bold mt-1">{fmt.bdt(insights.projected)}</div>
+            <div className="text-[11px] opacity-90 mt-1">{fmt.num(insights.todayDay)}/{fmt.num(insights.daysInMonth)} {lang === "bn" ? "দিন" : "days"}</div>
+          </div>
+        </div>
+      </Card>
+
       {/* Dashboard Summary */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 no-print">
         <StatCard label={t("dd_today")} value={fmt.bdt(todayDep)} icon={<Calendar className="w-4 h-4" />} accent="text-primary" />
@@ -409,8 +442,10 @@ function DailyDepositPage() {
           <TabsTrigger value="monthly">{t("dd_tab_monthly")}</TabsTrigger>
           <TabsTrigger value="yearly">{t("dd_tab_yearly")}</TabsTrigger>
           <TabsTrigger value="analytics">{t("dd_tab_analytics")}</TabsTrigger>
+          <TabsTrigger value="insights"><Sparkles className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "স্মার্ট ইনসাইট" : "Smart Insights"}</TabsTrigger>
           <TabsTrigger value="print">{t("dd_tab_print")}</TabsTrigger>
         </TabsList>
+
 
         {/* ADD */}
         <TabsContent value="add" className="mt-4">
