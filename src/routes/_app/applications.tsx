@@ -462,6 +462,33 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
               ))}
             </div>
           </div>
+          <div className="col-span-2 rounded-lg border-2 border-dashed p-3 bg-muted/30">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5 text-primary" /> ফাইল সংযুক্ত করুন (PDF / Word) — ঐচ্ছিক</Label>
+              {v.file_path && (
+                <div className="flex gap-1">
+                  <Button type="button" size="sm" variant="outline" onClick={openFile}><Eye className="w-3 h-3 mr-1" /> দেখুন</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={removeFile}><Trash2 className="w-3 h-3 text-destructive" /></Button>
+                </div>
+              )}
+            </div>
+            {v.file_path ? (
+              <div className="text-xs flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded p-2">
+                <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium truncate">{v.file_name}</div>
+                  <div className="text-[10px] text-muted-foreground">{v.file_mime} • {(((v.file_size || 0) / 1024) | 0)} KB</div>
+                </div>
+                <Button type="button" size="sm" variant="secondary" onClick={() => fileRef.current?.click()} disabled={uploading}>প্রতিস্থাপন</Button>
+              </div>
+            ) : (
+              <Button type="button" variant="outline" className="w-full" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                <Upload className="w-4 h-4 mr-1" /> {uploading ? "আপলোড হচ্ছে..." : "PDF / DOCX আপলোড"}
+              </Button>
+            )}
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = ""; }} />
+            <div className="text-[10px] text-muted-foreground mt-1.5">💡 আপনার রেডি-মেইড আবেদন (PDF/Word) এখানে সেভ করুন — পরে যেকোনো গ্রাহকের জন্য Open করে শুধু পরিবর্তনীয় তথ্য বসিয়ে প্রিন্ট করতে পারবেন।</div>
+          </div>
           <div className="col-span-2 flex items-center gap-2">
             <input id="active" type="checkbox" checked={v.is_active ?? true} onChange={(e) => setV({ ...v, is_active: e.target.checked })} />
             <Label htmlFor="active">সক্রিয়</Label>
