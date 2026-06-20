@@ -13,8 +13,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useFmt } from "@/lib/format";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Boxes, Plus, Trash2, Pencil, Printer, Save, AlertTriangle, PackageCheck, PackageMinus, Package, ClipboardList, Check, X, Monitor, Laptop, Cpu, HardDrive, Keyboard, Mouse, Wifi, Router, Smartphone, Tablet, Camera, Headphones, Speaker, Tv, Lightbulb, Fan, Cable, BatteryCharging, Plug, Armchair, Sofa, Building2, Briefcase, FileText, BookOpen, Sparkles, Search, Layers, TrendingUp, Hash } from "lucide-react";
+import { Boxes, Plus, Trash2, Pencil, Printer, Save, AlertTriangle, PackageCheck, PackageMinus, Package, ClipboardList, Check, X, Monitor, Laptop, Cpu, HardDrive, Keyboard, Mouse, Wifi, Router, Smartphone, Tablet, Camera, Headphones, Speaker, Tv, Lightbulb, Fan, Cable, BatteryCharging, Plug, Armchair, Sofa, Building2, Briefcase, FileText, BookOpen, Sparkles, Search, Layers, TrendingUp, TrendingDown, Hash, Activity, Clock, Users, Calendar, Crown, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip as RTooltip, XAxis, YAxis } from "recharts";
 
 export const Route = createFileRoute("/_app/inventory")({ component: InventoryPage });
 
