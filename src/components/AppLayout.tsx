@@ -7,7 +7,7 @@ import {
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
   ClipboardList, MessageSquare, Target, FileText, Banknote,
   BookOpen, FileSignature, Boxes, BookUser, Activity, CalendarClock, ShieldCheck,
-  CalendarDays, UserCheck, ListTodo, Brain
+  CalendarDays, UserCheck, ListTodo, Brain, FilePlus2
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -41,6 +41,7 @@ export function AppLayout() {
     { to: "/meetings", label: "Meeting Schedule", icon: CalendarDays, group: "M.S. KYC. Task" },
     { to: "/kyc", label: "KYC Documents", icon: UserCheck, group: "M.S. KYC. Task" },
     { to: "/tasks", label: "Task Management", icon: ListTodo, group: "M.S. KYC. Task" },
+    { to: "/applications", label: "Application Management", icon: FilePlus2, group: "M.S. KYC. Task" },
     // === Other ===
     { to: "/sms-sending", label: t("nav_sms"), icon: MessageSquare },
     { to: "/targets", label: t("nav_targets"), icon: Target },

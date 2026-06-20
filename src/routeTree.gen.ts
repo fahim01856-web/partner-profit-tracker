@@ -38,6 +38,7 @@ import { Route as AppCashBookRouteImport } from './routes/_app/cash-book'
 import { Route as AppBiDashboardRouteImport } from './routes/_app/bi-dashboard'
 import { Route as AppAuditReportRouteImport } from './routes/_app/audit-report'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
+import { Route as AppApplicationsRouteImport } from './routes/_app/applications'
 import { Route as AppAgentBankingRouteImport } from './routes/_app/agent-banking'
 import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
 import { Route as AppStaffIndexRouteImport } from './routes/_app/staff.index'
@@ -191,6 +192,11 @@ const AppAttendanceRoute = AppAttendanceRouteImport.update({
   path: '/attendance',
   getParentRoute: () => AppRoute,
 } as any)
+const AppApplicationsRoute = AppApplicationsRouteImport.update({
+  id: '/applications',
+  path: '/applications',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAgentBankingRoute = AppAgentBankingRouteImport.update({
   id: '/agent-banking',
   path: '/agent-banking',
@@ -237,6 +243,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/agent-banking': typeof AppAgentBankingRoute
+  '/applications': typeof AppApplicationsRoute
   '/attendance': typeof AppAttendanceRoute
   '/audit-report': typeof AppAuditReportRouteWithChildren
   '/bi-dashboard': typeof AppBiDashboardRoute
@@ -275,6 +282,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/agent-banking': typeof AppAgentBankingRoute
+  '/applications': typeof AppApplicationsRoute
   '/attendance': typeof AppAttendanceRoute
   '/bi-dashboard': typeof AppBiDashboardRoute
   '/cash-book': typeof AppCashBookRoute
@@ -313,6 +321,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_app/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/_app/agent-banking': typeof AppAgentBankingRoute
+  '/_app/applications': typeof AppApplicationsRoute
   '/_app/attendance': typeof AppAttendanceRoute
   '/_app/audit-report': typeof AppAuditReportRouteWithChildren
   '/_app/bi-dashboard': typeof AppBiDashboardRoute
@@ -353,6 +362,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/agent-bank-investment'
     | '/agent-banking'
+    | '/applications'
     | '/attendance'
     | '/audit-report'
     | '/bi-dashboard'
@@ -391,6 +401,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/agent-bank-investment'
     | '/agent-banking'
+    | '/applications'
     | '/attendance'
     | '/bi-dashboard'
     | '/cash-book'
@@ -428,6 +439,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_app/agent-bank-investment'
     | '/_app/agent-banking'
+    | '/_app/applications'
     | '/_app/attendance'
     | '/_app/audit-report'
     | '/_app/bi-dashboard'
@@ -673,6 +685,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAttendanceRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/applications': {
+      id: '/_app/applications'
+      path: '/applications'
+      fullPath: '/applications'
+      preLoaderRoute: typeof AppApplicationsRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/agent-banking': {
       id: '/_app/agent-banking'
       path: '/agent-banking'
@@ -786,6 +805,7 @@ const AppStaffRouteWithChildren = AppStaffRoute._addFileChildren(
 interface AppRouteChildren {
   AppAgentBankInvestmentRoute: typeof AppAgentBankInvestmentRoute
   AppAgentBankingRoute: typeof AppAgentBankingRoute
+  AppApplicationsRoute: typeof AppApplicationsRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppAuditReportRoute: typeof AppAuditReportRouteWithChildren
   AppBiDashboardRoute: typeof AppBiDashboardRoute
@@ -817,6 +837,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppAgentBankInvestmentRoute: AppAgentBankInvestmentRoute,
   AppAgentBankingRoute: AppAgentBankingRoute,
+  AppApplicationsRoute: AppApplicationsRoute,
   AppAttendanceRoute: AppAttendanceRoute,
   AppAuditReportRoute: AppAuditReportRouteWithChildren,
   AppBiDashboardRoute: AppBiDashboardRoute,

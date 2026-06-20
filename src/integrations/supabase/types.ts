@@ -281,6 +281,325 @@ export type Database = {
         }
         Relationships: []
       }
+      application_attachments: {
+        Row: {
+          application_id: string | null
+          created_at: string
+          file_path: string | null
+          file_url: string | null
+          id: string
+          mime_type: string | null
+          size_bytes: number | null
+          title: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          application_id?: string | null
+          created_at?: string
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          title?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          application_id?: string | null
+          created_at?: string
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          size_bytes?: number | null
+          title?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_attachments_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_fields: {
+        Row: {
+          created_at: string
+          default_value: string | null
+          field_key: string
+          field_type: string
+          id: string
+          label: string
+          required: boolean
+          sort_order: number
+          template_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          default_value?: string | null
+          field_key: string
+          field_type?: string
+          id?: string
+          label: string
+          required?: boolean
+          sort_order?: number
+          template_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          default_value?: string | null
+          field_key?: string
+          field_type?: string
+          id?: string
+          label?: string
+          required?: boolean
+          sort_order?: number
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "application_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_history: {
+        Row: {
+          action: string
+          application_id: string | null
+          changed_by: string | null
+          created_at: string
+          id: string
+          note: string | null
+          snapshot: Json | null
+          version: number
+        }
+        Insert: {
+          action: string
+          application_id?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          snapshot?: Json | null
+          version?: number
+        }
+        Update: {
+          action?: string
+          application_id?: string | null
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          snapshot?: Json | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_history_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_records: {
+        Row: {
+          account_number: string | null
+          account_type: string | null
+          amount: number | null
+          application_date: string
+          application_no: string | null
+          application_type: string | null
+          approved_at: string | null
+          approved_by: string | null
+          body_html: string
+          created_at: string
+          created_by: string | null
+          customer_mobile: string | null
+          customer_name: string
+          customer_nid: string | null
+          fields: Json
+          id: string
+          reason: string | null
+          remarks: string | null
+          status: string
+          template_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          account_type?: string | null
+          amount?: number | null
+          application_date?: string
+          application_no?: string | null
+          application_type?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          body_html?: string
+          created_at?: string
+          created_by?: string | null
+          customer_mobile?: string | null
+          customer_name: string
+          customer_nid?: string | null
+          fields?: Json
+          id?: string
+          reason?: string | null
+          remarks?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          account_type?: string | null
+          amount?: number | null
+          application_date?: string
+          application_no?: string | null
+          application_type?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          body_html?: string
+          created_at?: string
+          created_by?: string | null
+          customer_mobile?: string | null
+          customer_name?: string
+          customer_nid?: string | null
+          fields?: Json
+          id?: string
+          reason?: string | null
+          remarks?: string | null
+          status?: string
+          template_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "application_records_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "application_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      application_templates: {
+        Row: {
+          body_html: string
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          is_default: boolean
+          name: string
+          placeholders: Json
+          updated_at: string
+        }
+        Insert: {
+          body_html?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name: string
+          placeholders?: Json
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          is_default?: boolean
+          name?: string
+          placeholders?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      application_user_activities: {
+        Row: {
+          action: string
+          created_at: string
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          meta: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          meta?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          meta?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      approval_records: {
+        Row: {
+          application_id: string | null
+          comments: string | null
+          decided_at: string
+          decided_by: string | null
+          decision: string
+          id: string
+          stage: string
+        }
+        Insert: {
+          application_id?: string | null
+          comments?: string | null
+          decided_at?: string
+          decided_by?: string | null
+          decision: string
+          id?: string
+          stage: string
+        }
+        Update: {
+          application_id?: string | null
+          comments?: string | null
+          decided_at?: string
+          decided_by?: string | null
+          decision?: string
+          id?: string
+          stage?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approval_records_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "application_records"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       attendance: {
         Row: {
           created_at: string
@@ -673,6 +992,60 @@ export type Database = {
           id?: string
           role?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      customer_documents: {
+        Row: {
+          account_number: string | null
+          created_at: string
+          customer_mobile: string | null
+          customer_name: string
+          customer_nid: string | null
+          doc_type: string
+          file_path: string | null
+          file_url: string | null
+          id: string
+          mime_type: string | null
+          notes: string | null
+          size_bytes: number | null
+          title: string
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          account_number?: string | null
+          created_at?: string
+          customer_mobile?: string | null
+          customer_name: string
+          customer_nid?: string | null
+          doc_type: string
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          size_bytes?: number | null
+          title: string
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          account_number?: string | null
+          created_at?: string
+          customer_mobile?: string | null
+          customer_name?: string
+          customer_nid?: string | null
+          doc_type?: string
+          file_path?: string | null
+          file_url?: string | null
+          id?: string
+          mime_type?: string | null
+          notes?: string | null
+          size_bytes?: number | null
+          title?: string
+          updated_at?: string
+          uploaded_by?: string | null
         }
         Relationships: []
       }
