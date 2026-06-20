@@ -323,9 +323,9 @@ function SalarySheetPage() {
       </div>
 
       {/* Smart Analytics Panel */}
-      <div className="no-print grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className="no-print grid grid-cols-1 gap-4">
         {/* Payment Progress */}
-        <Card className="p-4 col-span-1 lg:col-span-2 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+        <Card className="p-4 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -350,45 +350,25 @@ function SalarySheetPage() {
           </div>
         </Card>
 
-        {/* Top earners */}
-        <Card className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Trophy className="w-4 h-4 text-amber-500" />
-            <h3 className="font-semibold text-sm">Top Earners</h3>
-          </div>
-          <div className="space-y-2">
-            {analytics.top3.length === 0 && <p className="text-xs text-muted-foreground">No data</p>}
-            {analytics.top3.map((x, i) => (
-              <div key={x.staff.id} className="flex items-center gap-2 text-xs">
-                <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
-                  i === 0 ? "bg-amber-100 text-amber-700" : i === 1 ? "bg-slate-100 text-slate-700" : "bg-orange-100 text-orange-700")}>
-                  {fmt.num(i + 1)}
-                </span>
-                <span className="flex-1 truncate font-medium">{x.staff.name}</span>
-                <span className="font-bold text-primary">{fmt.bdt(x.net)}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {/* Insights */}
-        <Card className="p-4 lg:col-span-3 bg-gradient-to-br from-accent/30 to-transparent">
+        {/* Smart Insights — payroll health */}
+        <Card className="p-4 bg-gradient-to-br from-accent/30 to-transparent">
           <div className="flex items-center gap-2 mb-3">
             <Calendar className="w-4 h-4 text-primary" />
             <h3 className="font-semibold text-sm">Smart Insights</h3>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-            <InsightChip icon={<Users className="w-3.5 h-3.5" />} label="Active Staff" value={fmt.num(filtered.length)} />
-            <InsightChip icon={<TrendingUp className="w-3.5 h-3.5 text-success" />} label="Highest Pay" value={analytics.highest ? `${analytics.highest.staff.name} · ${fmt.bdt(analytics.highest.net)}` : "—"} />
-            <InsightChip icon={<TrendingDown className="w-3.5 h-3.5 text-destructive" />} label="Lowest Pay" value={analytics.lowest ? `${analytics.lowest.staff.name} · ${fmt.bdt(analytics.lowest.net)}` : "—"} />
-            <InsightChip icon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />} label="Bonus Recipients" value={`${fmt.num(analytics.bonusRecipients)} staff`} />
-            <InsightChip icon={<AlertTriangle className="w-3.5 h-3.5 text-destructive" />} label="With Deductions" value={`${fmt.num(analytics.deductionCount)} staff`} />
-            <InsightChip icon={<Wallet className="w-3.5 h-3.5" />} label="Payout Coverage" value={fmt.bdt(analytics.paidAmount)} />
+            <InsightChip icon={<Wallet className="w-3.5 h-3.5 text-primary" />} label="Daily Payroll Cost" value={fmt.bdt(analytics.dailyCost)} />
+            <InsightChip icon={<Sparkles className="w-3.5 h-3.5 text-success" />} label="Bonus Ratio" value={`${analytics.bonusRatio.toFixed(1)}%`} />
+            <InsightChip icon={<AlertTriangle className="w-3.5 h-3.5 text-destructive" />} label="Deduction Ratio" value={`${analytics.deductionRatio.toFixed(1)}%`} />
+            <InsightChip icon={<TrendingUp className="w-3.5 h-3.5 text-primary" />} label="Next Month Forecast" value={fmt.bdt(analytics.forecast)} />
+            <InsightChip icon={<BadgeCheck className="w-3.5 h-3.5 text-success" />} label="Payout Coverage" value={`${analytics.coverage.toFixed(0)}%`} />
             <InsightChip icon={<Clock className="w-3.5 h-3.5 text-amber-600" />} label="Pending Payout" value={fmt.bdt(analytics.pendingAmount)} />
-            <InsightChip icon={<BadgeCheck className="w-3.5 h-3.5 text-success" />} label="Completion" value={`${fmt.num(analytics.progress)}%`} />
+            <InsightChip icon={<Calendar className="w-3.5 h-3.5 text-primary" />} label="Avg Working Days" value={analytics.avgDays.toFixed(1)} />
+            <InsightChip icon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />} label="Net / Working Day" value={fmt.bdt(analytics.netPerDay)} />
           </div>
         </Card>
       </div>
+
 
 
       {/* A4 Print Sheet */}
