@@ -240,7 +240,12 @@ function TemplatesTab() {
 
   const save = useMutation({
     mutationFn: async (t: any) => {
-      const payload = { name: t.name, category: t.category, description: t.description, body_html: t.body_html, is_active: t.is_active ?? true };
+      const payload: any = {
+        name: t.name, category: t.category, description: t.description,
+        body_html: t.body_html || "", is_active: t.is_active ?? true,
+        file_url: t.file_url ?? null, file_path: t.file_path ?? null,
+        file_name: t.file_name ?? null, file_mime: t.file_mime ?? null, file_size: t.file_size ?? null,
+      };
       if (t.id) {
         const { error } = await (supabase as any).from("application_templates").update(payload).eq("id", t.id);
         if (error) throw error;
