@@ -304,12 +304,30 @@ function TemplatesTab() {
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="min-w-0">
                 <div className="font-semibold truncate">{t.name}</div>
-                <Badge variant="outline" className="text-[10px] mt-1">{t.category || "—"}</Badge>
+                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                  <Badge variant="outline" className="text-[10px]">{t.category || "—"}</Badge>
+                  {t.file_path && (
+                    <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-600">
+                      <FileText className="w-2.5 h-2.5 mr-0.5" />
+                      {(t.file_mime || "").includes("pdf") ? "PDF" : (t.file_mime || "").includes("word") || (t.file_name || "").match(/\.docx?$/i) ? "DOCX" : "FILE"}
+                    </Badge>
+                  )}
+                </div>
               </div>
               {!t.is_active && <Badge variant="secondary" className="text-[10px]">Inactive</Badge>}
             </div>
             {t.description && <div className="text-xs text-muted-foreground line-clamp-2 mb-2">{t.description}</div>}
+            {t.file_name && (
+              <div className="text-[11px] text-muted-foreground truncate mb-2 font-mono">📎 {t.file_name}</div>
+            )}
             <div className="flex gap-2 mt-2">
+              {t.file_path && (
+                <Button size="sm" variant="secondary" className="flex-1" onClick={async () => {
+                  const { data, error } = await supabase.storage.from("application-attachments").createSignedUrl(t.file_path, 300);
+                  if (error || !data?.signedUrl) { toast.error("ফাইল খোলা যাচ্ছে না"); return; }
+                  window.open(data.signedUrl, "_blank");
+                }}><Download className="w-3 h-3 mr-1" /> Open</Button>
+              )}
               <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditing(t)}><Edit3 className="w-3 h-3 mr-1" /> Edit</Button>
               <Button size="sm" variant="ghost" onClick={() => { if (confirm("ডিলিট করবেন?")) del.mutate(t.id); }}><Trash2 className="w-3 h-3 text-destructive" /></Button>
             </div>
