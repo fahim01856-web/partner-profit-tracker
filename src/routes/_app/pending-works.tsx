@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList, Settings2, Download, Phone, MessageCircle, Copy, AlertTriangle, ListTodo, TrendingUp, CalendarClock, LayoutGrid, Search, Filter } from "lucide-react";
+import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList, Settings2, Download, Phone, MessageCircle, Copy, AlertTriangle, ListTodo, TrendingUp, CalendarClock, LayoutGrid, Search, Filter, Kanban, Table as TableIcon, Send, AlarmClock, Sparkles, CheckSquare, Square } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
