@@ -905,3 +905,304 @@ function ReportCenterTab() {
     </div>
   );
 }
+
+/* =====================================================================
+ * 4) TIN E-Return Tracker
+ * ===================================================================== */
+type TinEReturn = {
+  id: string;
+  customer_name: string;
+  account_number: string | null;
+  tin_number: string | null;
+  submitted_date: string;
+  expiry_date: string;
+  note: string | null;
+};
+
+function daysBetween(from: Date, to: Date) {
+  const ms = to.setHours(0, 0, 0, 0) - from.setHours(0, 0, 0, 0);
+  return Math.round(ms / 86400000);
+}
+
+function TinEReturnTab() {
+  const { lang } = useI18n();
+  const fmt = useFmt();
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "soon" | "expired">("all");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    customer_name: "", account_number: "", tin_number: "",
+    submitted_date: new Date().toISOString().slice(0, 10),
+    expiry_date: "", note: "",
+  });
+
+  const { data: rows = [] } = useQuery({
+    queryKey: ["tin-ereturns"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tin_ereturns").select("*")
+        .order("expiry_date", { ascending: true });
+      if (error) throw error;
+      return data as TinEReturn[];
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      if (!form.customer_name || !form.submitted_date || !form.expiry_date) {
+        throw new Error(lang === "bn" ? "নাম, সাবমিট ও মেয়াদ তারিখ আবশ্যক" : "Name, submitted & expiry date required");
+      }
+      const payload = {
+        customer_name: form.customer_name,
+        account_number: form.account_number || null,
+        tin_number: form.tin_number || null,
+        submitted_date: form.submitted_date,
+        expiry_date: form.expiry_date,
+        note: form.note || null,
+      };
+      if (editingId) {
+        const { error } = await supabase.from("tin_ereturns").update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("tin_ereturns").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success(editingId ? (lang === "bn" ? "আপডেট হয়েছে" : "Updated") : (lang === "bn" ? "যোগ হয়েছে" : "Added"));
+      setEditingId(null);
+      setForm({ customer_name: "", account_number: "", tin_number: "", submitted_date: new Date().toISOString().slice(0, 10), expiry_date: "", note: "" });
+      qc.invalidateQueries({ queryKey: ["tin-ereturns"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("tin_ereturns").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success(lang === "bn" ? "ডিলিট হয়েছে" : "Deleted");
+      qc.invalidateQueries({ queryKey: ["tin-ereturns"] });
+    },
+  });
+
+  const startEdit = (r: TinEReturn) => {
+    setEditingId(r.id);
+    setForm({
+      customer_name: r.customer_name,
+      account_number: r.account_number ?? "",
+      tin_number: r.tin_number ?? "",
+      submitted_date: r.submitted_date,
+      expiry_date: r.expiry_date,
+      note: r.note ?? "",
+    });
+  };
+
+  const today = new Date();
+  const enriched = rows.map((r) => {
+    const days = daysBetween(new Date(), new Date(r.expiry_date));
+    let status: "active" | "soon" | "expired" = "active";
+    if (days < 0) status = "expired";
+    else if (days <= 30) status = "soon";
+    return { ...r, daysLeft: days, status };
+  });
+
+  const filtered = enriched.filter((r) => {
+    if (statusFilter !== "all" && r.status !== statusFilter) return false;
+    if (search) {
+      const s = search.toLowerCase();
+      if (!(
+        r.customer_name.toLowerCase().includes(s) ||
+        (r.account_number ?? "").toLowerCase().includes(s) ||
+        (r.tin_number ?? "").toLowerCase().includes(s)
+      )) return false;
+    }
+    return true;
+  });
+
+  const stats = {
+    total: enriched.length,
+    active: enriched.filter((r) => r.status === "active").length,
+    soon: enriched.filter((r) => r.status === "soon").length,
+    expired: enriched.filter((r) => r.status === "expired").length,
+  };
+
+  const exportCSV = () => {
+    const header = ["Customer", "Account No", "TIN", "Submitted", "Expiry", "Days Left", "Status", "Note"];
+    const body = filtered.map((r) => [
+      r.customer_name, r.account_number ?? "", r.tin_number ?? "",
+      r.submitted_date, r.expiry_date, r.daysLeft, r.status, r.note ?? "",
+    ]);
+    downloadCSV(`tin-ereturn-${today.toISOString().slice(0, 10)}.csv`, [header, ...body]);
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 no-print">
+        <Card className="p-4 border-l-4 border-l-primary">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-muted-foreground">{lang === "bn" ? "মোট ই-রিটার্ন" : "Total E-Returns"}</div>
+              <div className="text-2xl font-bold">{fmt.num(stats.total)}</div>
+            </div>
+            <FileCheck2 className="w-8 h-8 text-primary opacity-70" />
+          </div>
+        </Card>
+        <Card className="p-4 border-l-4 border-l-success">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-muted-foreground">{lang === "bn" ? "সক্রিয়" : "Active"}</div>
+              <div className="text-2xl font-bold text-success">{fmt.num(stats.active)}</div>
+            </div>
+            <CheckCircle2 className="w-8 h-8 text-success opacity-70" />
+          </div>
+        </Card>
+        <Card className="p-4 border-l-4 border-l-warning">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-muted-foreground">{lang === "bn" ? "৩০ দিনের মধ্যে" : "Expiring in 30 days"}</div>
+              <div className="text-2xl font-bold text-warning">{fmt.num(stats.soon)}</div>
+            </div>
+            <Clock className="w-8 h-8 text-warning opacity-70" />
+          </div>
+        </Card>
+        <Card className="p-4 border-l-4 border-l-destructive">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="text-xs text-muted-foreground">{lang === "bn" ? "মেয়াদ শেষ" : "Expired"}</div>
+              <div className="text-2xl font-bold text-destructive">{fmt.num(stats.expired)}</div>
+            </div>
+            <AlertTriangle className="w-8 h-8 text-destructive opacity-70" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Entry form */}
+      <Card className="p-4 no-print">
+        <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+          {editingId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+          {editingId
+            ? (lang === "bn" ? "ই-রিটার্ন এডিট" : "Edit E-Return")
+            : (lang === "bn" ? "নতুন ই-রিটার্ন এন্ট্রি" : "New E-Return Entry")}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div><Label className="text-xs">{lang === "bn" ? "কাস্টমারের নাম *" : "Customer Name *"}</Label><Input value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} /></div>
+          <div><Label className="text-xs">{lang === "bn" ? "একাউন্ট নাম্বার" : "Account Number"}</Label><Input value={form.account_number} onChange={(e) => setForm({ ...form, account_number: e.target.value })} /></div>
+          <div><Label className="text-xs">{lang === "bn" ? "টিন নাম্বার" : "TIN Number"}</Label><Input value={form.tin_number} onChange={(e) => setForm({ ...form, tin_number: e.target.value })} /></div>
+          <div><Label className="text-xs">{lang === "bn" ? "সাবমিটেড ডেট *" : "Submitted Date *"}</Label><Input type="date" value={form.submitted_date} onChange={(e) => setForm({ ...form, submitted_date: e.target.value })} /></div>
+          <div><Label className="text-xs">{lang === "bn" ? "মেয়াদ শেষ ডেট *" : "Expiry Date *"}</Label><Input type="date" value={form.expiry_date} onChange={(e) => setForm({ ...form, expiry_date: e.target.value })} /></div>
+          <div><Label className="text-xs">{lang === "bn" ? "মন্তব্য" : "Note"}</Label><Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} /></div>
+        </div>
+        <div className="mt-3 flex justify-end gap-2">
+          {editingId && (
+            <Button variant="outline" onClick={() => { setEditingId(null); setForm({ customer_name: "", account_number: "", tin_number: "", submitted_date: new Date().toISOString().slice(0, 10), expiry_date: "", note: "" }); }}>
+              <X className="w-4 h-4 mr-1" /> {lang === "bn" ? "বাতিল" : "Cancel"}
+            </Button>
+          )}
+          <Button onClick={() => save.mutate()} disabled={save.isPending}>
+            {editingId ? <Save className="w-4 h-4 mr-1" /> : <Plus className="w-4 h-4 mr-1" />}
+            {editingId ? (lang === "bn" ? "সংরক্ষণ" : "Save") : (lang === "bn" ? "যোগ করুন" : "Add")}
+          </Button>
+        </div>
+      </Card>
+
+      {/* Filter bar */}
+      <Card className="p-4 no-print">
+        <div className="flex flex-wrap items-end gap-2 justify-between">
+          <div className="flex flex-wrap items-end gap-2">
+            <div>
+              <Label className="text-xs">{lang === "bn" ? "অনুসন্ধান" : "Search"}</Label>
+              <Input className="h-9 w-56" placeholder={lang === "bn" ? "নাম / একাউন্ট / টিন…" : "name / account / TIN…"} value={search} onChange={(e) => setSearch(e.target.value)} />
+            </div>
+            <div>
+              <Label className="text-xs">{lang === "bn" ? "স্ট্যাটাস" : "Status"}</Label>
+              <select className="h-9 rounded-md border border-input bg-background px-3 text-sm" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}>
+                <option value="all">{lang === "bn" ? "সব" : "All"}</option>
+                <option value="active">{lang === "bn" ? "সক্রিয়" : "Active"}</option>
+                <option value="soon">{lang === "bn" ? "৩০ দিনে শেষ" : "Expiring soon"}</option>
+                <option value="expired">{lang === "bn" ? "মেয়াদ শেষ" : "Expired"}</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={exportCSV}><FileSpreadsheet className="w-4 h-4 mr-1" /> Excel</Button>
+            <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4 mr-1" /> {lang === "bn" ? "প্রিন্ট" : "Print"}</Button>
+          </div>
+        </div>
+      </Card>
+
+      {/* Table */}
+      <div className="print-area">
+        <Card className="p-4 sm:p-6 print:shadow-none print:border-0 bg-white text-black">
+          <div className="border-b-2 border-black pb-3 mb-4 text-center">
+            <div className="text-xl font-extrabold">ISLAMI BANK AGENT BANKING</div>
+            <div className="text-base font-bold">M/S FEED HOUSE (121/11)</div>
+            <div className="inline-block mt-2 border border-black px-3 py-0.5 text-sm font-bold uppercase">
+              TIN E-Return Register
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border border-black border-collapse">
+              <thead>
+                <tr className="bg-[oklch(0.93_0.04_155)] print:bg-gray-100">
+                  <th className="border border-black p-1.5">#</th>
+                  <th className="border border-black p-1.5 text-left">{lang === "bn" ? "কাস্টমার" : "Customer"}</th>
+                  <th className="border border-black p-1.5">{lang === "bn" ? "একাউন্ট" : "Account"}</th>
+                  <th className="border border-black p-1.5">{lang === "bn" ? "টিন" : "TIN"}</th>
+                  <th className="border border-black p-1.5">{lang === "bn" ? "সাবমিট" : "Submitted"}</th>
+                  <th className="border border-black p-1.5">{lang === "bn" ? "মেয়াদ শেষ" : "Expiry"}</th>
+                  <th className="border border-black p-1.5">{lang === "bn" ? "বাকি দিন" : "Days Left"}</th>
+                  <th className="border border-black p-1.5">{lang === "bn" ? "স্ট্যাটাস" : "Status"}</th>
+                  <th className="border border-black p-1.5 no-print">{lang === "bn" ? "অ্যাকশন" : "Action"}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr><td colSpan={9} className="border border-black p-6 text-center text-muted-foreground">{lang === "bn" ? "কোনো এন্ট্রি নেই" : "No entries"}</td></tr>
+                ) : filtered.map((r, i) => {
+                  const statusColor =
+                    r.status === "expired" ? "bg-destructive/15 text-destructive" :
+                    r.status === "soon" ? "bg-warning/15 text-warning-foreground" :
+                    "bg-success/15 text-success";
+                  const statusLabel =
+                    r.status === "expired" ? (lang === "bn" ? "মেয়াদ শেষ" : "Expired") :
+                    r.status === "soon" ? (lang === "bn" ? "শীঘ্রই শেষ" : "Expiring soon") :
+                    (lang === "bn" ? "সক্রিয়" : "Active");
+                  const daysText =
+                    r.daysLeft < 0
+                      ? (lang === "bn" ? `${fmt.num(Math.abs(r.daysLeft))} দিন আগে শেষ` : `${Math.abs(r.daysLeft)} days ago`)
+                      : (lang === "bn" ? `${fmt.num(r.daysLeft)} দিন বাকি` : `${r.daysLeft} days left`);
+                  return (
+                    <tr key={r.id} className="hover:bg-muted/40">
+                      <td className="border border-black p-1.5 text-center">{fmt.num(i + 1)}</td>
+                      <td className="border border-black p-1.5 font-medium">{r.customer_name}</td>
+                      <td className="border border-black p-1.5 text-center">{r.account_number || "—"}</td>
+                      <td className="border border-black p-1.5 text-center">{r.tin_number || "—"}</td>
+                      <td className="border border-black p-1.5 text-center">{r.submitted_date}</td>
+                      <td className="border border-black p-1.5 text-center font-semibold">{r.expiry_date}</td>
+                      <td className={`border border-black p-1.5 text-center font-bold ${r.status === "expired" ? "text-destructive" : r.status === "soon" ? "text-warning" : "text-success"}`}>{daysText}</td>
+                      <td className="border border-black p-1.5 text-center">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${statusColor}`}>{statusLabel}</span>
+                      </td>
+                      <td className="border border-black p-1.5 text-center no-print">
+                        <div className="flex justify-center gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => startEdit(r)}><Pencil className="w-3.5 h-3.5" /></Button>
+                          <Button size="sm" variant="ghost" onClick={() => { if (confirm(lang === "bn" ? "নিশ্চিত?" : "Sure?")) del.mutate(r.id); }}><Trash2 className="w-3.5 h-3.5 text-destructive" /></Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+}
