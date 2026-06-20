@@ -12,7 +12,8 @@ import { analyzeBusiness, askBusiness } from "@/lib/bi-dashboard.functions";
 import {
   Brain, Sparkles, TrendingUp, TrendingDown, Wallet, AlertTriangle,
   Lightbulb, RefreshCw, Send, Target, Users, Package, ClipboardList,
-  Activity, Loader2, MessageSquare, ShieldAlert, Gauge,
+  Activity, Loader2, MessageSquare, ShieldAlert, Gauge, Printer,
+  Crown, ShieldCheck, FileCheck2, HeartPulse, Bell, Building2, Banknote,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
@@ -44,22 +45,33 @@ function BIDashboard() {
       const firstStart = monthRange(months[0].year, months[0].month).start;
       const lastEnd = monthRange(months[5].year, months[5].month).end;
 
-      const [mri, mp, exp, expCats, staff, tasks, pending, assets, loan, deposits, remit, accts, payments, attendance, targets] = await Promise.all([
+      const ninetyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90).toISOString().slice(0, 10);
+      const todayStr = now.toISOString().slice(0, 10);
+
+      const [mri, mp, exp, expCats, staff, tasks, pending, assets, loan, deposits, remit, accts, payments, attendance, targets,
+             cashEntries, cashOpening, kyc, perf, invest, audits, auditChecks] = await Promise.all([
         supabase.from("monthly_report_items").select("year,month,amount,item_type"),
         supabase.from("monthly_profits").select("*"),
         supabase.from("expenses").select("amount,category_id,date").gte("date", firstStart).lte("date", lastEnd),
         supabase.from("expense_categories").select("id,name_bn,name_en"),
-        supabase.from("staff").select("id,status,position"),
+        supabase.from("staff").select("id,name,status,position"),
         supabase.from("tasks").select("id,status,priority,due_date"),
         supabase.from("pending_works").select("id,status,priority"),
         supabase.from("agent_bank_assets").select("name,quantity"),
-        supabase.from("loan_persons").select("id,status"),
+        supabase.from("loan_persons").select("id,status,loan_amount,opening_balance"),
         supabase.from("daily_deposits").select("date,amount").gte("date", firstStart).lte("date", lastEnd),
         supabase.from("remittance_entries").select("date,amount,quantity").gte("date", firstStart).lte("date", lastEnd),
         supabase.from("account_opening_entries").select("year,month,num_accounts"),
         supabase.from("upcoming_payments").select("amount,status,due_date"),
         supabase.from("attendance").select("date,status").gte("date", firstStart).lte("date", lastEnd),
         supabase.from("monthly_targets").select("year,month,target_category,target_amount,target_quantity,staff_name,status,deadline,priority").eq("year", prevMonth.year).eq("month", prevMonth.month),
+        supabase.from("cash_book_entries").select("date,entry_type,amount").gte("date", ninetyDaysAgo).lte("date", todayStr),
+        supabase.from("cash_book_opening").select("date,opening_balance").order("date", { ascending: false }).limit(1),
+        supabase.from("kyc_profiles").select("id,customer_name,status,risk_level,monthly_income"),
+        supabase.from("staff_performance").select("staff_id,rating,review_date").order("review_date", { ascending: false }),
+        supabase.from("agent_bank_investments").select("amount,type"),
+        supabase.from("audit_reports").select("id,audit_date,auditor_name,audit_type,reference_number").order("audit_date", { ascending: false }).limit(5),
+        supabase.from("audit_compliance_checks").select("audit_report_id,status,title"),
       ]);
 
       const trend = months.map((m) => {
@@ -138,6 +150,76 @@ function BIDashboard() {
       const totalAbsent = [...attDays.values()].reduce((s, r) => s + r.absent, 0);
       const attendanceRate = totalPresent + totalAbsent ? (totalPresent / (totalPresent + totalAbsent)) * 100 : 0;
 
+      // === New: Total business value, deposit growth, cash position, customers/VIP, compliance, staff ranking ===
+      const totalDeposits6m = (deposits.data ?? []).reduce((s: number, d: any) => s + Number(d.amount), 0);
+      const totalRemit6m = (remit.data ?? []).reduce((s: number, r: any) => s + Number(r.amount ?? 0), 0);
+      const totalInvestment = (invest.data ?? []).reduce((s: number, i: any) => s + Number(i.amount ?? 0), 0);
+      const totalLoanOutstanding = (loan.data ?? []).reduce((s: number, l: any) => s + Number(l.loan_amount ?? l.opening_balance ?? 0), 0);
+      const totalBusinessValue = totalDeposits6m + totalRemit6m + totalInvestment + totalLoanOutstanding;
+
+      const lastDep = depositTrend[depositTrend.length - 1]?.deposit ?? 0;
+      const prevDep = depositTrend[depositTrend.length - 2]?.deposit ?? 0;
+      const depositGrowth = prevDep ? ((lastDep - prevDep) / prevDep) * 100 : 0;
+
+      const openBal = Number((cashOpening.data ?? [])[0]?.opening_balance ?? 0);
+      const cashIn = (cashEntries.data ?? []).filter((c: any) => c.entry_type === "in" || c.entry_type === "credit" || c.entry_type === "deposit").reduce((s: number, c: any) => s + Number(c.amount), 0);
+      const cashOut = (cashEntries.data ?? []).filter((c: any) => c.entry_type === "out" || c.entry_type === "debit" || c.entry_type === "withdraw").reduce((s: number, c: any) => s + Number(c.amount), 0);
+      const cashPosition = openBal + cashIn - cashOut;
+
+      const customers = kyc.data ?? [];
+      const totalCustomers = customers.length;
+      const vipCustomers = customers.filter((k: any) => Number(k.monthly_income ?? 0) >= 50000 || k.risk_level === "high").length;
+      const customerBusinessValue = customers.reduce((s: number, k: any) => s + Number(k.monthly_income ?? 0), 0) * 12;
+
+      // Staff ranking — avg rating per staff
+      const ratingMap = new Map<string, { sum: number; n: number }>();
+      (perf.data ?? []).forEach((p: any) => {
+        const r = ratingMap.get(p.staff_id) ?? { sum: 0, n: 0 };
+        r.sum += Number(p.rating ?? 0); r.n += 1; ratingMap.set(p.staff_id, r);
+      });
+      const staffNameMap = new Map((staff.data ?? []).map((s: any) => [s.id, s.name]));
+      const staffRanking = [...ratingMap.entries()]
+        .map(([id, r]) => ({ name: staffNameMap.get(id) ?? "—", rating: r.sum / r.n, reviews: r.n }))
+        .sort((a, b) => b.rating - a.rating).slice(0, 5);
+
+      // Compliance score from latest audit
+      const latestAudit = (audits.data ?? [])[0];
+      const latestChecks = latestAudit ? (auditChecks.data ?? []).filter((c: any) => c.audit_report_id === latestAudit.id) : [];
+      const okChecks = latestChecks.filter((c: any) => c.status === "ok").length;
+      const complianceScore = latestChecks.length ? Math.round((okChecks / latestChecks.length) * 100) : 0;
+
+      // Expense control: % vs income
+      const expenseRatio = cur.income ? (cur.expense / cur.income) * 100 : 0;
+
+      // Future prediction — simple linear projection from trend
+      const trendProfits = trend.map(t => t.profit);
+      const avgProfit = trendProfits.reduce((a, b) => a + b, 0) / (trendProfits.length || 1);
+      const lastProfit = trendProfits[trendProfits.length - 1] ?? 0;
+      const projectedNext = Math.round(avgProfit * 0.4 + lastProfit * 0.6);
+      const projectedYear = Math.round(avgProfit * 12);
+
+      // Business Health Score (0-100)
+      const healthScore = Math.max(0, Math.min(100, Math.round(
+        (margin > 0 ? Math.min(margin, 30) * 1.5 : 0) +
+        (attendanceRate * 0.2) +
+        (complianceScore * 0.2) +
+        (overdueTasks === 0 ? 10 : 0) +
+        (outOfStock === 0 ? 5 : 0) +
+        (overduePayments === 0 ? 10 : 0) +
+        (cur.profit > 0 ? 10 : 0)
+      )));
+
+      // Smart Alerts
+      const smartAlerts: { level: "high" | "medium" | "low"; text: string }[] = [];
+      if (overduePayments > 0) smartAlerts.push({ level: "high", text: lang === "bn" ? `ওভারডিউ পেমেন্ট: ${fmtBDT(overduePayments, lang)} — দ্রুত আদায় করুন` : `Overdue payments: ${fmtBDT(overduePayments, lang)} — collect now` });
+      if (outOfStock > 0) smartAlerts.push({ level: "high", text: lang === "bn" ? `${outOfStock} আইটেম স্টক শেষ — রিঅর্ডার দিন` : `${outOfStock} items out of stock — reorder` });
+      if (overdueTasks > 0) smartAlerts.push({ level: "medium", text: lang === "bn" ? `${overdueTasks} টাস্ক ওভারডিউ` : `${overdueTasks} tasks overdue` });
+      if (cur.profit < requiredProfit) smartAlerts.push({ level: "medium", text: lang === "bn" ? `মুনাফা টার্গেট থেকে কম` : `Profit below target` });
+      if (expenseRatio > 80) smartAlerts.push({ level: "high", text: lang === "bn" ? `ব্যয় আয়ের ${expenseRatio.toFixed(0)}% — নিয়ন্ত্রণ দরকার` : `Expense is ${expenseRatio.toFixed(0)}% of income — control needed` });
+      if (attendanceRate < 80) smartAlerts.push({ level: "medium", text: lang === "bn" ? `হাজিরার হার ${attendanceRate.toFixed(0)}% — স্টাফদের সাথে কথা বলুন` : `Attendance ${attendanceRate.toFixed(0)}% — review staff` });
+      if (complianceScore < 70 && latestChecks.length) smartAlerts.push({ level: "high", text: lang === "bn" ? `কমপ্লায়েন্স স্কোর কম (${complianceScore}%)` : `Compliance score low (${complianceScore}%)` });
+      if (smartAlerts.length === 0) smartAlerts.push({ level: "low", text: lang === "bn" ? "সব ঠিকঠাক চলছে ✓" : "All systems healthy ✓" });
+
       return {
         trend, expensePie, depositTrend, remitTrend, acctsTrend,
         cur, prev, incomeChange, expenseChange, profitChange, margin,
@@ -148,6 +230,12 @@ function BIDashboard() {
         targetIncome, targetProfit, totalTargetAmount, requiredProfit, profitGapPct,
         targetCount: (targets.data ?? []).length,
         manualProfit: manualProfitRow ?? null,
+        totalBusinessValue, totalDeposits6m, totalRemit6m, totalInvestment, totalLoanOutstanding,
+        depositGrowth, cashPosition, totalCustomers, vipCustomers, customerBusinessValue,
+        staffRanking, complianceScore, latestAudit, latestChecks: latestChecks.length,
+        expenseRatio, projectedNext, projectedYear, healthScore, smartAlerts,
+        auditCount: (audits.data ?? []).length,
+        recentAudits: audits.data ?? [],
       };
     },
   });
@@ -212,9 +300,12 @@ function BIDashboard() {
               : `Smart analytics on previous month's (${metrics.prevMonth.month}/${metrics.prevMonth.year}) finalized data`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> {lang === "bn" ? "রিফ্রেশ" : "Refresh"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-1" /> {lang === "bn" ? "PDF এক্সপোর্ট" : "Export PDF"}
           </Button>
           <Button size="sm" onClick={() => analyze.mutate()} disabled={analyze.isPending}>
             {analyze.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
@@ -222,6 +313,50 @@ function BIDashboard() {
           </Button>
         </div>
       </div>
+
+      {/* Hero — Total Business Value, Health Score, Cash Position */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Card className="p-4 bg-gradient-to-br from-indigo-600/20 to-purple-500/10 border-indigo-500/30 md:col-span-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground"><Building2 className="w-4 h-4" /> {lang === "bn" ? "মোট বিজনেস ভ্যালু" : "Total Business Value"}</div>
+          <div className="text-3xl font-bold mt-1">{fmtBDT(metrics.totalBusinessValue, lang)}</div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            {lang === "bn" ? "ডিপোজিট + রেমিট + বিনিয়োগ + ঋণ" : "Deposits + Remittance + Investment + Loans"}
+          </div>
+          <div className="grid grid-cols-4 gap-2 mt-3 text-[10px]">
+            <div><div className="text-muted-foreground">{lang === "bn" ? "ডিপোজিট" : "Deposits"}</div><div className="font-semibold">{fmtBDT(metrics.totalDeposits6m, lang)}</div></div>
+            <div><div className="text-muted-foreground">{lang === "bn" ? "রেমিট" : "Remit"}</div><div className="font-semibold">{fmtBDT(metrics.totalRemit6m, lang)}</div></div>
+            <div><div className="text-muted-foreground">{lang === "bn" ? "বিনিয়োগ" : "Invest"}</div><div className="font-semibold">{fmtBDT(metrics.totalInvestment, lang)}</div></div>
+            <div><div className="text-muted-foreground">{lang === "bn" ? "ঋণ" : "Loans"}</div><div className="font-semibold">{fmtBDT(metrics.totalLoanOutstanding, lang)}</div></div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border-emerald-500/30">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground"><HeartPulse className="w-4 h-4" /> {lang === "bn" ? "বিজনেস হেলথ স্কোর" : "Business Health Score"}</div>
+          <div className="text-4xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{metrics.healthScore}<span className="text-base text-muted-foreground">/100</span></div>
+          <div className="w-full h-2 bg-muted rounded-full mt-2 overflow-hidden"><div className="h-full bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500" style={{ width: `${metrics.healthScore}%` }} /></div>
+          <div className="text-[11px] text-muted-foreground mt-1">{metrics.healthScore >= 75 ? (lang === "bn" ? "উত্তম" : "Excellent") : metrics.healthScore >= 50 ? (lang === "bn" ? "মাঝারি" : "Moderate") : (lang === "bn" ? "মনোযোগ দরকার" : "Needs attention")}</div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border-cyan-500/30">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground"><Banknote className="w-4 h-4" /> {lang === "bn" ? "ক্যাশ পজিশন" : "Cash Position"}</div>
+          <div className="text-2xl font-bold mt-1">{fmtBDT(metrics.cashPosition, lang)}</div>
+          <div className="text-[11px] text-muted-foreground mt-1">{lang === "bn" ? "ক্যাশ বুক — বর্তমান ব্যালেন্স" : "Cash book — current balance"}</div>
+          <div className={`text-[11px] font-semibold mt-2 ${metrics.depositGrowth >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            {metrics.depositGrowth >= 0 ? "▲" : "▼"} {Math.abs(metrics.depositGrowth).toFixed(1)}% {lang === "bn" ? "ডিপোজিট গ্রোথ" : "deposit growth"}
+          </div>
+        </Card>
+      </div>
+
+      {/* Smart Alerts */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-3"><Bell className="w-5 h-5 text-amber-500" /><h3 className="font-semibold">{lang === "bn" ? "স্মার্ট অ্যালার্ট" : "Smart Alerts"}</h3></div>
+        <div className="grid sm:grid-cols-2 gap-2">
+          {metrics.smartAlerts.map((a: any, i: number) => (
+            <div key={i} className={`flex items-start gap-2 p-2 rounded-md border ${a.level === "high" ? "bg-red-500/10 border-red-500/30" : a.level === "medium" ? "bg-amber-500/10 border-amber-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
+              <Badge variant={a.level === "high" ? "destructive" : a.level === "medium" ? "default" : "secondary"} className="capitalize text-[10px]">{a.level}</Badge>
+              <div className="text-xs leading-relaxed">{a.text}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       {/* KPI Grid — Previous Month */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -313,6 +448,73 @@ function BIDashboard() {
           </div>
         )}
       </Card>
+
+      {/* Compliance, Audit, Target Tracking, Expense Control, Future Prediction */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2"><ShieldCheck className="w-5 h-5 text-emerald-500" /><div className="text-sm font-semibold">{lang === "bn" ? "কমপ্লায়েন্স স্কোর" : "Compliance Score"}</div></div>
+          <div className="text-3xl font-bold">{metrics.complianceScore}%</div>
+          <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden"><div className={`h-full ${metrics.complianceScore >= 80 ? "bg-emerald-500" : metrics.complianceScore >= 50 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${metrics.complianceScore}%` }} /></div>
+          <div className="text-[11px] text-muted-foreground mt-1">{metrics.latestChecks} {lang === "bn" ? "সর্বশেষ চেক" : "checks in latest audit"}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2"><FileCheck2 className="w-5 h-5 text-indigo-500" /><div className="text-sm font-semibold">{lang === "bn" ? "অডিট স্ট্যাটাস" : "Audit Status"}</div></div>
+          <div className="text-sm font-medium">{metrics.latestAudit?.audit_type ?? "—"}</div>
+          <div className="text-[11px] text-muted-foreground">{metrics.latestAudit?.audit_date ?? "—"} • {metrics.latestAudit?.auditor_name ?? "—"}</div>
+          <div className="text-[11px] mt-1">{metrics.auditCount} {lang === "bn" ? "সাম্প্রতিক রিপোর্ট" : "recent reports"}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2"><Target className="w-5 h-5 text-blue-500" /><div className="text-sm font-semibold">{lang === "bn" ? "টার্গেট ট্র্যাকিং" : "Target Tracking"}</div></div>
+          <div className="text-sm">{lang === "bn" ? "মুনাফা" : "Profit"}: <b>{Math.min(100, Math.round((metrics.cur.profit / Math.max(1, metrics.requiredProfit)) * 100))}%</b></div>
+          <div className="text-sm">{lang === "bn" ? "আয়" : "Income"}: <b>{metrics.targetIncome > 0 ? Math.min(100, Math.round((metrics.cur.income / metrics.targetIncome) * 100)) : 0}%</b></div>
+          <div className="text-[11px] text-muted-foreground mt-1">{metrics.targetCount} {lang === "bn" ? "টার্গেট এন্ট্রি" : "target entries"}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2"><Gauge className="w-5 h-5 text-red-500" /><div className="text-sm font-semibold">{lang === "bn" ? "ব্যয় নিয়ন্ত্রণ" : "Expense Control"}</div></div>
+          <div className="text-3xl font-bold">{metrics.expenseRatio.toFixed(0)}%</div>
+          <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "আয়ের শতকরা ব্যয়" : "of income spent"}</div>
+          <div className={`text-[11px] font-semibold mt-1 ${metrics.expenseRatio > 80 ? "text-red-600" : metrics.expenseRatio > 60 ? "text-amber-600" : "text-emerald-600"}`}>
+            {metrics.expenseRatio > 80 ? (lang === "bn" ? "ঝুঁকিপূর্ণ" : "High risk") : metrics.expenseRatio > 60 ? (lang === "bn" ? "সতর্ক" : "Caution") : (lang === "bn" ? "ভালো" : "Healthy")}
+          </div>
+        </Card>
+      </div>
+
+      {/* Customers, VIP, Staff Ranking, AI Prediction */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3"><Crown className="w-5 h-5 text-amber-500" /><h3 className="font-semibold">{lang === "bn" ? "গ্রাহক ও VIP বিশ্লেষণ" : "Customer & VIP Analysis"}</h3></div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="p-3 rounded-md bg-muted/50"><div className="text-2xl font-bold">{fmt.num(metrics.totalCustomers)}</div><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "মোট গ্রাহক" : "Total Customers"}</div></div>
+            <div className="p-3 rounded-md bg-amber-500/10"><div className="text-2xl font-bold text-amber-600">{fmt.num(metrics.vipCustomers)}</div><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "VIP গ্রাহক" : "VIP Customers"}</div></div>
+            <div className="p-3 rounded-md bg-emerald-500/10"><div className="text-sm font-bold text-emerald-600">{fmtBDT(metrics.customerBusinessValue, lang)}</div><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "বার্ষিক ভ্যালু" : "Yearly Value"}</div></div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3"><Users className="w-5 h-5 text-blue-500" /><h3 className="font-semibold">{lang === "bn" ? "স্টাফ এফিসিয়েন্সি র‌্যাঙ্কিং" : "Staff Efficiency Ranking"}</h3></div>
+          {metrics.staffRanking.length === 0 ? (
+            <div className="text-xs text-muted-foreground">{lang === "bn" ? "এখনো পারফরম্যান্স রিভিউ নেই" : "No performance reviews yet"}</div>
+          ) : (
+            <div className="space-y-1.5">
+              {metrics.staffRanking.map((s: any, i: number) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center">{i + 1}</span>{s.name}</div>
+                  <div className="flex items-center gap-2"><span className="font-semibold">{s.rating.toFixed(1)}</span><span className="text-[10px] text-muted-foreground">★ ({s.reviews})</span></div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+        <Card className="p-4 md:col-span-2 bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/30">
+          <div className="flex items-center gap-2 mb-3"><Brain className="w-5 h-5 text-purple-500" /><h3 className="font-semibold">{lang === "bn" ? "AI ফিউচার প্রেডিকশন" : "AI Future Prediction"}</h3></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "এ মাসে প্রজেক্টেড মুনাফা" : "Projected next-month profit"}</div><div className="text-lg font-bold">{fmtBDT(metrics.projectedNext, lang)}</div></div>
+            <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "বার্ষিক প্রজেক্টেড মুনাফা" : "Projected yearly profit"}</div><div className="text-lg font-bold">{fmtBDT(metrics.projectedYear, lang)}</div></div>
+            <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "ডিপোজিট গ্রোথ" : "Deposit growth"}</div><div className={`text-lg font-bold ${metrics.depositGrowth >= 0 ? "text-emerald-600" : "text-red-600"}`}>{metrics.depositGrowth.toFixed(1)}%</div></div>
+            <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "ঝুঁকি লেভেল" : "Risk level"}</div><div className={`text-lg font-bold ${metrics.smartAlerts.some((a:any)=>a.level==="high") ? "text-red-600" : metrics.smartAlerts.some((a:any)=>a.level==="medium") ? "text-amber-600" : "text-emerald-600"}`}>{metrics.smartAlerts.some((a:any)=>a.level==="high") ? (lang==="bn"?"উচ্চ":"High") : metrics.smartAlerts.some((a:any)=>a.level==="medium") ? (lang==="bn"?"মাঝারি":"Medium") : (lang==="bn"?"নিম্ন":"Low")}</div></div>
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-2">{lang === "bn" ? "৬-মাসের গড় ও সর্বশেষ মাসের ওজনযুক্ত পূর্বাভাস। 'AI বিশ্লেষণ করুন' বাটনে আরও বিস্তারিত পান।" : "Weighted forecast from 6-month average + last month. Click 'Run AI Analysis' for deeper insight."}</div>
+        </Card>
+      </div>
 
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-4">
