@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { generateAppTemplate } from "@/lib/app-template-ai.functions";
@@ -25,10 +25,7 @@ type ApplicationTab = (typeof APPLICATION_TABS)[number];
 const normalizeApplicationTab = (tab: unknown): ApplicationTab =>
   APPLICATION_TABS.includes(tab as ApplicationTab) ? (tab as ApplicationTab) : "dashboard";
 
-export const Route = createFileRoute("/_app/applications")({
-  validateSearch: (search) => ({ tab: normalizeApplicationTab(search.tab) }),
-  component: ApplicationsPage,
-});
+export const Route = createFileRoute("/_app/applications")({ component: ApplicationsPage });
 
 // ---------------- Constants ----------------
 const DEFAULT_TEMPLATES: { name: string; category: string }[] = [
@@ -169,13 +166,9 @@ function exportCsv(rows: any[], filename: string) {
 
 // ---------------- Main ----------------
 function ApplicationsPage() {
-  const { tab: searchTab } = Route.useSearch();
-  const [tab, setActiveTab] = useState<ApplicationTab>(searchTab);
-
-  useEffect(() => {
-    const saved = normalizeApplicationTab(window.localStorage.getItem("application-management-tab"));
-    if (saved !== tab) setActiveTab(saved);
-  }, []);
+  const [tab, setActiveTab] = useState<ApplicationTab>(() => (
+    typeof window === "undefined" ? "dashboard" : normalizeApplicationTab(window.localStorage.getItem("application-management-tab"))
+  ));
 
   const setTab = (nextTab: string) => {
     const normalized = normalizeApplicationTab(nextTab);
