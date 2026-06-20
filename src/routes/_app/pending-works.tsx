@@ -596,8 +596,8 @@ function PendingWorksPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={11} className="text-center py-6">{t("loading")}</TableCell></TableRow>}
-              {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={11} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো এন্ট্রি নেই" : "No entries"}</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={12} className="text-center py-6">{t("loading")}</TableCell></TableRow>}
+              {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={12} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো এন্ট্রি নেই" : "No entries"}</TableCell></TableRow>}
               {filtered.map((r, i) => {
                 const d = r.due_date ? daysDiff(r.due_date) : null;
                 const isOverdue = d !== null && d < 0 && r.status !== "completed";
