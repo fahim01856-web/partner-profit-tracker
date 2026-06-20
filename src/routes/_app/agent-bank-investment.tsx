@@ -663,42 +663,66 @@ function InvestmentPage() {
       </Card>
 
       <Card className="p-5">
-        <h2 className="font-semibold mb-4 flex items-center gap-2">
-          <Users className="w-4 h-4" /> {lang === "bn" ? "পার্টনারদের তালিকা" : "Partners"}
-        </h2>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <h2 className="font-semibold flex items-center gap-2">
+            <Users className="w-4 h-4" /> {lang === "bn" ? "পার্টনারদের তালিকা" : "Partners"}
+            <span className="text-xs text-muted-foreground font-normal">({fmt.num(perPartner.length)})</span>
+          </h2>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-8 h-9 w-56"
+              placeholder={lang === "bn" ? "পার্টনার খুঁজুন..." : "Search partner..."}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
         {perPartner.length === 0 ? (
           <div className="text-center text-muted-foreground p-6">{t("noEntries")}</div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {perPartner.map((p) => (
-              <Card
-                key={p.name}
-                className="p-4 cursor-pointer hover:shadow-md hover:border-primary transition"
-                onClick={() => setSelectedPartner(p.name)}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="font-bold text-lg">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{fmt.num(p.count)} {lang === "bn" ? "এন্ট্রি" : "entries"}</div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{lang === "bn" ? "বিনিয়োগ" : "Invested"}</span>
-                    <span className="text-success font-semibold">{fmt.bdt(p.invested)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{lang === "bn" ? "উত্তোলন" : "Withdrawn"}</span>
-                    <span className="text-destructive font-semibold">{fmt.bdt(p.withdrawn)}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-1 mt-1">
-                    <span className="font-medium">{lang === "bn" ? "ব্যালেন্স" : "Balance"}</span>
-                    <span className={`font-bold ${p.balance < 0 ? "text-destructive" : ""}`}>{fmt.bdt(p.balance)}</span>
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" className="w-full mt-3">
-                  {lang === "bn" ? "স্টেটমেন্ট দেখুন" : "View Statement"}
-                </Button>
-              </Card>
-            ))}
+            {perPartner
+              .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()))
+              .map((p) => {
+                const sharePct = totals.invested > 0 ? (p.invested / totals.invested) * 100 : 0;
+                return (
+                  <Card
+                    key={p.name}
+                    className="p-4 cursor-pointer hover:shadow-md hover:border-primary transition"
+                    onClick={() => setSelectedPartner(p.name)}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="font-bold text-lg truncate">{p.name}</div>
+                      <div className="text-xs text-muted-foreground shrink-0">{fmt.num(p.count)} {lang === "bn" ? "এন্ট্রি" : "entries"}</div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{lang === "bn" ? "বিনিয়োগ" : "Invested"}</span>
+                        <span className="text-success font-semibold">{fmt.bdt(p.invested)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{lang === "bn" ? "উত্তোলন" : "Withdrawn"}</span>
+                        <span className="text-destructive font-semibold">{fmt.bdt(p.withdrawn)}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-1 mt-1">
+                        <span className="font-medium">{lang === "bn" ? "ব্যালেন্স" : "Balance"}</span>
+                        <span className={`font-bold ${p.balance < 0 ? "text-destructive" : ""}`}>{fmt.bdt(p.balance)}</span>
+                      </div>
+                      <div className="pt-2">
+                        <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                          <span>{lang === "bn" ? "শেয়ার" : "Share"}</span><span>{sharePct.toFixed(1)}%</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded overflow-hidden"><div className="h-full bg-primary" style={{ width: `${sharePct}%` }} /></div>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground pt-1">{lang === "bn" ? "শেষ লেনদেন:" : "Last:"} {fmt.date(p.last)}</div>
+                    </div>
+                    <Button size="sm" variant="outline" className="w-full mt-3">
+                      {lang === "bn" ? "স্টেটমেন্ট দেখুন" : "View Statement"}
+                    </Button>
+                  </Card>
+                );
+              })}
           </div>
         )}
       </Card>
