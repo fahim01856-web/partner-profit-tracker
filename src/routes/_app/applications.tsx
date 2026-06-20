@@ -347,19 +347,31 @@ function TemplatesTab() {
             {t.file_name && (
               <div className="text-[11px] text-muted-foreground truncate mb-2 font-mono">📎 {t.file_name}</div>
             )}
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              <Button size="sm" variant="default" className="flex-1 bg-emerald-700 hover:bg-emerald-800" onClick={() => setUsing(t)}>
+                <Eye className="w-3 h-3 mr-1" /> Use / Preview
+              </Button>
               {t.file_path && (
-                <Button size="sm" variant="secondary" className="flex-1" onClick={async () => {
+                <Button size="sm" variant="secondary" onClick={async () => {
                   const { data, error } = await supabase.storage.from("application-attachments").createSignedUrl(t.file_path, 300);
                   if (error || !data?.signedUrl) { toast.error("ফাইল খোলা যাচ্ছে না"); return; }
                   window.open(data.signedUrl, "_blank");
-                }}><Download className="w-3 h-3 mr-1" /> Open</Button>
+                }} title="Attached file"><Download className="w-3 h-3" /></Button>
               )}
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditing(t)}><Edit3 className="w-3 h-3 mr-1" /> Edit</Button>
+              <Button size="sm" variant="outline" onClick={() => setEditing(t)} title="Edit"><Edit3 className="w-3 h-3" /></Button>
               <Button size="sm" variant="ghost" onClick={() => { if (confirm("ডিলিট করবেন?")) del.mutate(t.id); }}><Trash2 className="w-3 h-3 text-destructive" /></Button>
             </div>
           </Card>
         ))}
+        {filtered.length === 0 && <div className="col-span-full text-center py-10 text-muted-foreground">কোনো টেমপ্লেট নেই — "ডিফল্ট লোড" চাপুন</div>}
+      </div>
+
+      {editing && <TemplateEditor value={editing} onClose={() => setEditing(null)} onSave={(v) => save.mutate(v)} />}
+      {using && <TemplateQuickUse template={using} onClose={() => setUsing(null)} />}
+      {aiOpen && <AiTemplateDialog onClose={() => setAiOpen(false)} onGenerated={(t) => { setAiOpen(false); setEditing({ ...t, is_active: true }); }} />}
+    </div>
+  );
+}
         {filtered.length === 0 && <div className="col-span-full text-center py-10 text-muted-foreground">কোনো টেমপ্লেট নেই — "ডিফল্ট লোড" চাপুন</div>}
       </div>
 
