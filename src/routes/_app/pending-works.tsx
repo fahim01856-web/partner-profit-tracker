@@ -645,8 +645,12 @@ function PendingWorksPage() {
                   <TableCell className="no-print text-right whitespace-nowrap">
                     {r.mobile && <>
                       <Button size="icon" variant="ghost" className="h-8 w-8" asChild title="Call"><a href={`tel:${r.mobile}`}><Phone className="w-3.5 h-3.5 text-blue-600" /></a></Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8" asChild title="WhatsApp"><a href={`https://wa.me/${r.mobile.replace(/\D/g, "")}?text=${encodeURIComponent(r.title)}`} target="_blank" rel="noreferrer"><MessageCircle className="w-3.5 h-3.5 text-green-600" /></a></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" asChild title="WhatsApp"><a href={`https://wa.me/${r.mobile.replace(/\D/g, "")}?text=${encodeURIComponent(buildReminderText(r))}`} target="_blank" rel="noreferrer"><MessageCircle className="w-3.5 h-3.5 text-green-600" /></a></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" title={lang === "bn" ? "SMS রিমাইন্ডার কপি" : "Copy SMS reminder"} onClick={() => { navigator.clipboard.writeText(buildReminderText(r)); toast.success(lang === "bn" ? "রিমাইন্ডার কপি হয়েছে" : "Reminder copied"); }}><Send className="w-3.5 h-3.5 text-primary" /></Button>
                     </>}
+                    {r.status !== "completed" && (
+                      <Button size="icon" variant="ghost" className="h-8 w-8" title={lang === "bn" ? "স্নুজ +১ দিন" : "Snooze +1 day"} onClick={() => snooze.mutate({ id: r.id, days: 1 })}><AlarmClock className="w-3.5 h-3.5 text-amber-600" /></Button>
+                    )}
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => toggleStatus.mutate(r)} title={r.status === "completed" ? "Mark pending" : "Mark complete"}>
                       <CheckCircle2 className={`w-4 h-4 ${r.status === "completed" ? "text-green-600" : ""}`} />
                     </Button>
