@@ -27,6 +27,7 @@ export function AppLayout() {
     { to: "/monthly-report", label: t("nav_monthly_report"), icon: FileBarChart },
     { to: "/agent-bank-investment", label: t("nav_investment"), icon: TrendingUp },
     { to: "/daily-deposit", label: t("nav_daily_deposit"), icon: Banknote },
+    { to: "/agent-banking", label: "Agent Banking Profit", icon: TrendingUp },
     { to: "/cash-book", label: t("nav_cash_book"), icon: BookOpen },
     { to: "/expense", label: t("nav_expense"), icon: Receipt },
     { to: "/inventory", label: t("nav_inventory"), icon: Boxes },
