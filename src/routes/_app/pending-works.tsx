@@ -576,6 +576,12 @@ function PendingWorksPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8 no-print">
+                  <Checkbox
+                    checked={filtered.length > 0 && filtered.every((r) => selected.has(r.id))}
+                    onCheckedChange={(v) => setSelected(v ? new Set(filtered.map((r) => r.id)) : new Set())}
+                  />
+                </TableHead>
                 <TableHead className="w-12">#</TableHead>
                 <TableHead>{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead>
                 {activeCat === ALL && <TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>}
