@@ -7,7 +7,7 @@ import {
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
   ClipboardList, MessageSquare, Target, FileText, Banknote,
   BookOpen, FileSignature, Boxes, BookUser, Activity, CalendarClock, ShieldCheck,
-  CalendarDays, UserCheck, ListTodo, Brain
+  CalendarDays, UserCheck, ListTodo, Brain, FilePlus2
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
