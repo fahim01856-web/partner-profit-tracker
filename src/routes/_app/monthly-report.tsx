@@ -316,11 +316,18 @@ function MonthlyReportPage() {
         };
         const cur = profitByMonth(year);
         const prev = profitByMonth(year - 1);
-        const thisMonthProfit = cur[month - 1];
-        const lastMonthIdx = month === 1 ? 11 : month - 2;
-        const lastMonthYearArr = month === 1 ? prev : cur;
-        const lastMonthProfit = lastMonthYearArr[lastMonthIdx];
+        // Shift by one: "This Month" = previous completed month (profit lands next month)
+        const thisIdxRaw = month - 2; // month is 1..12, so prev month index is month-2
+        const thisYearArr = thisIdxRaw < 0 ? prev : cur;
+        const thisMonthIdx = (thisIdxRaw + 12) % 12;
+        const thisMonthProfit = thisYearArr[thisMonthIdx];
+        const lastIdxRaw = month - 3;
+        const lastYearArr = lastIdxRaw < 0 ? prev : cur;
+        const lastMonthIdx = (lastIdxRaw + 12) % 12;
+        const lastMonthProfit = lastYearArr[lastMonthIdx];
         const change = lastMonthProfit === 0 ? 0 : ((thisMonthProfit - lastMonthProfit) / Math.abs(lastMonthProfit)) * 100;
+        const thisMonthName = monthNames[thisMonthIdx];
+        const lastMonthName = monthNames[lastMonthIdx];
         const yearlyTotal = cur.reduce((s, v) => s + v, 0);
         const activeIdx = cur.map((v, i) => ({ v, i })).filter((x) => x.v !== 0);
         const hasActive = activeIdx.length > 0;
@@ -348,10 +355,10 @@ function MonthlyReportPage() {
           <div className="space-y-3 no-print">
             <h2 className="text-lg font-bold flex items-center gap-2"><TrendingUp className="w-5 h-5 text-primary" />{lang === "bn" ? "লাভ বিশ্লেষণ" : "Profit Analytics"}</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "এই মাসের লাভ" : "This Month"}</div><div className={`text-lg font-bold ${thisMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(thisMonthProfit)}</div></Card>
-              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "গত মাসের লাভ" : "Last Month"}</div><div className={`text-lg font-bold ${lastMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(lastMonthProfit)}</div></Card>
-              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "পরিবর্তন (MoM)" : "Change (MoM)"}</div><div className={`text-lg font-bold flex items-center gap-1 ${change >= 0 ? "text-success" : "text-destructive"}`}>{change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{change.toFixed(1)}%</div></Card>
-              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "পার্থক্য (গত মাস হতে)" : "Diff vs Last Month"}</div><div className={`text-lg font-bold flex items-center gap-1 ${momDiff >= 0 ? "text-success" : "text-destructive"}`}>{momDiff >= 0 ? "+" : ""}{fmt.bdt(momDiff)}</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? `${thisMonthName} মাসের লাভ` : `${thisMonthName} Profit`}</div><div className={`text-lg font-bold ${thisMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(thisMonthProfit)}</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? `${lastMonthName} মাসের লাভ` : `${lastMonthName} Profit`}</div><div className={`text-lg font-bold ${lastMonthProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(lastMonthProfit)}</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? `পরিবর্তন (${lastMonthName}→${thisMonthName})` : `Change (${lastMonthName}→${thisMonthName})`}</div><div className={`text-lg font-bold flex items-center gap-1 ${change >= 0 ? "text-success" : "text-destructive"}`}>{change >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{change.toFixed(1)}%</div></Card>
+              <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? `পার্থক্য (${lastMonthName}→${thisMonthName})` : `Diff (${lastMonthName}→${thisMonthName})`}</div><div className={`text-lg font-bold flex items-center gap-1 ${momDiff >= 0 ? "text-success" : "text-destructive"}`}>{momDiff >= 0 ? "+" : ""}{fmt.bdt(momDiff)}</div></Card>
               <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "গড় মাসিক লাভ" : "Average Profit"}</div><div className={`text-lg font-bold ${avgProfit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(avgProfit)}</div></Card>
               <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "বার্ষিক মোট" : "Yearly Total"} ({fmt.num(year)})</div><div className={`text-lg font-bold ${yearlyTotal >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(yearlyTotal)}</div></Card>
               <Card className="p-3"><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "বার্ষিক পরিবর্তন (YoY)" : "Change (YoY)"}</div><div className={`text-lg font-bold flex items-center gap-1 ${yoyChange >= 0 ? "text-success" : "text-destructive"}`}>{yoyChange >= 0 ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}{yoyChange.toFixed(1)}%</div></Card>
