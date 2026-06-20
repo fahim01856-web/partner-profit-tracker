@@ -837,3 +837,333 @@ function HistoryTab({
     </Card>
   );
 }
+
+/* ============ Deposit Analytics tab ============ */
+function DepositAnalytics({ balances }: { balances: Balance[] }) {
+  const analytics = useMemo(() => {
+    // unique sorted dates ascending
+    const dates = Array.from(new Set(balances.map((b) => b.date))).sort();
+    if (dates.length === 0) {
+      return {
+        dates: [] as string[],
+        timeline: [] as { date: string; total: number; delta: number }[],
+        perAccountDelta: {} as Record<string, { date: string; balance: number; prev: number; delta: number }[]>,
+        latestDate: null as string | null,
+        prevDate: null as string | null,
+        todayPerAccount: [] as { account: string; current: number; prev: number; delta: number; pct: number }[],
+        maxDay: null as null | { date: string; total: number },
+        minDay: null as null | { date: string; total: number },
+        biggestJump: null as null | { date: string; delta: number; total: number },
+        biggestDrop: null as null | { date: string; delta: number; total: number },
+        avgTotal: 0,
+        accountLeaders: [] as { account: string; current: number; share: number }[],
+      };
+    }
+
+    // for each date, compute totalDeposit using "carry-forward latest balance per account up to date"
+    const lastBalAt = (acc: string, date: string) => {
+      let v = 0;
+      for (const b of balances) {
+        if (b.account_type === acc && b.date <= date) {
+          // need latest; iterate properly
+        }
+      }
+      // efficient: pick max date <= given
+      let best: Balance | null = null;
+      for (const b of balances) {
+        if (b.account_type === acc && b.date <= date) {
+          if (!best || b.date > best.date) best = b;
+        }
+      }
+      return best ? Number(best.balance) : 0;
+      void v;
+    };
+
+    const timeline = dates.map((d) => {
+      const total = ACCOUNTS.reduce((s, a) => s + lastBalAt(a, d), 0);
+      return { date: d, total, delta: 0 };
+    });
+    for (let i = 1; i < timeline.length; i++) {
+      timeline[i].delta = timeline[i].total - timeline[i - 1].total;
+    }
+
+    const latestDate = dates[dates.length - 1];
+    const prevDate = dates.length > 1 ? dates[dates.length - 2] : null;
+
+    const todayPerAccount = ACCOUNTS.map((a) => {
+      const current = lastBalAt(a, latestDate);
+      const prev = prevDate ? lastBalAt(a, prevDate) : 0;
+      const delta = current - prev;
+      const pct = prev > 0 ? (delta / prev) * 100 : (current > 0 ? 100 : 0);
+      return { account: a, current, prev, delta, pct };
+    });
+
+    // per-account delta history (last 30 dates)
+    const perAccountDelta: Record<string, { date: string; balance: number; prev: number; delta: number }[]> = {};
+    for (const a of ACCOUNTS) {
+      const series: { date: string; balance: number; prev: number; delta: number }[] = [];
+      let prev = 0;
+      for (const d of dates) {
+        const cur = lastBalAt(a, d);
+        series.push({ date: d, balance: cur, prev, delta: cur - prev });
+        prev = cur;
+      }
+      perAccountDelta[a] = series.slice(-30).reverse();
+    }
+
+    const sortedByTotal = [...timeline].sort((x, y) => y.total - x.total);
+    const maxDay = sortedByTotal[0];
+    const minDay = sortedByTotal[sortedByTotal.length - 1];
+    const sortedByDelta = [...timeline].filter((t) => t.delta !== 0).sort((x, y) => y.delta - x.delta);
+    const biggestJump = sortedByDelta[0] ?? null;
+    const biggestDrop = sortedByDelta[sortedByDelta.length - 1] ?? null;
+    const avgTotal = timeline.reduce((s, t) => s + t.total, 0) / timeline.length;
+
+    const totalNow = todayPerAccount.reduce((s, x) => s + x.current, 0) || 1;
+    const accountLeaders = [...todayPerAccount]
+      .map((x) => ({ account: x.account, current: x.current, share: (x.current / totalNow) * 100 }))
+      .sort((a, b) => b.current - a.current);
+
+    return { dates, timeline, perAccountDelta, latestDate, prevDate, todayPerAccount, maxDay, minDay, biggestJump, biggestDrop, avgTotal, accountLeaders };
+  }, [balances]);
+
+  if (analytics.dates.length === 0) {
+    return (
+      <Card className="p-8 text-center text-muted-foreground">
+        কোনো ব্যালেন্স ডাটা নেই। Daily Balance ট্যাব থেকে এন্ট্রি যোগ করুন।
+      </Card>
+    );
+  }
+
+  const totalToday = analytics.todayPerAccount.reduce((s, x) => s + x.current, 0);
+  const totalDelta = analytics.todayPerAccount.reduce((s, x) => s + x.delta, 0);
+  const accountsUp = analytics.todayPerAccount.filter((x) => x.delta > 0);
+  const accountsDown = analytics.todayPerAccount.filter((x) => x.delta < 0);
+  const topGainer = [...analytics.todayPerAccount].sort((a, b) => b.delta - a.delta)[0];
+  const topLoser = [...analytics.todayPerAccount].sort((a, b) => a.delta - b.delta)[0];
+
+  return (
+    <div className="space-y-4">
+      {/* Hero — today vs previous */}
+      <Card className="p-5 bg-gradient-to-br from-indigo-500 via-blue-600 to-cyan-600 text-white border-0 shadow-lg">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <div className="text-xs uppercase opacity-80">Latest Snapshot</div>
+            <div className="text-2xl font-bold">{analytics.latestDate}</div>
+            {analytics.prevDate && (
+              <div className="text-xs opacity-80">আগের রেকর্ড: {analytics.prevDate}</div>
+            )}
+          </div>
+          <div className="text-right">
+            <div className="text-xs uppercase opacity-80">Total Deposit</div>
+            <div className="text-3xl font-bold">৳ {fmtBDT(totalToday)}</div>
+            <div className={`text-sm font-semibold inline-flex items-center gap-1 ${totalDelta >= 0 ? "text-emerald-100" : "text-rose-100"}`}>
+              {totalDelta >= 0 ? <ArrowUp className="w-4 h-4" /> : <ArrowDown className="w-4 h-4" />}
+              ৳ {fmtBDT(Math.abs(totalDelta))} (আগের দিনের তুলনায়)
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Summary chips */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <MiniStat label="Accounts ▲" value={`${accountsUp.length} টি`} sub={accountsUp.map(a=>a.account).join(", ") || "—"} tone="green" />
+        <MiniStat label="Accounts ▼" value={`${accountsDown.length} টি`} sub={accountsDown.map(a=>a.account).join(", ") || "—"} tone="red" />
+        <MiniStat label="Top Gainer" value={topGainer ? `${topGainer.account}` : "—"} sub={topGainer ? `+৳ ${fmtBDT(topGainer.delta)}` : ""} tone="green" />
+        <MiniStat label="Top Loser" value={topLoser && topLoser.delta < 0 ? `${topLoser.account}` : "—"} sub={topLoser && topLoser.delta < 0 ? `৳ ${fmtBDT(topLoser.delta)}` : ""} tone="red" />
+      </div>
+
+      {/* Per-account today vs yesterday */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <Activity className="w-4 h-4 text-primary" /> Account-wise: গতকালকের তুলনায় আজকের পরিবর্তন
+        </h3>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Account</TableHead>
+                <TableHead className="text-right">আগের ({analytics.prevDate ?? "—"})</TableHead>
+                <TableHead className="text-right">এখন ({analytics.latestDate})</TableHead>
+                <TableHead className="text-right">পার্থক্য</TableHead>
+                <TableHead className="text-right">% পরিবর্তন</TableHead>
+                <TableHead className="text-right">শেয়ার</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {analytics.todayPerAccount.map((r) => {
+                const share = totalToday > 0 ? (r.current / totalToday) * 100 : 0;
+                const dir = r.delta > 0 ? "up" : r.delta < 0 ? "down" : "flat";
+                return (
+                  <TableRow key={r.account}>
+                    <TableCell className="font-medium"><Badge variant="secondary">{r.account}</Badge></TableCell>
+                    <TableCell className="text-right font-mono text-muted-foreground">{fmtBDT(r.prev)}</TableCell>
+                    <TableCell className="text-right font-mono font-semibold">{fmtBDT(r.current)}</TableCell>
+                    <TableCell className={`text-right font-mono font-semibold ${dir === "up" ? "text-emerald-600" : dir === "down" ? "text-red-600" : "text-muted-foreground"}`}>
+                      <span className="inline-flex items-center gap-1 justify-end">
+                        {dir === "up" ? <ArrowUp className="w-3 h-3" /> : dir === "down" ? <ArrowDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                        ৳ {fmtBDT(Math.abs(r.delta))}
+                      </span>
+                    </TableCell>
+                    <TableCell className={`text-right text-xs ${dir === "up" ? "text-emerald-600" : dir === "down" ? "text-red-600" : "text-muted-foreground"}`}>
+                      {r.pct >= 0 ? "+" : ""}{r.pct.toFixed(2)}%
+                    </TableCell>
+                    <TableCell className="text-right text-xs">
+                      <div className="flex items-center gap-2 justify-end">
+                        <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full bg-primary" style={{ width: `${Math.min(100, share)}%` }} />
+                        </div>
+                        {share.toFixed(1)}%
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              <TableRow className="bg-muted/30 font-semibold">
+                <TableCell>Total</TableCell>
+                <TableCell className="text-right font-mono">{fmtBDT(analytics.todayPerAccount.reduce((s, x) => s + x.prev, 0))}</TableCell>
+                <TableCell className="text-right font-mono">{fmtBDT(totalToday)}</TableCell>
+                <TableCell className={`text-right font-mono ${totalDelta >= 0 ? "text-emerald-700" : "text-red-700"}`}>
+                  {totalDelta >= 0 ? "+" : "-"}৳ {fmtBDT(Math.abs(totalDelta))}
+                </TableCell>
+                <TableCell colSpan={2} />
+              </TableRow>
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+      {/* High / Low / Avg cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="p-4 bg-gradient-to-br from-emerald-500 to-teal-600 text-white border-0">
+          <div className="flex items-center gap-2 text-xs opacity-90"><Trophy className="w-4 h-4" /> সর্বোচ্চ ডিপোজিট দিন</div>
+          <div className="text-xl font-bold mt-1">৳ {fmtBDT(analytics.maxDay?.total || 0)}</div>
+          <div className="text-xs opacity-80">{analytics.maxDay?.date}</div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-rose-500 to-red-600 text-white border-0">
+          <div className="flex items-center gap-2 text-xs opacity-90"><TrendingDown className="w-4 h-4" /> সর্বনিম্ন ডিপোজিট দিন</div>
+          <div className="text-xl font-bold mt-1">৳ {fmtBDT(analytics.minDay?.total || 0)}</div>
+          <div className="text-xs opacity-80">{analytics.minDay?.date}</div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-amber-500 to-orange-600 text-white border-0">
+          <div className="flex items-center gap-2 text-xs opacity-90"><ArrowUp className="w-4 h-4" /> সর্বোচ্চ বৃদ্ধি</div>
+          <div className="text-xl font-bold mt-1">+৳ {fmtBDT(analytics.biggestJump?.delta || 0)}</div>
+          <div className="text-xs opacity-80">{analytics.biggestJump?.date ?? "—"}</div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-slate-600 to-slate-800 text-white border-0">
+          <div className="flex items-center gap-2 text-xs opacity-90"><ArrowDown className="w-4 h-4" /> সর্বোচ্চ হ্রাস</div>
+          <div className="text-xl font-bold mt-1">৳ {fmtBDT(analytics.biggestDrop?.delta || 0)}</div>
+          <div className="text-xs opacity-80">{analytics.biggestDrop?.date ?? "—"}</div>
+        </Card>
+      </div>
+
+      {/* Total deposit timeline */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-primary" /> Total Deposit Timeline (গড় ৳ {fmtBDT(analytics.avgTotal)})
+        </h3>
+        <ResponsiveContainer width="100%" height={260}>
+          <AreaChart data={analytics.timeline}>
+            <defs>
+              <linearGradient id="depGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.7} />
+                <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.05} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip formatter={(v: any) => `৳ ${fmtBDT(Number(v))}`} />
+            <Area type="monotone" dataKey="total" stroke="#3b82f6" fill="url(#depGrad)" />
+          </AreaChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {/* Daily change bars */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-primary" /> দৈনিক ডিপোজিট পার্থক্য (বৃদ্ধি/হ্রাস)
+        </h3>
+        <ResponsiveContainer width="100%" height={240}>
+          <BarChart data={analytics.timeline.slice(-30)}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="date" />
+            <YAxis />
+            <Tooltip formatter={(v: any) => `৳ ${fmtBDT(Number(v))}`} />
+            <Bar dataKey="delta">
+              {analytics.timeline.slice(-30).map((d, i) => (
+                <Cell key={i} fill={d.delta >= 0 ? "#10b981" : "#ef4444"} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </Card>
+
+      {/* Per-account recent deltas table */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <Wallet className="w-4 h-4 text-primary" /> Per-Account দিন-ভিত্তিক পরিবর্তন (সর্বশেষ ৩০ এন্ট্রি)
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {ACCOUNTS.map((a) => {
+            const rows = analytics.perAccountDelta[a] || [];
+            if (rows.length === 0) return null;
+            return (
+              <div key={a} className="border rounded-lg p-3">
+                <div className="flex items-center justify-between mb-2">
+                  <Badge>{a}</Badge>
+                  <span className="text-xs text-muted-foreground">{rows.length} entries</span>
+                </div>
+                <div className="max-h-56 overflow-y-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="h-7 text-xs">Date</TableHead>
+                        <TableHead className="h-7 text-xs text-right">Balance</TableHead>
+                        <TableHead className="h-7 text-xs text-right">Δ</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {rows.map((r) => (
+                        <TableRow key={r.date}>
+                          <TableCell className="py-1 text-xs">{r.date}</TableCell>
+                          <TableCell className="py-1 text-xs text-right font-mono">{fmtBDT(r.balance)}</TableCell>
+                          <TableCell className={`py-1 text-xs text-right font-mono ${r.delta > 0 ? "text-emerald-600" : r.delta < 0 ? "text-red-600" : "text-muted-foreground"}`}>
+                            {r.delta > 0 ? "+" : r.delta < 0 ? "" : ""}{fmtBDT(r.delta)}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* Account share leaderboard */}
+      <Card className="p-4">
+        <h3 className="font-semibold mb-3 flex items-center gap-2">
+          <Trophy className="w-4 h-4 text-amber-500" /> অ্যাকাউন্ট লিডারবোর্ড (Total Deposit Share)
+        </h3>
+        <div className="space-y-2">
+          {analytics.accountLeaders.map((a, idx) => (
+            <div key={a.account} className="flex items-center gap-3">
+              <div className="w-6 text-center font-bold text-muted-foreground">{idx + 1}</div>
+              <Badge variant="secondary" className="w-20 justify-center">{a.account}</Badge>
+              <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-indigo-500 to-blue-500"
+                  style={{ width: `${Math.max(2, a.share)}%` }}
+                />
+              </div>
+              <div className="w-32 text-right font-mono text-sm">৳ {fmtBDT(a.current)}</div>
+              <div className="w-14 text-right text-xs text-muted-foreground">{a.share.toFixed(1)}%</div>
+            </div>
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
