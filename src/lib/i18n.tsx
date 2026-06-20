@@ -14,7 +14,8 @@ const dict = {
   approvedBy: { bn: "অনুমোদনকারী (মো. ফাহিম)", en: "Approved by (Md. Fahim)" },
 
   // Nav
-  nav_dashboard: { bn: "ড্যাশবোর্ড", en: "Dashboard" },
+ nav_dashboard: { bn: "ড্যাশবোর্ড", en: "Dashboard" },
+ nav_bi_dashboard: { bn: "AI স্মার্ট বিশ্লেষণ", en: "AI Business Intelligence" },
   nav_investment: { bn: "এজেন্ট ব্যাংক বিনিয়োগ", en: "Agent Bank Investment" },
   nav_expense: { bn: "খরচ ভাউচার", en: "Expense Voucher" },
   nav_staff: { bn: "স্টাফ", en: "Staff" },

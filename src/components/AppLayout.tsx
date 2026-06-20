@@ -7,7 +7,7 @@ import {
   Wallet, Handshake, FileBarChart, LogOut, Menu, X, Languages,
   ClipboardList, MessageSquare, Target, FileText, Banknote,
   BookOpen, FileSignature, Boxes, BookUser, Activity, CalendarClock, ShieldCheck,
-  CalendarDays, UserCheck, ListTodo
+  CalendarDays, UserCheck, ListTodo, Brain
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ export function AppLayout() {
 
   const nav = [
     { to: "/dashboard", label: t("nav_dashboard"), icon: LayoutDashboard },
+    { to: "/bi-dashboard", label: t("nav_bi_dashboard"), icon: Brain },
     { to: "/monthly-report", label: t("nav_monthly_report"), icon: FileBarChart },
     { to: "/agent-bank-investment", label: t("nav_investment"), icon: TrendingUp },
     { to: "/daily-deposit", label: t("nav_daily_deposit"), icon: Banknote },
