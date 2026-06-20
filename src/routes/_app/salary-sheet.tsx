@@ -209,6 +209,63 @@ function SalarySheetPage() {
   const initials = (name: string) =>
     name.split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
 
+  // Smart analytics
+  const analytics = useMemo(() => {
+    const rows = filtered.map((s) => {
+      const r = getRow(s);
+      const existing = salaries.find((x) => x.staff_id === s.id);
+      return { staff: s, net: computeNet(r), status: existing?.payment_status ?? "pending", paidOn: existing?.paid_on ?? null };
+    });
+    const paidCount = rows.filter((x) => x.status === "paid").length;
+    const pendingCount = rows.length - paidCount;
+    const paidAmount = rows.filter((x) => x.status === "paid").reduce((a, x) => a + x.net, 0);
+    const pendingAmount = totals.net - paidAmount;
+    const avg = rows.length ? totals.net / rows.length : 0;
+    const sorted = [...rows].sort((a, b) => b.net - a.net);
+    const top3 = sorted.slice(0, 3);
+    const highest = sorted[0];
+    const lowest = sorted[sorted.length - 1];
+    const prevTotal = prevSalaries.reduce((a, x) => a + Number(x.net_paid || 0), 0);
+    const momPct = prevTotal > 0 ? ((totals.net - prevTotal) / prevTotal) * 100 : 0;
+    const progress = rows.length ? Math.round((paidCount / rows.length) * 100) : 0;
+    const bonusRecipients = rows.filter((x) => Number(getRow(x.staff).bonus) > 0).length;
+    const deductionCount = rows.filter((x) => Number(getRow(x.staff).deductions) > 0).length;
+    return { paidCount, pendingCount, paidAmount, pendingAmount, avg, top3, highest, lowest, prevTotal, momPct, progress, bonusRecipients, deductionCount };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, drafts, salaries, prevSalaries, totals]);
+
+  const exportCSV = () => {
+    const headers = ["SL", "Name", "Designation", "Phone", "Working Days", "Basic", "Bonus", "Allowance", "Deduction", "Net", "Status"];
+    const lines = [headers.join(",")];
+    filtered.forEach((s, i) => {
+      const r = getRow(s);
+      const existing = salaries.find((x) => x.staff_id === s.id);
+      lines.push([
+        i + 1, `"${s.name}"`, `"${s.position ?? ""}"`, s.phone ?? "",
+        r.working_days, r.base_salary, r.bonus, r.allowance, r.deductions,
+        computeNet(r), existing?.payment_status ?? "pending",
+      ].join(","));
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `salary-sheet-${year}-${String(month).padStart(2, "0")}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast.success("CSV exported");
+  };
+
+  const markAllPaid = async () => {
+    const pending = filtered.filter((s) => {
+      const ex = salaries.find((x) => x.staff_id === s.id);
+      return (ex?.payment_status ?? "pending") !== "paid";
+    });
+    if (pending.length === 0) { toast.info("All already paid"); return; }
+    for (const s of pending) {
+      await saveRow.mutateAsync({ staff_id: s.id, row: getRowSnapshot(s.id), status: "paid" });
+    }
+    toast.success(`Marked ${pending.length} as paid`);
+  };
+
   return (
     <div className="space-y-6">
       <style>{`@media print { @page { size: A4 landscape; margin: 8mm; } }`}</style>
