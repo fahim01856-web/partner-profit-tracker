@@ -499,9 +499,72 @@ function PendingWorksPage() {
             <X className="w-3 h-3 mr-1" />{lang === "bn" ? "ক্লিয়ার" : "Clear"}
           </Button>
         )}
-        <div className="ml-auto text-xs text-muted-foreground flex items-center gap-1"><Filter className="w-3 h-3" />{filtered.length} {lang === "bn" ? "টি" : "results"}</div>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="text-xs text-muted-foreground flex items-center gap-1"><Filter className="w-3 h-3" />{filtered.length} {lang === "bn" ? "টি" : "results"}</div>
+          <div className="inline-flex rounded-md border overflow-hidden">
+            <Button size="sm" variant={viewMode === "table" ? "default" : "ghost"} className="rounded-none h-8" onClick={() => setViewMode("table")}><TableIcon className="w-4 h-4 mr-1" />{lang === "bn" ? "টেবিল" : "Table"}</Button>
+            <Button size="sm" variant={viewMode === "kanban" ? "default" : "ghost"} className="rounded-none h-8" onClick={() => setViewMode("kanban")}><Kanban className="w-4 h-4 mr-1" />{lang === "bn" ? "বোর্ড" : "Board"}</Button>
+          </div>
+        </div>
       </div>
 
+      {selected.size > 0 && (
+        <Card className="p-3 no-print border-primary/50 bg-primary/5 flex items-center gap-2 flex-wrap">
+          <CheckSquare className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium">{selected.size} {lang === "bn" ? "টি নির্বাচিত" : "selected"}</span>
+          <div className="ml-auto flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => bulkAction.mutate({ ids: [...selected], action: "status", value: "completed" })}><CheckCircle2 className="w-3 h-3 mr-1" />{lang === "bn" ? "সম্পন্ন" : "Complete"}</Button>
+            <Button size="sm" variant="outline" onClick={() => bulkAction.mutate({ ids: [...selected], action: "status", value: "in_progress" })}><Clock className="w-3 h-3 mr-1" />{lang === "bn" ? "চলমান" : "In Progress"}</Button>
+            <Button size="sm" variant="outline" onClick={() => bulkAction.mutate({ ids: [...selected], action: "priority", value: "urgent" })}><AlertTriangle className="w-3 h-3 mr-1" />{lang === "bn" ? "জরুরি" : "Urgent"}</Button>
+            <Button size="sm" variant="destructive" onClick={() => { if (confirm(lang === "bn" ? `${selected.size} টি মুছবেন?` : `Delete ${selected.size}?`)) bulkAction.mutate({ ids: [...selected], action: "delete" }); }}><Trash2 className="w-3 h-3 mr-1" />{lang === "bn" ? "মুছুন" : "Delete"}</Button>
+            <Button size="sm" variant="ghost" onClick={clearSel}><X className="w-3 h-3 mr-1" />{lang === "bn" ? "বাতিল" : "Clear"}</Button>
+          </div>
+        </Card>
+      )}
+
+      {viewMode === "kanban" ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {(["pending", "in_progress", "completed"] as const).map((col) => {
+            const items = filtered.filter((r) => r.status === col);
+            const colMeta = {
+              pending: { label: lang === "bn" ? "পেন্ডিং" : "Pending", color: "border-muted-foreground/30", icon: <Clock className="w-4 h-4" /> },
+              in_progress: { label: lang === "bn" ? "চলমান" : "In Progress", color: "border-amber-500/40 bg-amber-500/5", icon: <TrendingUp className="w-4 h-4 text-amber-600" /> },
+              completed: { label: lang === "bn" ? "সম্পন্ন" : "Done", color: "border-green-500/40 bg-green-500/5", icon: <CheckCircle2 className="w-4 h-4 text-green-600" /> },
+            }[col];
+            return (
+              <Card key={col} className={`p-3 ${colMeta.color}`}>
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                  {colMeta.icon}
+                  <span className="font-semibold text-sm">{colMeta.label}</span>
+                  <Badge variant="secondary" className="ml-auto">{items.length}</Badge>
+                </div>
+                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                  {items.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">{lang === "bn" ? "খালি" : "Empty"}</div>}
+                  {items.map((r) => {
+                    const d = r.due_date ? daysDiff(r.due_date) : null;
+                    const isOverdue = d !== null && d < 0 && r.status !== "completed";
+                    return (
+                      <div key={r.id} className={`p-2 rounded border bg-card hover:shadow-md transition cursor-pointer ${isOverdue ? "border-destructive/50" : ""}`} onClick={() => startEdit(r)}>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{r.title}</div>
+                            {r.customer_name && <div className="text-xs text-muted-foreground truncate">{r.customer_name}</div>}
+                            <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              <Badge variant={r.priority === "urgent" ? "destructive" : r.priority === "high" ? "default" : "secondary"} className="text-[10px] h-4 px-1">{r.priority}</Badge>
+                              {r.due_date && <Badge variant={isOverdue ? "destructive" : "outline"} className="text-[10px] h-4 px-1">{r.due_date}</Badge>}
+                            </div>
+                          </div>
+                          <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleSel(r.id)} onClick={(e) => e.stopPropagation()} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
       <Card className="overflow-hidden print-area">
         <div className="hidden print:block p-4 text-center border-b">
           <div className="font-bold text-lg">{t("bankName")}</div>
