@@ -285,22 +285,63 @@ function InventoryPage() {
         <Button variant="outline" onClick={() => window.print()}><Printer className="w-4 h-4" /> {t("print")}</Button>
       </div>
 
-      {/* Stock cards */}
+      {/* Hero KPI strip */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <Card className="p-4 relative overflow-hidden border-0 text-primary-foreground" style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.78) 100%)" }}>
+          <Layers className="absolute -right-3 -top-3 w-20 h-20 opacity-15" />
+          <div className="text-xs uppercase tracking-wide opacity-90">{lang === "bn" ? "মোট স্টক" : "Total Stock"}</div>
+          <div className="text-3xl font-extrabold mt-1">{fmt.num(analytics.totalStock)}</div>
+          <div className="text-[11px] opacity-90 mt-1">{lang === "bn" ? "৩ আইটেম সম্মিলিত" : "Across 3 items"}</div>
+        </Card>
+        <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(160 70% 38%) 0%, hsl(150 70% 42%) 100%)" }}>
+          <PackageCheck className="absolute -right-3 -top-3 w-20 h-20 opacity-15" />
+          <div className="text-xs uppercase tracking-wide opacity-90">{lang === "bn" ? "এই মাসে প্রাপ্ত" : "Received this month"}</div>
+          <div className="text-3xl font-extrabold mt-1">{fmt.num(analytics.mRecv)}</div>
+          <div className="text-[11px] opacity-90 mt-1">{analytics.monthLabel}</div>
+        </Card>
+        <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(340 82% 52%) 0%, hsl(0 84% 55%) 100%)" }}>
+          <PackageMinus className="absolute -right-3 -top-3 w-20 h-20 opacity-15" />
+          <div className="text-xs uppercase tracking-wide opacity-90">{lang === "bn" ? "এই মাসে বিতরণ" : "Distributed this month"}</div>
+          <div className="text-3xl font-extrabold mt-1">{fmt.num(analytics.mDist)}</div>
+          <div className="text-[11px] opacity-95 mt-1 flex items-center gap-1">
+            {analytics.distMoMPct >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+            {analytics.distMoMPct >= 0 ? "+" : ""}{fmt.num(Math.round(analytics.distMoMPct))}% vs last month
+          </div>
+        </Card>
+        <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(15 90% 50%) 100%)" }}>
+          <ClipboardList className="absolute -right-3 -top-3 w-20 h-20 opacity-15" />
+          <div className="text-xs uppercase tracking-wide opacity-90">{lang === "bn" ? "পেন্ডিং অনুরোধ" : "Pending requests"}</div>
+          <div className="text-3xl font-extrabold mt-1">{fmt.num(analytics.pendingTotal)}</div>
+          <div className="text-[11px] opacity-95 mt-1">{fmt.num(pendings.filter((p) => p.status === "pending").length)} {lang === "bn" ? "জন কাস্টমার" : "customers"}</div>
+        </Card>
+      </div>
+
+      {/* Stock cards — gorgeous per-item */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {items.map((it) => {
-          const s = stock(it);
+        {analytics.perItem.map(({ it, stock: s, avg, daysLeft, totalRecv, totalDist, capacity, pending }) => {
           const low = s <= LOW_STOCK;
           return (
-            <Card key={it} className={`p-4 ${low ? "border-red-400 bg-red-50/40" : ""}`}>
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold flex items-center gap-1.5"><Package className="w-4 h-4 text-primary" /> {itemLabel(it)}</div>
-                {low && <span className="inline-flex items-center gap-1 text-[11px] text-red-600 font-medium"><AlertTriangle className="w-3 h-3" /> {lang === "bn" ? "স্টক কম" : "Low Stock"}</span>}
+            <Card key={it} className="p-0 overflow-hidden relative group hover:shadow-lg transition">
+              <div className="p-4 text-white relative" style={{ background: ITEM_GRADIENTS[it] }}>
+                <Package className="absolute right-3 top-3 w-12 h-12 opacity-15" />
+                <div className="text-xs uppercase tracking-wider opacity-90">{itemLabel(it)}</div>
+                <div className="flex items-end justify-between mt-1">
+                  <div className="text-4xl font-extrabold">{fmt.num(s)}</div>
+                  {low && <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-white/25 backdrop-blur px-2 py-0.5 rounded-full"><AlertTriangle className="w-3 h-3" />{lang === "bn" ? "স্টক কম" : "LOW"}</span>}
+                </div>
+                <div className="mt-2 h-1.5 rounded-full bg-white/25 overflow-hidden">
+                  <div className="h-full bg-white/90" style={{ width: `${Math.min(100, Math.max(2, capacity))}%` }} />
+                </div>
+                <div className="text-[10px] opacity-90 mt-1">{fmt.num(Math.round(capacity))}% {lang === "bn" ? "ক্যাপাসিটি অবশিষ্ট" : "of capacity"}</div>
               </div>
-              <div className={`text-3xl font-bold mt-2 ${low ? "text-red-600" : "text-primary"}`}>{fmt.num(s)}</div>
-              <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
-                <div className="text-emerald-700"><PackageCheck className="w-3 h-3 inline" /> {lang === "bn" ? "প্রাপ্ত" : "Recv"}: <b>{fmt.num(sumBy(receipts, it))}</b></div>
-                <div className="text-red-700"><PackageMinus className="w-3 h-3 inline" /> {lang === "bn" ? "বিতরণ" : "Dist"}: <b>{fmt.num(sumBy(distributions, it))}</b></div>
-                <div className="text-amber-700"><ClipboardList className="w-3 h-3 inline" /> {lang === "bn" ? "পেন্ডিং" : "Pend"}: <b>{fmt.num(pendingCount(it))}</b></div>
+              <div className="p-3 grid grid-cols-2 gap-2 text-xs bg-card">
+                <div className="flex items-center gap-1.5"><Activity className="w-3.5 h-3.5 text-primary" /><span className="text-muted-foreground">{lang === "bn" ? "দৈনিক গড়" : "Avg/day"}:</span> <b>{fmt.num(Math.round(avg * 10) / 10)}</b></div>
+                <div className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-amber-600" /><span className="text-muted-foreground">{lang === "bn" ? "স্টক চলবে" : "Lasts"}:</span> <b>{daysLeft === null ? "∞" : `${fmt.num(daysLeft)} ${lang === "bn" ? "দিন" : "d"}`}</b></div>
+                <div className="flex items-center gap-1.5 text-emerald-700"><PackageCheck className="w-3.5 h-3.5" /><span className="opacity-80">{lang === "bn" ? "প্রাপ্ত" : "Recv"}:</span> <b>{fmt.num(totalRecv)}</b></div>
+                <div className="flex items-center gap-1.5 text-red-700"><PackageMinus className="w-3.5 h-3.5" /><span className="opacity-80">{lang === "bn" ? "বিতরণ" : "Dist"}:</span> <b>{fmt.num(totalDist)}</b></div>
+                {pending > 0 && (
+                  <div className="col-span-2 flex items-center gap-1.5 text-amber-700 border-t pt-2 mt-1"><ClipboardList className="w-3.5 h-3.5" />{lang === "bn" ? "পেন্ডিং" : "Pending"}: <b>{fmt.num(pending)}</b></div>
+                )}
               </div>
             </Card>
           );
