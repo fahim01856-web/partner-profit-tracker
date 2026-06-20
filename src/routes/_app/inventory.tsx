@@ -364,9 +364,85 @@ function InventoryPage() {
           <TabsTrigger value="assets"><Package className="w-3.5 h-3.5 mr-1" /> {lang === "bn" ? "এজেন্ট ব্যাংক সম্পদ" : "Agent Bank Assets"}</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="dashboard" className="mt-4">
+        <TabsContent value="dashboard" className="mt-4 space-y-4">
+          {/* 30-day trend chart */}
           <Card className="p-4">
-            <h3 className="font-semibold mb-3">{lang === "bn" ? "সর্বশেষ ১০টি লেনদেন" : "Last 10 Transactions"}</h3>
+            <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+              <h3 className="font-semibold flex items-center gap-2"><Activity className="w-4 h-4 text-primary" /> {lang === "bn" ? "৩০ দিনের প্রবণতা" : "30-Day Trend"}</h3>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> {lang === "bn" ? "প্রাপ্ত" : "Received"}</span>
+                <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> {lang === "bn" ? "বিতরণ" : "Distributed"}</span>
+              </div>
+            </div>
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={analytics.trend} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gRecv" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(160 70% 40%)" stopOpacity={0.45} /><stop offset="100%" stopColor="hsl(160 70% 40%)" stopOpacity={0} /></linearGradient>
+                    <linearGradient id="gDist" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(340 82% 52%)" stopOpacity={0.45} /><stop offset="100%" stopColor="hsl(340 82% 52%)" stopOpacity={0} /></linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="day" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+                  <RTooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                  <Area type="monotone" dataKey="recv" stroke="hsl(160 70% 40%)" fill="url(#gRecv)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="dist" stroke="hsl(340 82% 52%)" fill="url(#gDist)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </Card>
+
+          <div className="grid gap-4 lg:grid-cols-2">
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Zap className="w-4 h-4 text-amber-500" /> {lang === "bn" ? "এই মাসে বিতরণ — আইটেম-ভিত্তিক" : "Distribution this month — by item"}</h3>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={analytics.itemShare} margin={{ left: -10, right: 8, top: 8, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="label" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                    <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+                    <RTooltip contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }} />
+                    <Bar dataKey="qty" radius={[6, 6, 0, 0]} fill="hsl(var(--primary))" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              {analytics.busiest && (
+                <div className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5 text-rose-500" />{lang === "bn" ? "সবচেয়ে ব্যস্ত দিন" : "Busiest day"}: <b className="text-foreground">{fmt.date(analytics.busiest[0])}</b> — {fmt.num(analytics.busiest[1])} {lang === "bn" ? "বিতরণ" : "distributed"}</div>
+              )}
+            </Card>
+
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Crown className="w-4 h-4 text-amber-500" /> {lang === "bn" ? "শীর্ষ কাস্টমার" : "Top Customers"}</h3>
+              {analytics.topCustomers.length === 0 ? (
+                <div className="text-sm text-muted-foreground py-6 text-center">{t("noEntries")}</div>
+              ) : (
+                <div className="space-y-2">
+                  {analytics.topCustomers.map((c, i) => {
+                    const maxQ = analytics.topCustomers[0].qty;
+                    const pct = maxQ > 0 ? (c.qty / maxQ) * 100 : 0;
+                    return (
+                      <div key={c.account + i}>
+                        <div className="flex items-center justify-between text-sm mb-1 gap-2">
+                          <span className="flex items-center gap-2 min-w-0">
+                            <span className={`w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-bold text-white shrink-0 ${i === 0 ? "bg-amber-500" : i === 1 ? "bg-slate-400" : i === 2 ? "bg-orange-700" : "bg-muted-foreground"}`}>{fmt.num(i + 1)}</span>
+                            <span className="truncate">
+                              <span className="font-medium">{c.name}</span>
+                              <span className="text-xs text-muted-foreground font-mono ml-1">{c.account}</span>
+                            </span>
+                          </span>
+                          <span className="font-bold text-primary shrink-0">{fmt.num(c.qty)}</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-muted overflow-hidden"><div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg, hsl(var(--primary)), hsl(292 76% 55%))" }} /></div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+          </div>
+
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><Clock className="w-4 h-4 text-primary" /> {lang === "bn" ? "সর্বশেষ ১০টি লেনদেন" : "Last 10 Transactions"}</h3>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -384,9 +460,9 @@ function InventoryPage() {
                     .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10).map((row) => (
                       <TableRow key={row.id}>
                         <TableCell>{fmt.date(row.date)}</TableCell>
-                        <TableCell>{row.kind === "received" ? <span className="text-emerald-700">{lang === "bn" ? "প্রাপ্ত" : "Received"}</span> : <span className="text-red-700">{lang === "bn" ? "বিতরণ" : "Distributed"}</span>}</TableCell>
+                        <TableCell>{row.kind === "received" ? <Badge className="bg-emerald-600 hover:bg-emerald-600">{lang === "bn" ? "প্রাপ্ত" : "Received"}</Badge> : <Badge variant="destructive">{lang === "bn" ? "বিতরণ" : "Distributed"}</Badge>}</TableCell>
                         <TableCell>{itemLabel(row.item_type as ItemType)}</TableCell>
-                        <TableCell className="text-right font-semibold">{fmt.num(row.quantity)}</TableCell>
+                        <TableCell className={`text-right font-semibold ${row.kind === "received" ? "text-emerald-700" : "text-rose-700"}`}>{row.kind === "received" ? "+" : "−"}{fmt.num(row.quantity)}</TableCell>
                         <TableCell className="text-xs">{row.details}</TableCell>
                       </TableRow>
                     ))}
