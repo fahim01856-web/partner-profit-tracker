@@ -188,6 +188,53 @@ function ExpensePage() {
   const formTotal = rows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
   const printV = printVoucher ? vouchers.find(v => v.date === printVoucher) : null;
 
+  // Analytics for "this month" insights
+  const insights = useMemo(() => {
+    const now = new Date();
+    const ym = now.toISOString().slice(0, 7);
+    const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastYm = lastDate.toISOString().slice(0, 7);
+
+    const monthRows = allRows.filter(r => (r.date ?? "").startsWith(ym));
+    const lastMonthRows = allRows.filter(r => (r.date ?? "").startsWith(lastYm));
+
+    const monthTotal = monthRows.reduce((s, r) => s + Number(r.amount), 0);
+    const lastMonthTotal = lastMonthRows.reduce((s, r) => s + Number(r.amount), 0);
+    const momPct = lastMonthTotal > 0 ? ((monthTotal - lastMonthTotal) / lastMonthTotal) * 100 : 0;
+
+    // Category totals (this month)
+    const catMap = new Map<string, number>();
+    monthRows.forEach(r => catMap.set(r.category, (catMap.get(r.category) ?? 0) + Number(r.amount)));
+    const topCats = Array.from(catMap.entries())
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+    const maxCat = topCats[0] ?? null;
+
+    // Day totals (this month)
+    const dayMap = new Map<string, number>();
+    monthRows.forEach(r => dayMap.set(r.date, (dayMap.get(r.date) ?? 0) + Number(r.amount)));
+    const dayList = Array.from(dayMap.entries()).map(([date, amount]) => ({ date, amount }));
+    const sortedDays = [...dayList].sort((a, b) => b.amount - a.amount);
+    const topDay = sortedDays[0] ?? null;
+    const lowDay = sortedDays.length > 1 ? sortedDays[sortedDays.length - 1] : null;
+    const topDays = sortedDays.slice(0, 5);
+
+    // All-time biggest single voucher
+    const biggestVoucher = vouchers.length ? vouchers.reduce((a, b) => b.total > a.total ? b : a) : null;
+
+    const daysWithExpense = dayList.length;
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const avgPerActiveDay = daysWithExpense ? monthTotal / daysWithExpense : 0;
+    const projected = daysWithExpense ? (monthTotal / Math.max(1, now.getDate())) * daysInMonth : 0;
+
+    return { ym, monthTotal, lastMonthTotal, momPct, topCats, maxCat, topDay, lowDay, topDays, biggestVoucher, daysWithExpense, avgPerActiveDay, projected };
+  }, [allRows, vouchers]);
+
+  const maxCatAmount = insights.topCats[0]?.amount ?? 0;
+  const maxDayAmount = insights.topDays[0]?.amount ?? 0;
+  const monthLabel = new Date(insights.ym + "-01").toLocaleDateString(undefined, { month: "long", year: "numeric" });
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3 no-print">
