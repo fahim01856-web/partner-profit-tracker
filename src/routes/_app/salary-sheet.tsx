@@ -322,6 +322,75 @@ function SalarySheetPage() {
         <SummaryCard label={t("ss_grand_total")} value={fmt.bdt(totals.net)} accent="text-primary" />
       </div>
 
+      {/* Smart Analytics Panel */}
+      <div className="no-print grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Payment Progress */}
+        <Card className="p-4 col-span-1 lg:col-span-2 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h3 className="font-semibold text-sm">Payment Progress — {periodLabel}</h3>
+            </div>
+            <span className="text-xs font-bold text-primary">{fmt.num(analytics.progress)}%</span>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden mb-3">
+            <div className="h-full bg-gradient-to-r from-success to-primary transition-all" style={{ width: `${analytics.progress}%` }} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <MiniMetric icon={<BadgeCheck className="w-4 h-4" />} label="Paid" value={fmt.num(analytics.paidCount)} sub={fmt.bdt(analytics.paidAmount)} tone="success" />
+            <MiniMetric icon={<Clock className="w-4 h-4" />} label="Pending" value={fmt.num(analytics.pendingCount)} sub={fmt.bdt(analytics.pendingAmount)} tone="warn" />
+            <MiniMetric icon={<Wallet className="w-4 h-4" />} label="Avg / Staff" value={fmt.bdt(analytics.avg)} tone="default" />
+            <MiniMetric
+              icon={analytics.momPct > 0 ? <TrendingUp className="w-4 h-4" /> : analytics.momPct < 0 ? <TrendingDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+              label="vs Last Month"
+              value={`${analytics.momPct > 0 ? "+" : ""}${analytics.momPct.toFixed(1)}%`}
+              sub={fmt.bdt(analytics.prevTotal)}
+              tone={analytics.momPct > 0 ? "success" : analytics.momPct < 0 ? "danger" : "default"}
+            />
+          </div>
+        </Card>
+
+        {/* Top earners */}
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="w-4 h-4 text-amber-500" />
+            <h3 className="font-semibold text-sm">Top Earners</h3>
+          </div>
+          <div className="space-y-2">
+            {analytics.top3.length === 0 && <p className="text-xs text-muted-foreground">No data</p>}
+            {analytics.top3.map((x, i) => (
+              <div key={x.staff.id} className="flex items-center gap-2 text-xs">
+                <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                  i === 0 ? "bg-amber-100 text-amber-700" : i === 1 ? "bg-slate-100 text-slate-700" : "bg-orange-100 text-orange-700")}>
+                  {fmt.num(i + 1)}
+                </span>
+                <span className="flex-1 truncate font-medium">{x.staff.name}</span>
+                <span className="font-bold text-primary">{fmt.bdt(x.net)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Insights */}
+        <Card className="p-4 lg:col-span-3 bg-gradient-to-br from-accent/30 to-transparent">
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="w-4 h-4 text-primary" />
+            <h3 className="font-semibold text-sm">Smart Insights</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <InsightChip icon={<Users className="w-3.5 h-3.5" />} label="Active Staff" value={fmt.num(filtered.length)} />
+            <InsightChip icon={<TrendingUp className="w-3.5 h-3.5 text-success" />} label="Highest Pay" value={analytics.highest ? `${analytics.highest.staff.name} · ${fmt.bdt(analytics.highest.net)}` : "—"} />
+            <InsightChip icon={<TrendingDown className="w-3.5 h-3.5 text-destructive" />} label="Lowest Pay" value={analytics.lowest ? `${analytics.lowest.staff.name} · ${fmt.bdt(analytics.lowest.net)}` : "—"} />
+            <InsightChip icon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />} label="Bonus Recipients" value={`${fmt.num(analytics.bonusRecipients)} staff`} />
+            <InsightChip icon={<AlertTriangle className="w-3.5 h-3.5 text-destructive" />} label="With Deductions" value={`${fmt.num(analytics.deductionCount)} staff`} />
+            <InsightChip icon={<Wallet className="w-3.5 h-3.5" />} label="Payout Coverage" value={fmt.bdt(analytics.paidAmount)} />
+            <InsightChip icon={<Clock className="w-3.5 h-3.5 text-amber-600" />} label="Pending Payout" value={fmt.bdt(analytics.pendingAmount)} />
+            <InsightChip icon={<BadgeCheck className="w-3.5 h-3.5 text-success" />} label="Completion" value={`${fmt.num(analytics.progress)}%`} />
+          </div>
+        </Card>
+      </div>
+
+
       {/* A4 Print Sheet */}
       <div className="print-area">
         <div className="mx-auto bg-white text-black border print:border-0 shadow-sm print:shadow-none p-5 print:p-6"
