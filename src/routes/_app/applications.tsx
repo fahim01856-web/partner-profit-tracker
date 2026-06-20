@@ -98,6 +98,32 @@ function printHtml(html: string, title = "Application") {
   w.document.close();
 }
 
+function downloadDoc(html: string, filename: string) {
+  const blob = new Blob([
+    `<!doctype html><html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${filename}</title></head><body>${html}</body></html>`,
+  ], { type: "application/msword" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${filename}.doc`;
+  a.click();
+}
+
+function extractPlaceholders(html: string): string[] {
+  const set = new Set<string>();
+  const re = /\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html || ""))) set.add(m[1]);
+  return Array.from(set);
+}
+
+async function copyHtmlAsText(html: string) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  const text = tmp.innerText;
+  try { await navigator.clipboard.writeText(text); toast.success("কপি করা হয়েছে"); }
+  catch { toast.error("কপি করা গেল না"); }
+}
+
 function exportCsv(rows: any[], filename: string) {
   if (!rows.length) return toast.error("কোনো ডেটা নেই");
   const headers = Object.keys(rows[0]);
