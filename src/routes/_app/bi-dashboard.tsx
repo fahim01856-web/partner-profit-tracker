@@ -150,6 +150,76 @@ function BIDashboard() {
       const totalAbsent = [...attDays.values()].reduce((s, r) => s + r.absent, 0);
       const attendanceRate = totalPresent + totalAbsent ? (totalPresent / (totalPresent + totalAbsent)) * 100 : 0;
 
+      // === New: Total business value, deposit growth, cash position, customers/VIP, compliance, staff ranking ===
+      const totalDeposits6m = (deposits.data ?? []).reduce((s: number, d: any) => s + Number(d.amount), 0);
+      const totalRemit6m = (remit.data ?? []).reduce((s: number, r: any) => s + Number(r.amount ?? 0), 0);
+      const totalInvestment = (invest.data ?? []).reduce((s: number, i: any) => s + Number(i.amount ?? 0), 0);
+      const totalLoanOutstanding = (loan.data ?? []).reduce((s: number, l: any) => s + Number(l.loan_amount ?? l.opening_balance ?? 0), 0);
+      const totalBusinessValue = totalDeposits6m + totalRemit6m + totalInvestment + totalLoanOutstanding;
+
+      const lastDep = depositTrend[depositTrend.length - 1]?.deposit ?? 0;
+      const prevDep = depositTrend[depositTrend.length - 2]?.deposit ?? 0;
+      const depositGrowth = prevDep ? ((lastDep - prevDep) / prevDep) * 100 : 0;
+
+      const openBal = Number((cashOpening.data ?? [])[0]?.opening_balance ?? 0);
+      const cashIn = (cashEntries.data ?? []).filter((c: any) => c.entry_type === "in" || c.entry_type === "credit" || c.entry_type === "deposit").reduce((s: number, c: any) => s + Number(c.amount), 0);
+      const cashOut = (cashEntries.data ?? []).filter((c: any) => c.entry_type === "out" || c.entry_type === "debit" || c.entry_type === "withdraw").reduce((s: number, c: any) => s + Number(c.amount), 0);
+      const cashPosition = openBal + cashIn - cashOut;
+
+      const customers = kyc.data ?? [];
+      const totalCustomers = customers.length;
+      const vipCustomers = customers.filter((k: any) => Number(k.monthly_income ?? 0) >= 50000 || k.risk_level === "high").length;
+      const customerBusinessValue = customers.reduce((s: number, k: any) => s + Number(k.monthly_income ?? 0), 0) * 12;
+
+      // Staff ranking — avg rating per staff
+      const ratingMap = new Map<string, { sum: number; n: number }>();
+      (perf.data ?? []).forEach((p: any) => {
+        const r = ratingMap.get(p.staff_id) ?? { sum: 0, n: 0 };
+        r.sum += Number(p.rating ?? 0); r.n += 1; ratingMap.set(p.staff_id, r);
+      });
+      const staffNameMap = new Map((staff.data ?? []).map((s: any) => [s.id, s.name]));
+      const staffRanking = [...ratingMap.entries()]
+        .map(([id, r]) => ({ name: staffNameMap.get(id) ?? "—", rating: r.sum / r.n, reviews: r.n }))
+        .sort((a, b) => b.rating - a.rating).slice(0, 5);
+
+      // Compliance score from latest audit
+      const latestAudit = (audits.data ?? [])[0];
+      const latestChecks = latestAudit ? (auditChecks.data ?? []).filter((c: any) => c.audit_report_id === latestAudit.id) : [];
+      const okChecks = latestChecks.filter((c: any) => c.status === "ok").length;
+      const complianceScore = latestChecks.length ? Math.round((okChecks / latestChecks.length) * 100) : 0;
+
+      // Expense control: % vs income
+      const expenseRatio = cur.income ? (cur.expense / cur.income) * 100 : 0;
+
+      // Future prediction — simple linear projection from trend
+      const trendProfits = trend.map(t => t.profit);
+      const avgProfit = trendProfits.reduce((a, b) => a + b, 0) / (trendProfits.length || 1);
+      const lastProfit = trendProfits[trendProfits.length - 1] ?? 0;
+      const projectedNext = Math.round(avgProfit * 0.4 + lastProfit * 0.6);
+      const projectedYear = Math.round(avgProfit * 12);
+
+      // Business Health Score (0-100)
+      const healthScore = Math.max(0, Math.min(100, Math.round(
+        (margin > 0 ? Math.min(margin, 30) * 1.5 : 0) +
+        (attendanceRate * 0.2) +
+        (complianceScore * 0.2) +
+        (overdueTasks === 0 ? 10 : 0) +
+        (outOfStock === 0 ? 5 : 0) +
+        (overduePayments === 0 ? 10 : 0) +
+        (cur.profit > 0 ? 10 : 0)
+      )));
+
+      // Smart Alerts
+      const smartAlerts: { level: "high" | "medium" | "low"; text: string }[] = [];
+      if (overduePayments > 0) smartAlerts.push({ level: "high", text: lang === "bn" ? `ওভারডিউ পেমেন্ট: ${fmtBDT(overduePayments, lang)} — দ্রুত আদায় করুন` : `Overdue payments: ${fmtBDT(overduePayments, lang)} — collect now` });
+      if (outOfStock > 0) smartAlerts.push({ level: "high", text: lang === "bn" ? `${outOfStock} আইটেম স্টক শেষ — রিঅর্ডার দিন` : `${outOfStock} items out of stock — reorder` });
+      if (overdueTasks > 0) smartAlerts.push({ level: "medium", text: lang === "bn" ? `${overdueTasks} টাস্ক ওভারডিউ` : `${overdueTasks} tasks overdue` });
+      if (cur.profit < requiredProfit) smartAlerts.push({ level: "medium", text: lang === "bn" ? `মুনাফা টার্গেট থেকে কম` : `Profit below target` });
+      if (expenseRatio > 80) smartAlerts.push({ level: "high", text: lang === "bn" ? `ব্যয় আয়ের ${expenseRatio.toFixed(0)}% — নিয়ন্ত্রণ দরকার` : `Expense is ${expenseRatio.toFixed(0)}% of income — control needed` });
+      if (attendanceRate < 80) smartAlerts.push({ level: "medium", text: lang === "bn" ? `হাজিরার হার ${attendanceRate.toFixed(0)}% — স্টাফদের সাথে কথা বলুন` : `Attendance ${attendanceRate.toFixed(0)}% — review staff` });
+      if (complianceScore < 70 && latestChecks.length) smartAlerts.push({ level: "high", text: lang === "bn" ? `কমপ্লায়েন্স স্কোর কম (${complianceScore}%)` : `Compliance score low (${complianceScore}%)` });
+      if (smartAlerts.length === 0) smartAlerts.push({ level: "low", text: lang === "bn" ? "সব ঠিকঠাক চলছে ✓" : "All systems healthy ✓" });
+
       return {
         trend, expensePie, depositTrend, remitTrend, acctsTrend,
         cur, prev, incomeChange, expenseChange, profitChange, margin,
@@ -160,6 +230,12 @@ function BIDashboard() {
         targetIncome, targetProfit, totalTargetAmount, requiredProfit, profitGapPct,
         targetCount: (targets.data ?? []).length,
         manualProfit: manualProfitRow ?? null,
+        totalBusinessValue, totalDeposits6m, totalRemit6m, totalInvestment, totalLoanOutstanding,
+        depositGrowth, cashPosition, totalCustomers, vipCustomers, customerBusinessValue,
+        staffRanking, complianceScore, latestAudit, latestChecks: latestChecks.length,
+        expenseRatio, projectedNext, projectedYear, healthScore, smartAlerts,
+        auditCount: (audits.data ?? []).length,
+        recentAudits: audits.data ?? [],
       };
     },
   });
