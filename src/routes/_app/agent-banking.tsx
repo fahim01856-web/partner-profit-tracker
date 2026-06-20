@@ -178,6 +178,38 @@ function AgentBankingPage() {
         <KpiCard label="Total Income (all-time)" value={fmtBDT(totalIncome)} icon={BarChart3} grad="from-fuchsia-500 to-pink-600" />
       </div>
 
+      {/* Daily Income Analytics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+        <MiniStat label="Today's Income" value={fmtBDT(incomeStats.today)} tone="blue" />
+        <MiniStat label="Yesterday" value={fmtBDT(incomeStats.yesterday)} tone="slate" />
+        <MiniStat
+          label="Day-over-Day"
+          value={`${incomeStats.changePct >= 0 ? "▲" : "▼"} ${Math.abs(incomeStats.changePct).toFixed(1)}%`}
+          tone={incomeStats.changePct >= 0 ? "green" : "red"}
+        />
+        <MiniStat label="7-Day Avg" value={fmtBDT(incomeStats.avg7)} tone="amber" />
+        <MiniStat
+          label="Highest Day"
+          value={incomeStats.maxDay ? fmtBDT(incomeStats.maxDay.total) : "—"}
+          sub={incomeStats.maxDay?.date}
+          tone="green"
+        />
+        <MiniStat
+          label="Lowest Day"
+          value={incomeStats.minDay ? fmtBDT(incomeStats.minDay.total) : "—"}
+          sub={incomeStats.minDay?.date}
+          tone="red"
+        />
+        <MiniStat label="30-Day Avg" value={fmtBDT(incomeStats.avg30)} tone="blue" />
+        <MiniStat
+          label="Month-over-Month"
+          value={`${monthChangePct >= 0 ? "▲" : "▼"} ${Math.abs(monthChangePct).toFixed(1)}%`}
+          tone={monthChangePct >= 0 ? "green" : "red"}
+        />
+      </div>
+
+
+
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
