@@ -605,7 +605,7 @@ function EmployeeTab() {
   const { t } = useI18n();
   const fmt = useFmt();
   const qc = useQueryClient();
-  const [editing, setEditing] = useState<Record<string, { employee_code?: string; photo_url?: string }>>({});
+  const [editing, setEditing] = useState<Record<string, { nid?: string; photo_url?: string }>>({});
 
   const { data: staff = [] } = useQuery({
     queryKey: ["staff-all"],
@@ -650,7 +650,7 @@ function EmployeeTab() {
                   </td>
                   <td className="p-2.5"><Input className="h-8 w-56" placeholder="https://..." defaultValue={s.photo_url ?? ''} onChange={(ev) => setEditing(p => ({ ...p, [s.id]: { ...p[s.id], photo_url: ev.target.value } }))} /></td>
                   <td className="p-2.5 font-semibold">{s.name}</td>
-                  <td className="p-2.5"><Input className="h-8 w-28" defaultValue={s.employee_code ?? ''} onChange={(ev) => setEditing(p => ({ ...p, [s.id]: { ...p[s.id], employee_code: ev.target.value } }))} /></td>
+                  <td className="p-2.5"><Input className="h-8 w-36" placeholder="NID" defaultValue={s.nid ?? ''} onChange={(ev) => setEditing(p => ({ ...p, [s.id]: { ...p[s.id], nid: ev.target.value } }))} /></td>
                   <td className="p-2.5">{s.position}</td>
                   <td className="p-2.5">{s.phone}</td>
                   <td className="p-2.5">{s.joining_date ? fmt.date(s.joining_date) : '-'}</td>
