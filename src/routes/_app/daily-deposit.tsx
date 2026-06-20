@@ -175,6 +175,85 @@ function DailyDepositPage() {
     }));
   }, [all, fYear, lang]);
 
+  // ===== SMART INSIGHTS =====
+  const insights = useMemo(() => {
+    const totalEver = all.reduce((s, d) => s + Number(d.amount), 0);
+    const curY = today.getFullYear(), curM = today.getMonth();
+    const inMonth = (d: Deposit, y: number, m: number) => {
+      const dt = new Date(d.date);
+      return dt.getFullYear() === y && dt.getMonth() === m;
+    };
+    const thisMonth = all.filter((d) => inMonth(d, curY, curM));
+    const lastMonthDt = new Date(curY, curM - 1, 1);
+    const lastMonth = all.filter((d) => inMonth(d, lastMonthDt.getFullYear(), lastMonthDt.getMonth()));
+    const thisTotal = thisMonth.reduce((s, d) => s + Number(d.amount), 0);
+    const lastTotal = lastMonth.reduce((s, d) => s + Number(d.amount), 0);
+    const momPct = lastTotal > 0 ? ((thisTotal - lastTotal) / lastTotal) * 100 : 0;
+
+    // Weekday performance
+    const wd = [0, 1, 2, 3, 4, 5, 6].map(() => ({ total: 0, count: 0 }));
+    all.forEach((d) => {
+      const w = new Date(d.date).getDay();
+      wd[w].total += Number(d.amount); wd[w].count += 1;
+    });
+    const wdNames = lang === "bn"
+      ? ["রবি","সোম","মঙ্গল","বুধ","বৃহঃ","শুক্র","শনি"]
+      : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const wdData = wd.map((x, i) => ({ day: wdNames[i], avg: x.count ? x.total / x.count : 0, total: x.total }));
+    const bestWd = wdData.reduce((b, c) => (c.avg > b.avg ? c : b), wdData[0]);
+    const worstWd = wdData.filter((x) => x.total > 0).reduce((b, c) => (c.avg < b.avg ? c : b), wdData.find((x) => x.total > 0) ?? wdData[0]);
+
+    // Growth streak (consecutive growing days, asc order)
+    let curStreak = 0, bestStreak = 0;
+    for (let i = 1; i < ascSorted.length; i++) {
+      if (ascSorted[i].amount > ascSorted[i - 1].amount) { curStreak += 1; bestStreak = Math.max(bestStreak, curStreak); }
+      else curStreak = 0;
+    }
+    // Trailing streak from end
+    let trailing = 0;
+    for (let i = ascSorted.length - 1; i > 0; i--) {
+      if (ascSorted[i].amount > ascSorted[i - 1].amount) trailing += 1; else break;
+    }
+
+    // Projected month total
+    const todayDay = today.getDate();
+    const daysInMonth = new Date(curY, curM + 1, 0).getDate();
+    const dailyAvgThisMonth = thisMonth.length ? thisTotal / thisMonth.length : 0;
+    const projected = dailyAvgThisMonth * daysInMonth;
+
+    // Volatility = stddev / mean
+    const amounts = all.map((d) => Number(d.amount));
+    const mean = amounts.length ? amounts.reduce((a, b) => a + b, 0) / amounts.length : 0;
+    const variance = amounts.length ? amounts.reduce((s, v) => s + (v - mean) ** 2, 0) / amounts.length : 0;
+    const stddev = Math.sqrt(variance);
+    const volatility = mean > 0 ? (stddev / mean) * 100 : 0;
+    const consistency = Math.max(0, Math.min(100, 100 - volatility));
+
+    // Median
+    const sortedAmt = [...amounts].sort((a, b) => a - b);
+    const median = sortedAmt.length
+      ? (sortedAmt.length % 2 ? sortedAmt[(sortedAmt.length - 1) / 2]
+        : (sortedAmt[sortedAmt.length / 2 - 1] + sortedAmt[sortedAmt.length / 2]) / 2)
+      : 0;
+
+    // Top 5 days
+    const top5 = [...all].sort((a, b) => b.amount - a.amount).slice(0, 5);
+
+    // Up vs down days
+    let ups = 0, downs = 0, flats = 0;
+    diffMap.forEach((v) => { if (v == null) return; if (v > 0) ups += 1; else if (v < 0) downs += 1; else flats += 1; });
+
+    return {
+      totalEver, thisTotal, lastTotal, momPct,
+      wdData, bestWd, worstWd,
+      bestStreak, trailing,
+      projected, daysInMonth, todayDay, dailyAvgThisMonth,
+      volatility, consistency, median,
+      top5, ups, downs, flats,
+    };
+  }, [all, ascSorted, diffMap, lang]);
+
+
   const exportCSV = () => {
     const rows = [
       [t("date"), t("dd_amount"), t("dd_diff"), t("dd_status"), t("note")],
