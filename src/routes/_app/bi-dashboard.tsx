@@ -206,7 +206,11 @@ function BIDashboard() {
             <Brain className="w-7 h-7 text-primary" />
             {lang === "bn" ? "AI বিজনেস ইন্টেলিজেন্স" : "AI Business Intelligence"}
           </h1>
-          <p className="text-sm text-muted-foreground">{lang === "bn" ? "স্মার্ট বিশ্লেষণ, ঝুঁকি ও সুপারিশ" : "Smart analytics, risks & recommendations"}</p>
+          <p className="text-sm text-muted-foreground">
+            {lang === "bn"
+              ? `গত মাসের (${metrics.prevMonth.month}/${metrics.prevMonth.year}) ফাইনাল ডেটার উপর স্মার্ট বিশ্লেষণ`
+              : `Smart analytics on previous month's (${metrics.prevMonth.month}/${metrics.prevMonth.year}) finalized data`}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
