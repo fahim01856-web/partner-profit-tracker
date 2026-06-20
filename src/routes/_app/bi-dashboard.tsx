@@ -223,17 +223,40 @@ function BIDashboard() {
         </div>
       </div>
 
-      {/* KPI Grid */}
+      {/* KPI Grid — Previous Month */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Kpi icon={<TrendingUp className="w-5 h-5" />} label={lang === "bn" ? "চলতি মাসের আয়" : "MTD Income"} value={fmtBDT(metrics.cur.income, lang)} change={metrics.incomeChange} tone="green" />
-        <Kpi icon={<TrendingDown className="w-5 h-5" />} label={lang === "bn" ? "চলতি মাসের ব্যয়" : "MTD Expense"} value={fmtBDT(metrics.cur.expense, lang)} change={metrics.expenseChange} tone="red" invertChange />
+        <Kpi icon={<TrendingUp className="w-5 h-5" />} label={lang === "bn" ? "গত মাসের আয়" : "Prev Month Income"} value={fmtBDT(metrics.cur.income, lang)} change={metrics.incomeChange} tone="green" />
+        <Kpi icon={<TrendingDown className="w-5 h-5" />} label={lang === "bn" ? "গত মাসের ব্যয়" : "Prev Month Expense"} value={fmtBDT(metrics.cur.expense, lang)} change={metrics.expenseChange} tone="red" invertChange />
         <Kpi icon={<Wallet className="w-5 h-5" />} label={lang === "bn" ? "নিট মুনাফা" : "Net Profit"} value={fmtBDT(metrics.cur.profit, lang)} change={metrics.profitChange} tone={metrics.cur.profit >= 0 ? "green" : "red"} />
         <Kpi icon={<Gauge className="w-5 h-5" />} label={lang === "bn" ? "মুনাফা মার্জিন" : "Profit Margin"} value={`${fmt.num(metrics.margin.toFixed(1))}%`} tone="blue" />
+        <Kpi icon={<Target className="w-5 h-5" />} label={lang === "bn" ? "প্রয়োজনীয় মুনাফা" : "Required Profit"} value={fmtBDT(metrics.requiredProfit, lang)} sub={metrics.targetProfit > 0 ? (lang === "bn" ? "টার্গেট থেকে" : "from target") : (lang === "bn" ? "প্রাক্কলিত (ব্যয়ের ২৫%)" : "est. 25% over expense")} tone={metrics.cur.profit >= metrics.requiredProfit ? "green" : "amber"} />
+        <Kpi icon={<Target className="w-5 h-5" />} label={lang === "bn" ? "মাসিক টার্গেট" : "Monthly Targets"} value={fmtBDT(metrics.totalTargetAmount, lang)} sub={`${fmt.num(metrics.targetCount)} ${lang === "bn" ? "এন্ট্রি" : "entries"}`} tone="blue" />
         <Kpi icon={<Users className="w-5 h-5" />} label={lang === "bn" ? "সক্রিয় স্টাফ" : "Active Staff"} value={fmt.num(metrics.activeStaff)} sub={`${fmt.num(metrics.attendanceRate.toFixed(0))}% ${lang === "bn" ? "হাজিরা" : "attendance"}`} tone="blue" />
         <Kpi icon={<ClipboardList className="w-5 h-5" />} label={lang === "bn" ? "ওপেন টাস্ক" : "Open Tasks"} value={fmt.num(metrics.openTasks)} sub={`${fmt.num(metrics.overdueTasks)} ${lang === "bn" ? "ওভারডিউ" : "overdue"}`} tone={metrics.overdueTasks > 0 ? "amber" : "blue"} />
         <Kpi icon={<Package className="w-5 h-5" />} label={lang === "bn" ? "লো স্টক" : "Low Stock"} value={fmt.num(metrics.lowStock)} sub={`${fmt.num(metrics.outOfStock)} ${lang === "bn" ? "শেষ" : "out"}`} tone={metrics.outOfStock > 0 ? "red" : "amber"} />
         <Kpi icon={<AlertTriangle className="w-5 h-5" />} label={lang === "bn" ? "ওভারডিউ পেমেন্ট" : "Overdue Payments"} value={fmtBDT(metrics.overduePayments, lang)} tone={metrics.overduePayments > 0 ? "red" : "green"} />
       </div>
+
+      {/* Profit Gap / Business Renewal hint */}
+      {metrics.requiredProfit > 0 && (
+        <Card className="p-4 bg-gradient-to-r from-amber-500/10 to-emerald-500/10 border-amber-500/30">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/15"><Target className="w-5 h-5 text-amber-600" /></div>
+            <div className="flex-1">
+              <div className="font-semibold">{lang === "bn" ? "ব্যবসা রিনিউ / বৃদ্ধির গাইড" : "Business Renewal / Growth Guide"}</div>
+              <div className="text-sm text-muted-foreground mt-1">
+                {metrics.cur.profit >= metrics.requiredProfit
+                  ? (lang === "bn"
+                    ? `✓ মুনাফা টার্গেট অর্জিত। আগামী মাসে বিনিয়োগ ও নতুন অ্যাকাউন্ট ওপেনিং বাড়িয়ে আরও বৃদ্ধি করুন।`
+                    : `✓ Profit target met. Grow further by boosting investments & new account openings.`)
+                  : (lang === "bn"
+                    ? `আরও ${fmtBDT(metrics.requiredProfit - metrics.cur.profit, lang)} মুনাফা দরকার (${fmt.num(Math.abs(metrics.profitGapPct).toFixed(0))}% ঘাটতি)। ব্যয় কমান, রেমিটেন্স/ডিপোজিট বাড়ান, পেন্ডিং পেমেন্ট আদায় করুন।`
+                    : `Need ${fmtBDT(metrics.requiredProfit - metrics.cur.profit, lang)} more profit (${fmt.num(Math.abs(metrics.profitGapPct).toFixed(0))}% gap). Cut expenses, boost remittance/deposits, collect overdue payments.`)}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* AI Insight Panel */}
       <Card className="p-5 bg-gradient-to-br from-primary/10 via-purple-500/5 to-transparent border-primary/30">
