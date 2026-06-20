@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,12 +16,13 @@ import { toast } from "sonner";
 import {
   Plus, Trash2, Pencil, Save, FileDown, Banknote, TrendingUp, Percent,
   Wallet, Calendar, BarChart3, X, ArrowUp, ArrowDown, Trophy, TrendingDown,
-  Activity, Minus,
+  Activity, Minus, Camera, Sparkles, Loader2,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from "recharts";
+import { ocrAgentBankingBalances } from "@/lib/ab-ocr.functions";
 
 export const Route = createFileRoute("/_app/agent-banking")({ component: AgentBankingPage });
 
@@ -416,7 +418,9 @@ function BalanceTab({ balances, qc }: { balances: Balance[]; qc: ReturnType<type
   const rows = balances.filter((b) => filter === "all" || b.account_type === filter);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="space-y-4">
+      <PhotoBulkUpload qc={qc} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <Card className="p-4 lg:col-span-1 space-y-3">
         <h3 className="font-semibold flex items-center gap-2"><Plus className="w-4 h-4" /> {form.id ? "Edit" : "Add"} Daily Balance</h3>
         <div>
@@ -497,7 +501,142 @@ function BalanceTab({ balances, qc }: { balances: Balance[]; qc: ReturnType<type
           </Table>
         </div>
       </Card>
+      </div>
     </div>
+  );
+}
+
+/* ============ Photo bulk-upload (OCR) ============ */
+function PhotoBulkUpload({ qc }: { qc: ReturnType<typeof useQueryClient> }) {
+  const [date, setDate] = useState(todayStr());
+  const [preview, setPreview] = useState<string | null>(null);
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const runOcr = useServerFn(ocrAgentBankingBalances);
+
+  const readFile = (f: File) =>
+    new Promise<string>((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(f);
+    });
+
+  const onFile = async (f: File | null) => {
+    if (!f) return;
+    if (f.size > 8 * 1024 * 1024) { toast.error("Image too large (max 8MB)"); return; }
+    setLoading(true);
+    try {
+      const dataUrl = await readFile(f);
+      setPreview(dataUrl);
+      const result = await runOcr({ data: { imageDataUrl: dataUrl } });
+      const next: Record<string, string> = {};
+      for (const a of ACCOUNTS) {
+        const v = (result as any)[a];
+        if (v != null) next[a] = String(v);
+      }
+      setValues(next);
+      if (result.date) setDate(result.date);
+      const found = Object.keys(next).length;
+      if (found === 0) toast.warning("কোনো ব্যালেন্স ডিটেক্ট হয়নি — ম্যানুয়ালি যোগ করুন");
+      else toast.success(`${found} টি অ্যাকাউন্টের ব্যালেন্স অটো-ফিল হয়েছে`);
+    } catch (e: any) {
+      toast.error(e?.message || "OCR failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveAll = useMutation({
+    mutationFn: async () => {
+      const rows = ACCOUNTS
+        .filter((a) => values[a] && !isNaN(Number(values[a])))
+        .map((a) => ({ date, account_type: a, balance: Number(values[a]), note: "Auto-filled from photo" }));
+      if (rows.length === 0) throw new Error("No values to save");
+      const { error } = await supabase
+        .from("ab_account_balances")
+        .upsert(rows, { onConflict: "date,account_type" });
+      if (error) throw error;
+      return rows.length;
+    },
+    onSuccess: (n) => {
+      toast.success(`${n} টি ব্যালেন্স সেভ হয়েছে`);
+      qc.invalidateQueries({ queryKey: ["ab_balances"] });
+      setValues({});
+      setPreview(null);
+      if (fileRef.current) fileRef.current.value = "";
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  return (
+    <Card className="p-4 border-2 border-dashed border-primary/40 bg-gradient-to-br from-primary/5 to-transparent">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" /> ছবি থেকে অটো-আপডেট (AI OCR)
+          </h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            ডেইলি ব্যালেন্স রিপোর্টের ছবি আপলোড করুন — AWCA, MSA, MSSA, MMPDSA, MTDRA, MHSA, SMSA, MFSA সবগুলো অ্যাকাউন্টের ব্যালেন্স অটোমেটিকলি ফিল হবে।
+          </p>
+        </div>
+        <div className="w-44">
+          <Label className="text-xs">Date</Label>
+          <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="md:col-span-1 space-y-2">
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={(e) => onFile(e.target.files?.[0] ?? null)}
+          />
+          <Button
+            onClick={() => fileRef.current?.click()}
+            disabled={loading}
+            className="w-full"
+            variant="outline"
+          >
+            {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Camera className="w-4 h-4 mr-2" />}
+            {loading ? "Reading…" : "ছবি আপলোড / ক্যামেরা"}
+          </Button>
+          {preview && (
+            <img src={preview} alt="preview" className="rounded-md border max-h-48 w-full object-contain bg-muted" />
+          )}
+        </div>
+
+        <div className="md:col-span-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {ACCOUNTS.map((a) => (
+              <div key={a}>
+                <Label className="text-xs">{a}</Label>
+                <Input
+                  type="number"
+                  placeholder="0"
+                  value={values[a] ?? ""}
+                  onChange={(e) => setValues((v) => ({ ...v, [a]: e.target.value }))}
+                />
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2 mt-3">
+            <Button variant="ghost" onClick={() => { setValues({}); setPreview(null); if (fileRef.current) fileRef.current.value = ""; }}>
+              <X className="w-4 h-4 mr-1" /> Clear
+            </Button>
+            <Button onClick={() => saveAll.mutate()} disabled={saveAll.isPending || Object.keys(values).length === 0}>
+              <Save className="w-4 h-4 mr-2" />
+              সব সেভ করুন ({Object.keys(values).length})
+            </Button>
+          </div>
+        </div>
+      </div>
+    </Card>
   );
 }
 
