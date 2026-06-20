@@ -98,6 +98,10 @@ function PendingWorksPage() {
   const [showForm, setShowForm] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Partial<Category> | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleSel = (id: string) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const clearSel = () => setSelected(new Set());
 
   const ALL = "__all__";
   const todayStr = new Date().toISOString().slice(0, 10);
