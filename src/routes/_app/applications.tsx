@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { generateAppTemplate } from "@/lib/app-template-ai.functions";
@@ -169,11 +169,18 @@ function exportCsv(rows: any[], filename: string) {
 
 // ---------------- Main ----------------
 function ApplicationsPage() {
-  const { tab } = Route.useSearch();
-  const navigate = Route.useNavigate();
+  const { tab: searchTab } = Route.useSearch();
+  const [tab, setActiveTab] = useState<ApplicationTab>(searchTab);
+
+  useEffect(() => {
+    const saved = normalizeApplicationTab(window.localStorage.getItem("application-management-tab"));
+    if (saved !== tab) setActiveTab(saved);
+  }, []);
+
   const setTab = (nextTab: string) => {
     const normalized = normalizeApplicationTab(nextTab);
-    navigate({ to: ".", search: { tab: normalized }, replace: true });
+    setActiveTab(normalized);
+    window.localStorage.setItem("application-management-tab", normalized);
   };
   return (
     <div className="space-y-5">
