@@ -18,10 +18,11 @@ import { toast } from "sonner";
 import {
   Printer, Plus, Trash2, Pencil, TrendingUp, TrendingDown, Wallet,
   ArrowUp, ArrowDown, Minus, FileDown, BarChart3, Calendar, Save,
+  Sparkles, Trophy, Flame, Target, Activity, CalendarDays, Zap,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, Legend, Cell,
+  CartesianGrid, Legend, Cell, Area, AreaChart, RadialBarChart, RadialBar, PolarAngleAxis,
 } from "recharts";
 
 export const Route = createFileRoute("/_app/daily-deposit")({ component: DailyDepositPage });
@@ -174,6 +175,85 @@ function DailyDepositPage() {
     }));
   }, [all, fYear, lang]);
 
+  // ===== SMART INSIGHTS =====
+  const insights = useMemo(() => {
+    const totalEver = all.reduce((s, d) => s + Number(d.amount), 0);
+    const curY = today.getFullYear(), curM = today.getMonth();
+    const inMonth = (d: Deposit, y: number, m: number) => {
+      const dt = new Date(d.date);
+      return dt.getFullYear() === y && dt.getMonth() === m;
+    };
+    const thisMonth = all.filter((d) => inMonth(d, curY, curM));
+    const lastMonthDt = new Date(curY, curM - 1, 1);
+    const lastMonth = all.filter((d) => inMonth(d, lastMonthDt.getFullYear(), lastMonthDt.getMonth()));
+    const thisTotal = thisMonth.reduce((s, d) => s + Number(d.amount), 0);
+    const lastTotal = lastMonth.reduce((s, d) => s + Number(d.amount), 0);
+    const momPct = lastTotal > 0 ? ((thisTotal - lastTotal) / lastTotal) * 100 : 0;
+
+    // Weekday performance
+    const wd = [0, 1, 2, 3, 4, 5, 6].map(() => ({ total: 0, count: 0 }));
+    all.forEach((d) => {
+      const w = new Date(d.date).getDay();
+      wd[w].total += Number(d.amount); wd[w].count += 1;
+    });
+    const wdNames = lang === "bn"
+      ? ["রবি","সোম","মঙ্গল","বুধ","বৃহঃ","শুক্র","শনি"]
+      : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+    const wdData = wd.map((x, i) => ({ day: wdNames[i], avg: x.count ? x.total / x.count : 0, total: x.total }));
+    const bestWd = wdData.reduce((b, c) => (c.avg > b.avg ? c : b), wdData[0]);
+    const worstWd = wdData.filter((x) => x.total > 0).reduce((b, c) => (c.avg < b.avg ? c : b), wdData.find((x) => x.total > 0) ?? wdData[0]);
+
+    // Growth streak (consecutive growing days, asc order)
+    let curStreak = 0, bestStreak = 0;
+    for (let i = 1; i < ascSorted.length; i++) {
+      if (ascSorted[i].amount > ascSorted[i - 1].amount) { curStreak += 1; bestStreak = Math.max(bestStreak, curStreak); }
+      else curStreak = 0;
+    }
+    // Trailing streak from end
+    let trailing = 0;
+    for (let i = ascSorted.length - 1; i > 0; i--) {
+      if (ascSorted[i].amount > ascSorted[i - 1].amount) trailing += 1; else break;
+    }
+
+    // Projected month total
+    const todayDay = today.getDate();
+    const daysInMonth = new Date(curY, curM + 1, 0).getDate();
+    const dailyAvgThisMonth = thisMonth.length ? thisTotal / thisMonth.length : 0;
+    const projected = dailyAvgThisMonth * daysInMonth;
+
+    // Volatility = stddev / mean
+    const amounts = all.map((d) => Number(d.amount));
+    const mean = amounts.length ? amounts.reduce((a, b) => a + b, 0) / amounts.length : 0;
+    const variance = amounts.length ? amounts.reduce((s, v) => s + (v - mean) ** 2, 0) / amounts.length : 0;
+    const stddev = Math.sqrt(variance);
+    const volatility = mean > 0 ? (stddev / mean) * 100 : 0;
+    const consistency = Math.max(0, Math.min(100, 100 - volatility));
+
+    // Median
+    const sortedAmt = [...amounts].sort((a, b) => a - b);
+    const median = sortedAmt.length
+      ? (sortedAmt.length % 2 ? sortedAmt[(sortedAmt.length - 1) / 2]
+        : (sortedAmt[sortedAmt.length / 2 - 1] + sortedAmt[sortedAmt.length / 2]) / 2)
+      : 0;
+
+    // Top 5 days
+    const top5 = [...all].sort((a, b) => b.amount - a.amount).slice(0, 5);
+
+    // Up vs down days
+    let ups = 0, downs = 0, flats = 0;
+    diffMap.forEach((v) => { if (v == null) return; if (v > 0) ups += 1; else if (v < 0) downs += 1; else flats += 1; });
+
+    return {
+      totalEver, thisTotal, lastTotal, momPct,
+      wdData, bestWd, worstWd,
+      bestStreak, trailing,
+      projected, daysInMonth, todayDay, dailyAvgThisMonth,
+      volatility, consistency, median,
+      top5, ups, downs, flats,
+    };
+  }, [all, ascSorted, diffMap, lang]);
+
+
   const exportCSV = () => {
     const rows = [
       [t("date"), t("dd_amount"), t("dd_diff"), t("dd_status"), t("note")],
@@ -304,6 +384,39 @@ function DailyDepositPage() {
         </div>
       </div>
 
+      {/* ===== GORGEOUS HERO BANNER ===== */}
+      <Card className="relative overflow-hidden border-0 text-white shadow-xl no-print"
+        style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, #6366f1 50%, #8b5cf6 100%)" }}>
+        <div className="absolute inset-0 opacity-20" style={{
+          backgroundImage: "radial-gradient(circle at 20% 20%, rgba(255,255,255,0.4) 0, transparent 40%), radial-gradient(circle at 80% 80%, rgba(255,255,255,0.3) 0, transparent 40%)",
+        }} />
+        <div className="relative p-5 md:p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="col-span-2 md:col-span-2">
+            <div className="flex items-center gap-2 text-xs uppercase tracking-wider opacity-90">
+              <Sparkles className="w-4 h-4" /> {lang === "bn" ? "মোট ডিপোজিট পজিশন" : "Total Deposit Position"}
+            </div>
+            <div className="text-3xl md:text-5xl font-extrabold mt-2 tracking-tight">{fmt.bdt(insights.totalEver)}</div>
+            <div className="text-xs opacity-90 mt-2 flex items-center gap-3">
+              <span className="inline-flex items-center gap-1"><Activity className="w-3.5 h-3.5" /> {fmt.num(all.length)} {lang === "bn" ? "এন্ট্রি" : "entries"}</span>
+              <span className="inline-flex items-center gap-1"><Flame className="w-3.5 h-3.5" /> {fmt.num(insights.trailing)} {lang === "bn" ? "দিন বৃদ্ধি" : "day growth streak"}</span>
+            </div>
+          </div>
+          <div className="bg-white/15 backdrop-blur rounded-lg p-3">
+            <div className="text-[10px] uppercase tracking-wider opacity-90">{lang === "bn" ? "এই মাস" : "This Month"}</div>
+            <div className="text-xl font-bold mt-1">{fmt.bdt(insights.thisTotal)}</div>
+            <div className={`text-[11px] mt-1 inline-flex items-center gap-1 ${insights.momPct >= 0 ? "" : ""}`}>
+              {insights.momPct >= 0 ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />}
+              {Math.abs(insights.momPct).toFixed(1)}% {lang === "bn" ? "vs গত মাস" : "vs last month"}
+            </div>
+          </div>
+          <div className="bg-white/15 backdrop-blur rounded-lg p-3">
+            <div className="text-[10px] uppercase tracking-wider opacity-90 inline-flex items-center gap-1"><Target className="w-3 h-3" /> {lang === "bn" ? "প্রজেকশন" : "Projection"}</div>
+            <div className="text-xl font-bold mt-1">{fmt.bdt(insights.projected)}</div>
+            <div className="text-[11px] opacity-90 mt-1">{fmt.num(insights.todayDay)}/{fmt.num(insights.daysInMonth)} {lang === "bn" ? "দিন" : "days"}</div>
+          </div>
+        </div>
+      </Card>
+
       {/* Dashboard Summary */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 no-print">
         <StatCard label={t("dd_today")} value={fmt.bdt(todayDep)} icon={<Calendar className="w-4 h-4" />} accent="text-primary" />
@@ -329,8 +442,10 @@ function DailyDepositPage() {
           <TabsTrigger value="monthly">{t("dd_tab_monthly")}</TabsTrigger>
           <TabsTrigger value="yearly">{t("dd_tab_yearly")}</TabsTrigger>
           <TabsTrigger value="analytics">{t("dd_tab_analytics")}</TabsTrigger>
+          <TabsTrigger value="insights"><Sparkles className="w-3.5 h-3.5 mr-1" />{lang === "bn" ? "স্মার্ট ইনসাইট" : "Smart Insights"}</TabsTrigger>
           <TabsTrigger value="print">{t("dd_tab_print")}</TabsTrigger>
         </TabsList>
+
 
         {/* ADD */}
         <TabsContent value="add" className="mt-4">
@@ -553,7 +668,139 @@ function DailyDepositPage() {
         </TabsContent>
 
         {/* PRINT */}
+        {/* SMART INSIGHTS */}
+        <TabsContent value="insights" className="mt-4 space-y-4">
+          {/* KPI strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <GradientStat icon={<Flame className="w-4 h-4" />} label={lang === "bn" ? "বর্তমান স্ট্রিক" : "Current Streak"} value={`${fmt.num(insights.trailing)} ${lang === "bn" ? "দিন" : "days"}`} from="#f97316" to="#ef4444" />
+            <GradientStat icon={<Trophy className="w-4 h-4" />} label={lang === "bn" ? "সেরা স্ট্রিক" : "Best Streak"} value={`${fmt.num(insights.bestStreak)} ${lang === "bn" ? "দিন" : "days"}`} from="#eab308" to="#f59e0b" />
+            <GradientStat icon={<Zap className="w-4 h-4" />} label={lang === "bn" ? "কনসিস্টেন্সি" : "Consistency"} value={`${insights.consistency.toFixed(0)}%`} from="#10b981" to="#06b6d4" />
+            <GradientStat icon={<Activity className="w-4 h-4" />} label={lang === "bn" ? "মিডিয়ান" : "Median"} value={fmt.bdt(insights.median)} from="#8b5cf6" to="#ec4899" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Weekday performance */}
+            <Card className="p-4 lg:col-span-2">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-primary" />{lang === "bn" ? "সাপ্তাহিক পারফরমেন্স" : "Weekday Performance (Avg)"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={insights.wdData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="day" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                    <Bar dataKey="avg" radius={[6, 6, 0, 0]}>
+                      {insights.wdData.map((d, i) => (
+                        <Cell key={i} fill={d.day === insights.bestWd.day ? "#10b981" : d.day === insights.worstWd.day ? "#ef4444" : "hsl(var(--primary))"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+              <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                <div className="p-2 rounded bg-emerald-50 text-emerald-700">
+                  <Trophy className="w-3 h-3 inline mr-1" />{lang === "bn" ? "সেরা দিন:" : "Best:"} <b>{insights.bestWd.day}</b> · {fmt.bdt(insights.bestWd.avg)}
+                </div>
+                <div className="p-2 rounded bg-red-50 text-red-700">
+                  <TrendingDown className="w-3 h-3 inline mr-1" />{lang === "bn" ? "দুর্বল দিন:" : "Weakest:"} <b>{insights.worstWd.day}</b> · {fmt.bdt(insights.worstWd.avg)}
+                </div>
+              </div>
+            </Card>
+
+            {/* Consistency gauge */}
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Zap className="w-4 h-4 text-primary" />{lang === "bn" ? "ধারাবাহিকতা স্কোর" : "Consistency Score"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={200}>
+                  <RadialBarChart innerRadius="65%" outerRadius="100%" data={[{ name: "x", value: insights.consistency, fill: insights.consistency > 70 ? "#10b981" : insights.consistency > 40 ? "#f59e0b" : "#ef4444" }]} startAngle={210} endAngle={-30}>
+                    <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                    <RadialBar background dataKey="value" cornerRadius={20} />
+                  </RadialBarChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+              <div className="text-center -mt-24 mb-16">
+                <div className="text-3xl font-extrabold">{insights.consistency.toFixed(0)}<span className="text-sm">%</span></div>
+                <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "ভোলাটিলিটি" : "Volatility"} {insights.volatility.toFixed(1)}%</div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Cumulative deposit area */}
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" />{lang === "bn" ? "ক্রমবর্ধমান ডিপোজিট" : "Cumulative Deposit"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={(() => {
+                    let cum = 0;
+                    return ascSorted.slice(-60).map((d) => { cum += Number(d.amount); return { date: d.date.slice(5), cum }; });
+                  })()}>
+                    <defs>
+                      <linearGradient id="cumGrad" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="date" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                    <Area type="monotone" dataKey="cum" stroke="hsl(var(--primary))" fill="url(#cumGrad)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+            </Card>
+
+            {/* Top 5 days */}
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" />{lang === "bn" ? "সেরা ৫ দিন" : "Top 5 Days"}</h3>
+              <div className="space-y-2">
+                {insights.top5.map((d, i) => {
+                  const max = insights.top5[0]?.amount || 1;
+                  const pct = (Number(d.amount) / max) * 100;
+                  const medals = ["🥇", "🥈", "🥉", "4", "5"];
+                  return (
+                    <div key={d.id} className="flex items-center gap-3">
+                      <div className="w-7 text-center text-lg">{medals[i]}</div>
+                      <div className="flex-1">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">{fmt.date(d.date)}</span>
+                          <span className="font-bold">{fmt.bdt(d.amount)}</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded overflow-hidden">
+                          <div className="h-full rounded" style={{ width: `${pct}%`, background: "linear-gradient(90deg, #f59e0b, #ef4444)" }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {insights.top5.length === 0 && <div className="text-sm text-muted-foreground text-center py-4">{t("noEntries")}</div>}
+              </div>
+            </Card>
+          </div>
+
+          {/* Up/Down/Flat days summary */}
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><Activity className="w-4 h-4 text-primary" />{lang === "bn" ? "দৈনিক পরিবর্তনের বিশ্লেষণ" : "Daily Movement Analysis"}</h3>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
+                <div className="text-xs text-emerald-700 flex items-center gap-1"><ArrowUp className="w-3 h-3" />{lang === "bn" ? "বৃদ্ধির দিন" : "Up Days"}</div>
+                <div className="text-2xl font-bold text-emerald-600 mt-1">{fmt.num(insights.ups)}</div>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/20">
+                <div className="text-xs text-red-700 flex items-center gap-1"><ArrowDown className="w-3 h-3" />{lang === "bn" ? "কমে যাওয়া" : "Down Days"}</div>
+                <div className="text-2xl font-bold text-red-600 mt-1">{fmt.num(insights.downs)}</div>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-muted to-transparent border">
+                <div className="text-xs text-muted-foreground flex items-center gap-1"><Minus className="w-3 h-3" />{lang === "bn" ? "অপরিবর্তিত" : "Flat"}</div>
+                <div className="text-2xl font-bold mt-1">{fmt.num(insights.flats)}</div>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="print" className="mt-4 space-y-4">
+
           <Card className="p-4"><FiltersBar /></Card>
           <div className="flex gap-2">
             <Button onClick={() => window.print()}><Printer className="w-4 h-4" /> {t("print")} (PDF)</Button>
@@ -613,6 +860,15 @@ function DailyDepositPage() {
         </div>
       </Card>
     </div>
+  );
+}
+
+function GradientStat({ icon, label, value, from, to }: { icon: React.ReactNode; label: string; value: string; from: string; to: string }) {
+  return (
+    <Card className="p-3 text-white border-0 shadow-md relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}>
+      <div className="text-[11px] uppercase tracking-wider opacity-90 flex items-center gap-1.5">{icon}{label}</div>
+      <div className="text-xl font-extrabold mt-1">{value}</div>
+    </Card>
   );
 }
 
