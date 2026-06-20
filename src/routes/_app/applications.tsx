@@ -554,7 +554,7 @@ function AiTemplateDialog({ onClose, onGenerated }: { onClose: () => void; onGen
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> AI দিয়ে অ্যাপ্লিকেশন টেমপ্লেট তৈরি</DialogTitle>
@@ -631,7 +631,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-4xl">
         <DialogHeader><DialogTitle>{v.id ? "টেমপ্লেট সম্পাদনা" : "নতুন টেমপ্লেট"}</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3 max-h-[70vh] overflow-y-auto">
@@ -915,7 +915,7 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
   const previewHtml = buildDocumentHtml({ bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি", outlet: "ফকিরবাজার এজেন্ট আউটলেট ১২১/১১, বুড়িচং, কুমিল্লা", bodyHtml: v.body_html, fields: mergedFields });
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-5xl">
         <DialogHeader><DialogTitle>{v.id ? "আবেদন সম্পাদনা" : "নতুন আবেদন"}</DialogTitle></DialogHeader>
 
@@ -1029,7 +1029,12 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
           <Dialog open onOpenChange={() => setPreviewOpen(false)}>
             <DialogContent className="max-w-3xl">
               <DialogHeader><DialogTitle>ডকুমেন্ট প্রিভিউ</DialogTitle></DialogHeader>
-              <div className="bg-white p-6 rounded border max-h-[70vh] overflow-y-auto" dangerouslySetInnerHTML={{ __html: previewHtml }} />
+              <iframe
+                title="Application document preview"
+                srcDoc={documentPreviewSrcDoc(previewHtml)}
+                sandbox=""
+                className="bg-white rounded border h-[70vh] w-full"
+              />
               <DialogFooter>
                 <Button variant="outline" onClick={() => setPreviewOpen(false)}>বন্ধ</Button>
                 <Button onClick={() => printHtml(previewHtml, v.application_type || "Application")}><Printer className="w-4 h-4 mr-1" /> Print</Button>
