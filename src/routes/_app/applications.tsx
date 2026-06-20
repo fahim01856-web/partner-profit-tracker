@@ -72,15 +72,12 @@ function buildDocumentHtml(opts: {
   <div style="font-family: 'SolaimanLipi', 'Noto Sans Bengali', Arial, sans-serif; max-width: 780px; margin: 0 auto; color:#0f172a;">
     <div style="text-align:center; border-bottom: 3px double #064e3b; padding-bottom:12px; margin-bottom:18px;">
       <div style="font-size:22px; font-weight:800; color:#064e3b;">${opts.bankName}</div>
-      <div style="font-size:13px; color:#334155;">${opts.outlet}</div>
+      <div style="font-size:13px; color:#334155; margin-top:2px;">${opts.outlet}</div>
     </div>
     <div style="font-size:14px; line-height:1.9; white-space:pre-wrap;">${rendered}</div>
-    <div style="margin-top:60px; display:flex; justify-content:space-between; font-size:13px;">
+    <div style="margin-top:80px; display:flex; justify-content:flex-end; font-size:13px;">
       <div style="text-align:center;">
-        <div style="border-top:1px solid #334155; padding-top:4px; min-width:180px;">আবেদনকারীর স্বাক্ষর</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="border-top:1px solid #334155; padding-top:4px; min-width:180px;">অনুমোদনকারী</div>
+        <div style="border-top:1px solid #334155; padding-top:4px; min-width:200px;">অনুমোদনকারী</div>
       </div>
     </div>
     <div style="margin-top:24px; text-align:center; font-size:11px; color:#64748b; border-top:1px solid #e2e8f0; padding-top:8px;">
@@ -410,7 +407,7 @@ function TemplateQuickUse({ template, onClose }: { template: any; onClose: () =>
 
   const html = useMemo(() => buildDocumentHtml({
     bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি",
-    outlet: "এজেন্ট আউটলেট, ফকির বাজার, বুড়িচং, কুমিল্লা",
+    outlet: "ফকিরবাজার এজেন্ট আউটলেট ১২১/১১, বুড়িচং, কুমিল্লা",
     bodyHtml: template.body_html || "",
     fields,
   }), [template, fields]);
@@ -873,7 +870,7 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
     onError: (e: any) => toast.error(e.message),
   });
 
-  const previewHtml = buildDocumentHtml({ bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি", outlet: "এজেন্ট আউটলেট, ফকির বাজার, বুড়িচং, কুমিল্লা", bodyHtml: v.body_html, fields: mergedFields });
+  const previewHtml = buildDocumentHtml({ bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি", outlet: "ফকিরবাজার এজেন্ট আউটলেট ১২১/১১, বুড়িচং, কুমিল্লা", bodyHtml: v.body_html, fields: mergedFields });
 
   return (
     <Dialog open onOpenChange={onClose}>
