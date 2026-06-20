@@ -13,7 +13,10 @@ import { toast } from "sonner";
 import {
   Plus, Trash2, Printer, Pencil, X, TrendingUp, TrendingDown, Wallet,
   ArrowLeft, Users, FileText, Image as ImageIcon, Upload, Banknote, Landmark,
+  Search, Download, Award, Activity, PieChart as PieIcon, BarChart3,
 } from "lucide-react";
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
+import { ClientOnly } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/agent-bank-investment")({ component: InvestmentPage });
 
