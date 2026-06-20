@@ -14,8 +14,9 @@ import {
   FileBarChart, Globe2, BookPlus, FolderOpen,
   Plus, Trash2, Printer, Download, FileSpreadsheet,
   Handshake, TrendingUp, Receipt, Wallet, Pencil, Save, X,
-  FileCheck2, AlertTriangle, CheckCircle2, Clock,
+  FileCheck2, AlertTriangle, CheckCircle2, Clock, UserX, TrendingDown,
 } from "lucide-react";
+
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_app/reports")({ component: ReportsPage });
