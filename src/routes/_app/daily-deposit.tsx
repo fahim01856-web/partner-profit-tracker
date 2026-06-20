@@ -863,6 +863,15 @@ function DailyDepositPage() {
   );
 }
 
+function GradientStat({ icon, label, value, from, to }: { icon: React.ReactNode; label: string; value: string; from: string; to: string }) {
+  return (
+    <Card className="p-3 text-white border-0 shadow-md relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${from}, ${to})` }}>
+      <div className="text-[11px] uppercase tracking-wider opacity-90 flex items-center gap-1.5">{icon}{label}</div>
+      <div className="text-xl font-extrabold mt-1">{value}</div>
+    </Card>
+  );
+}
+
 function StatCard({ label, value, sub, icon, accent = "" }: { label: string; value: string; sub?: string; icon?: React.ReactNode; accent?: string }) {
   return (
     <Card className="p-3">
