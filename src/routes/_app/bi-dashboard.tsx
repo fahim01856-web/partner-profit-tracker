@@ -61,21 +61,6 @@ function BIDashboard() {
         supabase.from("attendance").select("date,status").gte("date", firstStart).lte("date", lastEnd),
         supabase.from("monthly_targets").select("year,month,target_category,target_amount,target_quantity,staff_name,status,deadline,priority").eq("year", prevMonth.year).eq("month", prevMonth.month),
       ]);
-        supabase.from("monthly_report_items").select("year,month,amount,item_type"),
-        supabase.from("monthly_profits").select("*"),
-        supabase.from("expenses").select("amount,category_id,date").gte("date", firstStart).lte("date", lastEnd),
-        supabase.from("expense_categories").select("id,name_bn,name_en"),
-        supabase.from("staff").select("id,status,position"),
-        supabase.from("tasks").select("id,status,priority,due_date"),
-        supabase.from("pending_works").select("id,status,priority"),
-        supabase.from("agent_bank_assets").select("name,quantity"),
-        supabase.from("loan_persons").select("id,status"),
-        supabase.from("daily_deposits").select("date,amount").gte("date", firstStart).lte("date", lastEnd),
-        supabase.from("remittance_entries").select("date,amount,quantity").gte("date", firstStart).lte("date", lastEnd),
-        supabase.from("account_opening_entries").select("year,month,num_accounts"),
-        supabase.from("upcoming_payments").select("amount,status,due_date"),
-        supabase.from("attendance").select("date,status").gte("date", firstStart).lte("date", lastEnd),
-      ]);
 
       const trend = months.map((m) => {
         const inc = (mri.data ?? []).filter((r: any) => r.year === m.year && r.month === m.month && r.item_type === "income").reduce((s, r: any) => s + Number(r.amount), 0);
