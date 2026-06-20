@@ -214,6 +214,7 @@ function AgentBankingPage() {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+          <TabsTrigger value="deposit-analytics">Deposit Analytics</TabsTrigger>
           <TabsTrigger value="balance">Daily Balance</TabsTrigger>
           <TabsTrigger value="slabs">Profit Slabs</TabsTrigger>
           <TabsTrigger value="income">Income Entry</TabsTrigger>
@@ -228,6 +229,11 @@ function AgentBankingPage() {
             yearlyProfit={yearlyProfit}
           />
         </TabsContent>
+
+        <TabsContent value="deposit-analytics" className="space-y-4">
+          <DepositAnalytics balances={balances} />
+        </TabsContent>
+
 
         <TabsContent value="balance">
           <BalanceTab balances={balances} qc={qc} />
