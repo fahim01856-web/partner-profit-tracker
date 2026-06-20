@@ -181,6 +181,41 @@ function PendingWorksPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pending_works"] }),
   });
 
+  const snooze = useMutation({
+    mutationFn: async ({ id, days }: { id: string; days: number }) => {
+      const r = rows.find((x) => x.id === id);
+      const base = r?.due_date ? new Date(r.due_date) : new Date();
+      base.setDate(base.getDate() + days);
+      const { error } = await supabase.from("pending_works" as any).update({ due_date: base.toISOString().slice(0, 10) }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["pending_works"] }); toast.success(lang === "bn" ? "ডেডলাইন পেছানো হয়েছে" : "Snoozed"); },
+  });
+
+  const bulkAction = useMutation({
+    mutationFn: async ({ ids, action, value }: { ids: string[]; action: "status" | "priority" | "delete"; value?: string }) => {
+      if (action === "delete") {
+        const { error } = await supabase.from("pending_works" as any).delete().in("id", ids);
+        if (error) throw error;
+      } else if (action === "status") {
+        const { error } = await supabase.from("pending_works" as any).update({ status: value, completed_at: value === "completed" ? new Date().toISOString() : null }).in("id", ids);
+        if (error) throw error;
+      } else if (action === "priority") {
+        const { error } = await supabase.from("pending_works" as any).update({ priority: value }).in("id", ids);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["pending_works"] }); clearSel(); toast.success(lang === "bn" ? "বাল্ক অ্যাকশন সম্পন্ন" : "Bulk action done"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const buildReminderText = (r: Row) => {
+    const due = r.due_date ? (lang === "bn" ? ` (শেষ তারিখ: ${r.due_date})` : ` (Due: ${r.due_date})`) : "";
+    return lang === "bn"
+      ? `প্রিয় ${r.customer_name || "গ্রাহক"}, আপনার "${r.title}" সংক্রান্ত কাজটি পেন্ডিং রয়েছে${due}। দ্রুত যোগাযোগ করুন। — ফকিরবাজার এজেন্ট আউটলেট, ১২১/১১`
+      : `Dear ${r.customer_name || "Customer"}, your "${r.title}" task is pending${due}. Please contact us soon. — Fakirbazar Agent Outlet, 121/11`;
+  };
+
   const filtered = useMemo(() => {
     const priorityRank: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
     return rows
