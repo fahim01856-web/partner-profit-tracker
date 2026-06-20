@@ -398,6 +398,51 @@ function BIDashboard() {
           </div>
         )}
       </Card>
+
+      {/* Feature Guide */}
+      <Card className="p-5">
+        <h2 className="font-semibold flex items-center gap-2 mb-3"><Lightbulb className="w-5 h-5 text-amber-500" />{lang === "bn" ? "ফিচার গাইড — কোনটা কী, কেন দরকার" : "Feature Guide — What & Why"}</h2>
+        <div className="grid sm:grid-cols-2 gap-3 text-sm">
+          {(lang === "bn" ? [
+            ["গত মাসের আয়", "মাসিক রিপোর্ট থেকে গত মাসের মোট আয়। নতুন বিনিয়োগ/সঞ্চয় প্ল্যান করতে দেখুন।"],
+            ["গত মাসের ব্যয়", "অপারেশনাল খরচ। কোথায় কমানো যায় বুঝতে পাই চার্ট দেখুন।"],
+            ["নিট মুনাফা", "আয় − ব্যয়। ম্যানুয়াল এন্ট্রি থাকলে সেটি প্রাধান্য পায়।"],
+            ["মুনাফা মার্জিন", "মুনাফা ÷ আয় × ১০০। ১৫–২৫% সুস্থ ব্যবসার সূচক।"],
+            ["প্রয়োজনীয় মুনাফা", "টার্গেট থেকে নেওয়া; না থাকলে ব্যয়ের ২৫% হিসাবে অনুমান।"],
+            ["মাসিক টার্গেট", "মাসিক টার্গেট পেজের যোগফল — প্রতিটি স্টাফ/ক্যাটাগরির লক্ষ্য।"],
+            ["সক্রিয় স্টাফ ও হাজিরা", "চলমান কর্মী সংখ্যা ও তাদের ৬-মাসের হাজিরার হার।"],
+            ["ওপেন টাস্ক / ওভারডিউ", "টাস্ক ম্যানেজমেন্টে অসমাপ্ত ও সময় পেরিয়ে যাওয়া কাজ।"],
+            ["লো স্টক", "ইনভেন্টরির ≤২ পিস আইটেম — দ্রুত রিঅর্ডার দরকার।"],
+            ["ওভারডিউ পেমেন্ট", "আসন্ন পেমেন্টে যেগুলো ডিউ ডেট পার করেছে — দ্রুত আদায় করুন।"],
+            ["৬-মাসের ট্রেন্ড", "আয়/ব্যয়/মুনাফার গতি — বৃদ্ধি না কমছে দেখুন।"],
+            ["টপ ব্যয় ক্যাটাগরি", "কোন খাতে বেশি খরচ — কমানোর সুযোগ চিহ্নিত করুন।"],
+            ["AI বিজনেস ইনসাইট", "Lovable AI আপনার ডেটা বিশ্লেষণ করে সারাংশ, ঝুঁকি, সুপারিশ ও হেলথ স্কোর দেয়।"],
+            ["AI কে জিজ্ঞেস করুন", "ব্যবসা সংক্রান্ত যেকোনো প্রশ্ন বাংলায় করুন — তাৎক্ষণিক উত্তর।"],
+            ["ব্যবসা রিনিউ গাইড", "টার্গেটের সাথে তুলনা করে কত মুনাফা ঘাটতি ও কীভাবে পূরণ করবেন তা জানায়।"],
+          ] : [
+            ["Prev Month Income", "Total income from monthly report — basis for planning new investments."],
+            ["Prev Month Expense", "Operational spend. Use the pie chart to spot cuts."],
+            ["Net Profit", "Income − Expense. Manual monthly profit entry overrides if present."],
+            ["Profit Margin", "Profit ÷ Income × 100. 15–25% is healthy."],
+            ["Required Profit", "From monthly targets; if none, estimated as 25% above expense."],
+            ["Monthly Targets", "Sum of all monthly target entries per staff/category."],
+            ["Active Staff & Attendance", "Active employees and 6-month attendance rate."],
+            ["Open Tasks / Overdue", "Unfinished tasks; overdue means past due date."],
+            ["Low Stock", "Inventory items with ≤2 pcs — reorder soon."],
+            ["Overdue Payments", "Upcoming payments past their due date — collect now."],
+            ["6-Month Trend", "Income/expense/profit trajectory — see growth direction."],
+            ["Top Expense Categories", "Where you spend most — find cut opportunities."],
+            ["AI Business Insights", "Lovable AI analyzes your data → summary, risks, recommendations, health score."],
+            ["Ask AI Anything", "Ask any business question — instant answer in your language."],
+            ["Business Renewal Guide", "Compares profit to target and tells you the gap & how to close it."],
+          ]).map(([title, desc]) => (
+            <div key={title} className="p-3 rounded-lg border bg-muted/30">
+              <div className="font-semibold text-sm mb-0.5">{title}</div>
+              <div className="text-xs text-muted-foreground leading-relaxed">{desc}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
     </div>
   );
 }
