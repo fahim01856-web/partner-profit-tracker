@@ -418,7 +418,9 @@ function BalanceTab({ balances, qc }: { balances: Balance[]; qc: ReturnType<type
   const rows = balances.filter((b) => filter === "all" || b.account_type === filter);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div className="space-y-4">
+      <PhotoBulkUpload qc={qc} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
       <Card className="p-4 lg:col-span-1 space-y-3">
         <h3 className="font-semibold flex items-center gap-2"><Plus className="w-4 h-4" /> {form.id ? "Edit" : "Add"} Daily Balance</h3>
         <div>
