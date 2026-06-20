@@ -402,7 +402,9 @@ function defaultBody(name: string) {
 
 function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () => void; onSave: (v: any) => void }) {
   const [v, setV] = useState<any>(value);
+  const [uploading, setUploading] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const insertPh = (ph: string) => {
     const ta = taRef.current; if (!ta) return;
@@ -410,6 +412,32 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
     const txt = `{{${ph}}}`;
     setV({ ...v, body_html: (v.body_html || "").slice(0, start) + txt + (v.body_html || "").slice(end) });
     setTimeout(() => { ta.focus(); ta.setSelectionRange(start + txt.length, start + txt.length); }, 0);
+  };
+
+  const uploadFile = async (file: File) => {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `templates/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from("application-attachments").upload(path, file, { contentType: file.type, upsert: false });
+      if (error) throw error;
+      const { data: signed } = await supabase.storage.from("application-attachments").createSignedUrl(path, 60 * 60 * 24 * 365);
+      setV((prev: any) => ({ ...prev, file_path: path, file_url: signed?.signedUrl ?? null, file_name: file.name, file_mime: file.type, file_size: file.size }));
+      toast.success("ফাইল আপলোড হয়েছে");
+    } catch (e: any) { toast.error(e.message || "Upload failed"); }
+    finally { setUploading(false); }
+  };
+
+  const removeFile = async () => {
+    if (v.file_path) { try { await supabase.storage.from("application-attachments").remove([v.file_path]); } catch {} }
+    setV({ ...v, file_path: null, file_url: null, file_name: null, file_mime: null, file_size: null });
+  };
+
+  const openFile = async () => {
+    if (!v.file_path) return;
+    const { data, error } = await supabase.storage.from("application-attachments").createSignedUrl(v.file_path, 300);
+    if (error || !data?.signedUrl) { toast.error("ফাইল খোলা যাচ্ছে না"); return; }
+    window.open(data.signedUrl, "_blank");
   };
 
   return (
