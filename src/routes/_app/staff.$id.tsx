@@ -84,7 +84,7 @@ function StaffProfilePage() {
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-2xl font-bold">{staff.name}</h1>
               {staff.active ? <Badge className="bg-green-600">Active</Badge> : <Badge variant="secondary">Inactive</Badge>}
-              {staff.employee_code && <Badge variant="outline">#{staff.employee_code}</Badge>}
+              {staff.nid && <Badge variant="outline">NID: {staff.nid}</Badge>}
             </div>
             <div className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1"><Briefcase className="w-3.5 h-3.5" />{staff.position || "—"}</div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 text-sm">

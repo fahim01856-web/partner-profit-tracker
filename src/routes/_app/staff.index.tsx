@@ -222,7 +222,7 @@ function StaffPage() {
                     {!r.active && <Badge variant="secondary" className="text-xs">Inactive</Badge>}
                   </div>
                   <div className="font-bold truncate">{r.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">{r.position || "—"}{r.employee_code ? ` · ${r.employee_code}` : ""}</div>
+                  <div className="text-xs text-muted-foreground truncate">{r.position || "—"}{r.nid ? ` · NID: ${r.nid}` : ""}</div>
                   <div className="text-sm font-semibold text-primary mt-1">{fmt.bdt(Number(r.monthly_salary))}</div>
                 </div>
               </div>
