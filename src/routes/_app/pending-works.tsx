@@ -606,6 +606,7 @@ function PendingWorksPage() {
                 const catLbl = categories.find((c) => c.slug === r.category);
                 return (
                 <TableRow key={r.id} className={rowClass}>
+                  <TableCell className="no-print"><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleSel(r.id)} /></TableCell>
                   <TableCell>{i + 1}</TableCell>
                   <TableCell className="font-medium">
                     <div>{r.title}</div>
