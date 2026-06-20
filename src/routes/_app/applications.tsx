@@ -499,13 +499,14 @@ function ApplicationsTab() {
 
 // ---------------- Application Editor (huge feature) ----------------
 function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
-  const [v, setV] = useState<any>(() => ({
-    customer_name: "", customer_nid: "", customer_mobile: "", account_number: "",
-    account_type: "savings", application_type: "", application_date: new Date().toISOString().slice(0, 10),
-    status: "draft", remarks: "", amount: "", reason: "", fields: {}, body_html: "",
-    ...value,
-    fields: { ...(value?.fields || {}) },
-  }));
+  const [v, setV] = useState<any>(() => {
+    const base = {
+      customer_name: "", customer_nid: "", customer_mobile: "", account_number: "",
+      account_type: "savings", application_type: "", application_date: new Date().toISOString().slice(0, 10),
+      status: "draft", remarks: "", amount: "", reason: "", body_html: "",
+    };
+    return { ...base, ...value, fields: { ...(value?.fields || {}) } };
+  });
   const [previewOpen, setPreviewOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
