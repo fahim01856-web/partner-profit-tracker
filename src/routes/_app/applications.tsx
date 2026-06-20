@@ -372,14 +372,6 @@ function TemplatesTab() {
     </div>
   );
 }
-        {filtered.length === 0 && <div className="col-span-full text-center py-10 text-muted-foreground">কোনো টেমপ্লেট নেই — "ডিফল্ট লোড" চাপুন</div>}
-      </div>
-
-      {editing && <TemplateEditor value={editing} onClose={() => setEditing(null)} onSave={(v) => save.mutate(v)} />}
-      {aiOpen && <AiTemplateDialog onClose={() => setAiOpen(false)} onGenerated={(t) => { setAiOpen(false); setEditing({ ...t, is_active: true }); }} />}
-    </div>
-  );
-}
 
 function AiTemplateDialog({ onClose, onGenerated }: { onClose: () => void; onGenerated: (t: any) => void }) {
   const [prompt, setPrompt] = useState("");
