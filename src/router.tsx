@@ -6,11 +6,17 @@ export const getRouter = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
-        staleTime: 60_000,
-        gcTime: 5 * 60_000,
+        // Show cached data instantly; refresh in background
+        staleTime: 5 * 60_000,
+        gcTime: 30 * 60_000,
         refetchOnWindowFocus: false,
         refetchOnReconnect: false,
+        refetchOnMount: false,
         retry: 1,
+        networkMode: "offlineFirst",
+      },
+      mutations: {
+        networkMode: "offlineFirst",
       },
     },
   });
@@ -19,8 +25,13 @@ export const getRouter = () => {
     routeTree,
     context: { queryClient },
     scrollRestoration: true,
+    // Let Query control freshness — but allow router preload cache to dedupe rapid intents
     defaultPreloadStaleTime: 0,
+    defaultPreloadGcTime: 30 * 60_000,
     defaultPreload: "intent",
+    // Avoid showing pending UI for fast navigations — feels instant
+    defaultPendingMs: 1500,
+    defaultPendingMinMs: 0,
   });
 
   return router;
