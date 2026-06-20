@@ -221,16 +221,24 @@ function SalarySheetPage() {
     const paidAmount = rows.filter((x) => x.status === "paid").reduce((a, x) => a + x.net, 0);
     const pendingAmount = totals.net - paidAmount;
     const avg = rows.length ? totals.net / rows.length : 0;
-    const sorted = [...rows].sort((a, b) => b.net - a.net);
-    const top3 = sorted.slice(0, 3);
-    const highest = sorted[0];
-    const lowest = sorted[sorted.length - 1];
     const prevTotal = prevSalaries.reduce((a, x) => a + Number(x.net_paid || 0), 0);
     const momPct = prevTotal > 0 ? ((totals.net - prevTotal) / prevTotal) * 100 : 0;
     const progress = rows.length ? Math.round((paidCount / rows.length) * 100) : 0;
     const bonusRecipients = rows.filter((x) => Number(getRow(x.staff).bonus) > 0).length;
     const deductionCount = rows.filter((x) => Number(getRow(x.staff).deductions) > 0).length;
-    return { paidCount, pendingCount, paidAmount, pendingAmount, avg, top3, highest, lowest, prevTotal, momPct, progress, bonusRecipients, deductionCount };
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const dailyCost = totals.net / daysInMonth;
+    const bonusRatio = totals.net > 0 ? (totals.bonus / totals.net) * 100 : 0;
+    const deductionRatio = (totals.basic + totals.bonus + totals.allowance) > 0
+      ? (totals.ded / (totals.basic + totals.bonus + totals.allowance)) * 100 : 0;
+    const trend = prevTotal > 0 ? totals.net / prevTotal : 1;
+    const forecast = totals.net * (trend > 0 ? trend : 1);
+    const coverage = totals.net > 0 ? (paidAmount / totals.net) * 100 : 0;
+    const totalDays = rows.reduce((a, x) => a + Number(getRow(x.staff).working_days || 0), 0);
+    const avgDays = rows.length ? totalDays / rows.length : 0;
+    const netPerDay = totalDays > 0 ? totals.net / totalDays : 0;
+    return { paidCount, pendingCount, paidAmount, pendingAmount, avg, prevTotal, momPct, progress, bonusRecipients, deductionCount, dailyCost, bonusRatio, deductionRatio, forecast, coverage, avgDays, netPerDay };
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filtered, drafts, salaries, prevSalaries, totals]);
 
