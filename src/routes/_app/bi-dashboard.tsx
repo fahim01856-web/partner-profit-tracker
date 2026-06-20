@@ -34,16 +34,33 @@ function BIDashboard() {
   const { data: metrics, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["bi-metrics"],
     queryFn: async () => {
-      // last 6 months range
+      // 6 months ending at PREVIOUS month (finalized data)
       const months: { year: number; month: number; label: string }[] = [];
       for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const d = new Date(now.getFullYear(), now.getMonth() - 1 - i, 1);
         months.push({ year: d.getFullYear(), month: d.getMonth() + 1, label: `${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}` });
       }
+      const prevMonth = months[5];
       const firstStart = monthRange(months[0].year, months[0].month).start;
       const lastEnd = monthRange(months[5].year, months[5].month).end;
 
-      const [mri, mp, exp, expCats, staff, tasks, pending, assets, loan, deposits, remit, accts, payments, attendance] = await Promise.all([
+      const [mri, mp, exp, expCats, staff, tasks, pending, assets, loan, deposits, remit, accts, payments, attendance, targets] = await Promise.all([
+        supabase.from("monthly_report_items").select("year,month,amount,item_type"),
+        supabase.from("monthly_profits").select("*"),
+        supabase.from("expenses").select("amount,category_id,date").gte("date", firstStart).lte("date", lastEnd),
+        supabase.from("expense_categories").select("id,name_bn,name_en"),
+        supabase.from("staff").select("id,status,position"),
+        supabase.from("tasks").select("id,status,priority,due_date"),
+        supabase.from("pending_works").select("id,status,priority"),
+        supabase.from("agent_bank_assets").select("name,quantity"),
+        supabase.from("loan_persons").select("id,status"),
+        supabase.from("daily_deposits").select("date,amount").gte("date", firstStart).lte("date", lastEnd),
+        supabase.from("remittance_entries").select("date,amount,quantity").gte("date", firstStart).lte("date", lastEnd),
+        supabase.from("account_opening_entries").select("year,month,num_accounts"),
+        supabase.from("upcoming_payments").select("amount,status,due_date"),
+        supabase.from("attendance").select("date,status").gte("date", firstStart).lte("date", lastEnd),
+        supabase.from("monthly_targets").select("year,month,target_category,target_amount,target_quantity,staff_name,status,deadline,priority").eq("year", prevMonth.year).eq("month", prevMonth.month),
+      ]);
         supabase.from("monthly_report_items").select("year,month,amount,item_type"),
         supabase.from("monthly_profits").select("*"),
         supabase.from("expenses").select("amount,category_id,date").gte("date", firstStart).lte("date", lastEnd),
@@ -74,14 +91,23 @@ function BIDashboard() {
       });
       const expensePie = [...expByCat.entries()].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8);
 
-      const curMonthIdx = trend.length - 1;
-      const prevMonthIdx = curMonthIdx - 1;
+      const curMonthIdx = trend.length - 1; // previous (last finalized) month
+      const prevMonthIdx = curMonthIdx - 1; // month before that
       const cur = trend[curMonthIdx];
       const prev = trend[prevMonthIdx];
+      const manualProfitRow = (mp.data ?? []).find((x: any) => x.year === prevMonth.year && x.month === prevMonth.month);
+      if (manualProfitRow) cur.profit = Number(manualProfitRow.total_profit);
       const incomeChange = prev?.income ? ((cur.income - prev.income) / prev.income) * 100 : 0;
       const expenseChange = prev?.expense ? ((cur.expense - prev.expense) / prev.expense) * 100 : 0;
       const profitChange = prev?.profit ? ((cur.profit - prev.profit) / Math.abs(prev.profit)) * 100 : 0;
       const margin = cur.income ? (cur.profit / cur.income) * 100 : 0;
+
+      // Targets for previous month
+      const targetIncome = (targets.data ?? []).filter((r: any) => /income|deposit|revenue|আয়|ডিপোজিট/i.test(r.target_category)).reduce((s: number, r: any) => s + Number(r.target_amount ?? 0), 0);
+      const targetProfit = (targets.data ?? []).filter((r: any) => /profit|মুনাফা|লাভ/i.test(r.target_category)).reduce((s: number, r: any) => s + Number(r.target_amount ?? 0), 0);
+      const totalTargetAmount = (targets.data ?? []).reduce((s: number, r: any) => s + Number(r.target_amount ?? 0), 0);
+      const requiredProfit = targetProfit > 0 ? targetProfit : Math.max(0, cur.expense * 0.25); // fallback: 25% over expense
+      const profitGapPct = requiredProfit > 0 ? ((requiredProfit - cur.profit) / requiredProfit) * 100 : 0;
 
       const activeStaff = (staff.data ?? []).filter((s: any) => (s.status ?? "active") === "active").length;
       const openTasks = (tasks.data ?? []).filter((t: any) => t.status !== "done" && t.status !== "completed").length;
@@ -133,7 +159,10 @@ function BIDashboard() {
         activeStaff, openTasks, highPriorityTasks, overdueTasks, openPending,
         lowStock, outOfStock, activeLoans, overduePayments, upcomingDue,
         attendanceRate,
-        manualProfit: (mp.data ?? []).find((x: any) => x.year === now.getFullYear() && x.month === now.getMonth() + 1) ?? null,
+        prevMonth,
+        targetIncome, targetProfit, totalTargetAmount, requiredProfit, profitGapPct,
+        targetCount: (targets.data ?? []).length,
+        manualProfit: manualProfitRow ?? null,
       };
     },
   });
