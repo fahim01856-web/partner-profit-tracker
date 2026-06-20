@@ -98,6 +98,32 @@ function printHtml(html: string, title = "Application") {
   w.document.close();
 }
 
+function downloadDoc(html: string, filename: string) {
+  const blob = new Blob([
+    `<!doctype html><html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${filename}</title></head><body>${html}</body></html>`,
+  ], { type: "application/msword" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${filename}.doc`;
+  a.click();
+}
+
+function extractPlaceholders(html: string): string[] {
+  const set = new Set<string>();
+  const re = /\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html || ""))) set.add(m[1]);
+  return Array.from(set);
+}
+
+async function copyHtmlAsText(html: string) {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  const text = tmp.innerText;
+  try { await navigator.clipboard.writeText(text); toast.success("কপি করা হয়েছে"); }
+  catch { toast.error("কপি করা গেল না"); }
+}
+
 function exportCsv(rows: any[], filename: string) {
   if (!rows.length) return toast.error("কোনো ডেটা নেই");
   const headers = Object.keys(rows[0]);
@@ -226,6 +252,7 @@ function StatCard({ title, value, icon: Icon, color }: any) {
 function TemplatesTab() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any>(null);
+  const [using, setUsing] = useState<any>(null);
   const [aiOpen, setAiOpen] = useState(false);
   const [search, setSearch] = useState("");
 
@@ -320,15 +347,18 @@ function TemplatesTab() {
             {t.file_name && (
               <div className="text-[11px] text-muted-foreground truncate mb-2 font-mono">📎 {t.file_name}</div>
             )}
-            <div className="flex gap-2 mt-2">
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              <Button size="sm" variant="default" className="flex-1 bg-emerald-700 hover:bg-emerald-800" onClick={() => setUsing(t)}>
+                <Eye className="w-3 h-3 mr-1" /> Use / Preview
+              </Button>
               {t.file_path && (
-                <Button size="sm" variant="secondary" className="flex-1" onClick={async () => {
+                <Button size="sm" variant="secondary" onClick={async () => {
                   const { data, error } = await supabase.storage.from("application-attachments").createSignedUrl(t.file_path, 300);
                   if (error || !data?.signedUrl) { toast.error("ফাইল খোলা যাচ্ছে না"); return; }
                   window.open(data.signedUrl, "_blank");
-                }}><Download className="w-3 h-3 mr-1" /> Open</Button>
+                }} title="Attached file"><Download className="w-3 h-3" /></Button>
               )}
-              <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditing(t)}><Edit3 className="w-3 h-3 mr-1" /> Edit</Button>
+              <Button size="sm" variant="outline" onClick={() => setEditing(t)} title="Edit"><Edit3 className="w-3 h-3" /></Button>
               <Button size="sm" variant="ghost" onClick={() => { if (confirm("ডিলিট করবেন?")) del.mutate(t.id); }}><Trash2 className="w-3 h-3 text-destructive" /></Button>
             </div>
           </Card>
@@ -337,8 +367,129 @@ function TemplatesTab() {
       </div>
 
       {editing && <TemplateEditor value={editing} onClose={() => setEditing(null)} onSave={(v) => save.mutate(v)} />}
+      {using && <TemplateQuickUse template={using} onClose={() => setUsing(null)} />}
       {aiOpen && <AiTemplateDialog onClose={() => setAiOpen(false)} onGenerated={(t) => { setAiOpen(false); setEditing({ ...t, is_active: true }); }} />}
     </div>
+  );
+}
+
+function TemplateQuickUse({ template, onClose }: { template: any; onClose: () => void }) {
+  const placeholders = useMemo(() => extractPlaceholders(template.body_html || ""), [template]);
+  const [fields, setFields] = useState<Record<string, string>>(() => {
+    const init: Record<string, string> = { date: new Date().toLocaleDateString("bn-BD") };
+    placeholders.forEach((p) => { if (!(p in init)) init[p] = ""; });
+    return init;
+  });
+  const [customerSearch, setCustomerSearch] = useState("");
+  const [matches, setMatches] = useState<any[]>([]);
+
+  const findCustomer = async () => {
+    if (!customerSearch.trim()) return;
+    const q = customerSearch.trim();
+    const { data } = await (supabase as any).from("application_records")
+      .select("customer_name,customer_nid,customer_mobile,account_number,account_type,fields")
+      .or(`customer_name.ilike.%${q}%,customer_nid.ilike.%${q}%,customer_mobile.ilike.%${q}%,account_number.ilike.%${q}%`)
+      .limit(8);
+    setMatches(data || []);
+    if (!data?.length) toast.info("কোনো গ্রাহক পাওয়া যায়নি");
+  };
+
+  const applyCustomer = (c: any) => {
+    setFields((f) => ({
+      ...f,
+      customer_name: c.customer_name || f.customer_name || "",
+      nid: c.customer_nid || f.nid || "",
+      mobile: c.customer_mobile || f.mobile || "",
+      account_number: c.account_number || f.account_number || "",
+      account_type: c.account_type || f.account_type || "",
+      ...(c.fields || {}),
+    }));
+    setMatches([]);
+    toast.success("গ্রাহক তথ্য লোড হয়েছে");
+  };
+
+  const html = useMemo(() => buildDocumentHtml({
+    bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি",
+    outlet: "এজেন্ট আউটলেট, ফকির বাজার, বুড়িচং, কুমিল্লা",
+    bodyHtml: template.body_html || "",
+    fields,
+  }), [template, fields]);
+
+  const openAttachment = async () => {
+    if (!template.file_path) return;
+    const { data, error } = await supabase.storage.from("application-attachments").createSignedUrl(template.file_path, 300);
+    if (error || !data?.signedUrl) { toast.error("ফাইল খোলা যাচ্ছে না"); return; }
+    window.open(data.signedUrl, "_blank");
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-6xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-emerald-700" /> {template.name}
+            <Badge variant="outline" className="text-[10px]">{template.category}</Badge>
+            {template.file_path && <Badge className="text-[10px] bg-emerald-600">📎 {template.file_name}</Badge>}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto">
+          {/* Left: Dynamic variables */}
+          <div className="space-y-3">
+            <Card className="p-3 bg-blue-50/50 border-blue-200">
+              <Label className="text-xs font-semibold flex items-center gap-1"><Search className="w-3 h-3" /> Auto-fill from existing customer</Label>
+              <div className="flex gap-1 mt-1">
+                <Input placeholder="নাম / NID / মোবাইল / A/C" value={customerSearch} onChange={(e) => setCustomerSearch(e.target.value)} onKeyDown={(e) => e.key === "Enter" && findCustomer()} className="h-8 text-xs" />
+                <Button size="sm" variant="secondary" onClick={findCustomer}>খুঁজুন</Button>
+              </div>
+              {matches.length > 0 && (
+                <div className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                  {matches.map((c, i) => (
+                    <button key={i} onClick={() => applyCustomer(c)} className="w-full text-left text-xs border rounded p-1.5 hover:bg-blue-100 bg-white">
+                      <div className="font-medium">{c.customer_name}</div>
+                      <div className="text-[10px] text-muted-foreground">A/C: {c.account_number || "—"} · NID: {c.customer_nid || "—"}</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </Card>
+
+            <div>
+              <Label className="text-xs font-semibold">Dynamic Variables ({placeholders.length})</Label>
+              {placeholders.length === 0 ? (
+                <div className="text-xs text-muted-foreground py-2">এই টেমপ্লেটে কোনো {`{{variable}}`} নেই।</div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2 mt-1">
+                  {placeholders.map((p) => (
+                    <div key={p}>
+                      <Label className="text-[10px] text-muted-foreground">{`{{${p}}}`}</Label>
+                      {["reason", "remarks", "address"].includes(p) ? (
+                        <Textarea rows={2} value={fields[p] || ""} onChange={(e) => setFields({ ...fields, [p]: e.target.value })} className="text-sm" />
+                      ) : (
+                        <Input value={fields[p] || ""} onChange={(e) => setFields({ ...fields, [p]: e.target.value })} className="h-8 text-sm" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Live preview */}
+          <div>
+            <Label className="text-xs font-semibold flex items-center gap-1"><Eye className="w-3 h-3" /> Live Preview</Label>
+            <div className="bg-white border rounded p-4 mt-1 max-h-[60vh] overflow-y-auto text-xs" dangerouslySetInnerHTML={{ __html: html }} />
+          </div>
+        </div>
+        <DialogFooter className="flex flex-wrap gap-2">
+          {template.file_path && (
+            <Button variant="outline" onClick={openAttachment}><FileText className="w-4 h-4 mr-1" /> Original File</Button>
+          )}
+          <Button variant="outline" onClick={() => copyHtmlAsText(html)}><Copy className="w-4 h-4 mr-1" /> Copy Text</Button>
+          <Button variant="outline" onClick={() => downloadDoc(html, template.name || "Application")}><Download className="w-4 h-4 mr-1" /> Word</Button>
+          <Button onClick={() => printHtml(html, template.name || "Application")} className="bg-emerald-700 hover:bg-emerald-800"><Printer className="w-4 h-4 mr-1" /> Print / PDF</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
