@@ -337,7 +337,12 @@ function MonthlyReportPage() {
         const negativeMonths = cur.filter((v) => v < 0).length;
         const prevYearTotal = prev.reduce((s, v) => s + v, 0);
         const yoyChange = prevYearTotal === 0 ? 0 : ((yearlyTotal - prevYearTotal) / Math.abs(prevYearTotal)) * 100;
-        const chartData = cur.map((v, i) => ({ month: monthNames[i], thisYear: v, lastYear: prev[i] }));
+        const momDiff = thisMonthProfit - lastMonthProfit;
+        const monthDiffs = cur.map((v, i) => {
+          const prevV = i === 0 ? prev[11] : cur[i - 1];
+          return { month: monthNames[i], profit: v, diff: v - prevV };
+        });
+        const chartData = cur.map((v, i) => ({ month: monthNames[i], thisYear: v, lastYear: prev[i], diff: monthDiffs[i].diff }));
         const hasAny = cur.some((v) => v !== 0) || prev.some((v) => v !== 0);
         return (
           <div className="space-y-3 no-print">
