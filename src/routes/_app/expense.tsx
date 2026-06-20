@@ -245,6 +245,122 @@ function ExpensePage() {
         <Button variant="outline" onClick={() => { setPrintVoucher(null); window.print(); }}><FileDown className="w-4 h-4 mr-2" /> {t("printAll")}</Button>
       </div>
 
+      {/* Analytics Dashboard */}
+      {allRows.length > 0 && (
+        <div className="no-print space-y-4">
+          {/* Hero KPI row */}
+          <div className="grid gap-3 md:grid-cols-4">
+            <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.75) 100%)" }}>
+              <div className="absolute -right-4 -top-4 opacity-20"><Wallet className="w-24 h-24" /></div>
+              <div className="text-xs uppercase tracking-wide opacity-90">{monthLabel}</div>
+              <div className="text-2xl font-extrabold mt-1">{fmt.bdt(insights.monthTotal)}</div>
+              <div className="text-xs mt-2 flex items-center gap-1">
+                {insights.momPct >= 0
+                  ? <TrendingUp className="w-3 h-3" />
+                  : <TrendingDown className="w-3 h-3" />}
+                <span>{insights.momPct >= 0 ? "+" : ""}{fmt.num(Math.round(insights.momPct))}% vs last month</span>
+              </div>
+            </Card>
+
+            <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(15 90% 50%) 100%)" }}>
+              <div className="absolute -right-4 -top-4 opacity-20"><Crown className="w-24 h-24" /></div>
+              <div className="text-xs uppercase tracking-wide opacity-90">Top Category</div>
+              <div className="text-lg font-bold mt-1 truncate">{insights.maxCat?.name ?? "—"}</div>
+              <div className="text-xl font-extrabold">{fmt.bdt(insights.maxCat?.amount ?? 0)}</div>
+            </Card>
+
+            <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(340 82% 52%) 0%, hsl(0 84% 55%) 100%)" }}>
+              <div className="absolute -right-4 -top-4 opacity-20"><Flame className="w-24 h-24" /></div>
+              <div className="text-xs uppercase tracking-wide opacity-90">Highest Spend Day</div>
+              <div className="text-sm font-semibold mt-1">{insights.topDay ? fmt.date(insights.topDay.date) : "—"}</div>
+              <div className="text-xl font-extrabold">{fmt.bdt(insights.topDay?.amount ?? 0)}</div>
+            </Card>
+
+            <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(160 70% 40%) 0%, hsl(180 65% 38%) 100%)" }}>
+              <div className="absolute -right-4 -top-4 opacity-20"><BarChart3 className="w-24 h-24" /></div>
+              <div className="text-xs uppercase tracking-wide opacity-90">Projected Month-End</div>
+              <div className="text-xl font-extrabold mt-1">{fmt.bdt(insights.projected)}</div>
+              <div className="text-xs mt-1 opacity-90">{fmt.num(insights.daysWithExpense)} active days · avg {fmt.bdt(insights.avgPerActiveDay)}</div>
+            </Card>
+          </div>
+
+          {/* Top categories + top days */}
+          <div className="grid gap-3 lg:grid-cols-2">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Trophy className="w-4 h-4 text-amber-500" />
+                <h3 className="font-semibold">Top Categories — {monthLabel}</h3>
+              </div>
+              {insights.topCats.length === 0 ? (
+                <div className="text-sm text-muted-foreground py-4 text-center">No expenses this month yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {insights.topCats.map((c, i) => {
+                    const pct = maxCatAmount > 0 ? (c.amount / maxCatAmount) * 100 : 0;
+                    return (
+                      <div key={c.name}>
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="flex items-center gap-2 truncate">
+                            <span className={cn("w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-bold text-white",
+                              i === 0 ? "bg-amber-500" : i === 1 ? "bg-slate-400" : i === 2 ? "bg-orange-700" : "bg-muted-foreground")}>{fmt.num(i + 1)}</span>
+                            <span className="truncate font-medium">{c.name}</span>
+                          </span>
+                          <span className="font-bold text-destructive">{fmt.bdt(c.amount)}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg, hsl(var(--primary)), hsl(340 82% 52%))" }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Calendar className="w-4 h-4 text-primary" />
+                <h3 className="font-semibold">Top Spending Days — {monthLabel}</h3>
+              </div>
+              {insights.topDays.length === 0 ? (
+                <div className="text-sm text-muted-foreground py-4 text-center">No expenses this month yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {insights.topDays.map((d, i) => {
+                    const pct = maxDayAmount > 0 ? (d.amount / maxDayAmount) * 100 : 0;
+                    return (
+                      <div key={d.date}>
+                        <div className="flex items-center justify-between text-sm mb-1">
+                          <span className="flex items-center gap-2">
+                            <span className={cn("w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-bold text-white",
+                              i === 0 ? "bg-rose-500" : i === 1 ? "bg-orange-400" : "bg-muted-foreground")}>{fmt.num(i + 1)}</span>
+                            <span className="font-medium">{fmt.date(d.date)}</span>
+                          </span>
+                          <span className="font-bold text-destructive">{fmt.bdt(d.amount)}</span>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div className="h-full rounded-full" style={{ width: `${pct}%`, background: "linear-gradient(90deg, hsl(25 95% 53%), hsl(340 82% 52%))" }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {insights.lowDay && insights.topDays.length > 1 && (
+                    <div className="text-xs text-muted-foreground pt-2 border-t mt-2">
+                      Lowest day: <span className="font-semibold">{fmt.date(insights.lowDay.date)}</span> — {fmt.bdt(insights.lowDay.amount)}
+                    </div>
+                  )}
+                  {insights.biggestVoucher && (
+                    <div className="text-xs text-muted-foreground">
+                      All-time biggest voucher: <span className="font-semibold">{fmt.date(insights.biggestVoucher.date)}</span> — {fmt.bdt(insights.biggestVoucher.total)}
+                    </div>
+                  )}
+                </div>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
+
       <Card className={`p-5 no-print ${editingVoucher ? "ring-2 ring-primary" : ""}`}>
         <div className="flex items-center justify-between mb-4 flex-wrap gap-3">
           <h2 className="font-semibold flex items-center gap-2">
