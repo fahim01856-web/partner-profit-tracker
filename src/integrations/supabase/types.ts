@@ -2867,6 +2867,42 @@ export type Database = {
           },
         ]
       }
+      tin_ereturns: {
+        Row: {
+          account_number: string | null
+          created_at: string
+          customer_name: string
+          expiry_date: string
+          id: string
+          note: string | null
+          submitted_date: string
+          tin_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number?: string | null
+          created_at?: string
+          customer_name: string
+          expiry_date: string
+          id?: string
+          note?: string | null
+          submitted_date: string
+          tin_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string | null
+          created_at?: string
+          customer_name?: string
+          expiry_date?: string
+          id?: string
+          note?: string | null
+          submitted_date?: string
+          tin_number?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       upcoming_payments: {
         Row: {
           amount: number
