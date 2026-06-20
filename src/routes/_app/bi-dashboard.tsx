@@ -34,16 +34,17 @@ function BIDashboard() {
   const { data: metrics, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["bi-metrics"],
     queryFn: async () => {
-      // last 6 months range
+      // 6 months ending at PREVIOUS month (finalized data)
       const months: { year: number; month: number; label: string }[] = [];
       for (let i = 5; i >= 0; i--) {
-        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const d = new Date(now.getFullYear(), now.getMonth() - 1 - i, 1);
         months.push({ year: d.getFullYear(), month: d.getMonth() + 1, label: `${d.getMonth() + 1}/${String(d.getFullYear()).slice(2)}` });
       }
+      const prevMonth = months[5];
       const firstStart = monthRange(months[0].year, months[0].month).start;
       const lastEnd = monthRange(months[5].year, months[5].month).end;
 
-      const [mri, mp, exp, expCats, staff, tasks, pending, assets, loan, deposits, remit, accts, payments, attendance] = await Promise.all([
+      const [mri, mp, exp, expCats, staff, tasks, pending, assets, loan, deposits, remit, accts, payments, attendance, targets] = await Promise.all([
         supabase.from("monthly_report_items").select("year,month,amount,item_type"),
         supabase.from("monthly_profits").select("*"),
         supabase.from("expenses").select("amount,category_id,date").gte("date", firstStart).lte("date", lastEnd),
@@ -58,6 +59,7 @@ function BIDashboard() {
         supabase.from("account_opening_entries").select("year,month,num_accounts"),
         supabase.from("upcoming_payments").select("amount,status,due_date"),
         supabase.from("attendance").select("date,status").gte("date", firstStart).lte("date", lastEnd),
+        supabase.from("monthly_targets").select("year,month,target_category,target_amount,target_quantity,staff_name,status,deadline,priority").eq("year", prevMonth.year).eq("month", prevMonth.month),
       ]);
 
       const trend = months.map((m) => {
@@ -74,14 +76,23 @@ function BIDashboard() {
       });
       const expensePie = [...expByCat.entries()].map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 8);
 
-      const curMonthIdx = trend.length - 1;
-      const prevMonthIdx = curMonthIdx - 1;
+      const curMonthIdx = trend.length - 1; // previous (last finalized) month
+      const prevMonthIdx = curMonthIdx - 1; // month before that
       const cur = trend[curMonthIdx];
       const prev = trend[prevMonthIdx];
+      const manualProfitRow = (mp.data ?? []).find((x: any) => x.year === prevMonth.year && x.month === prevMonth.month);
+      if (manualProfitRow) cur.profit = Number(manualProfitRow.total_profit);
       const incomeChange = prev?.income ? ((cur.income - prev.income) / prev.income) * 100 : 0;
       const expenseChange = prev?.expense ? ((cur.expense - prev.expense) / prev.expense) * 100 : 0;
       const profitChange = prev?.profit ? ((cur.profit - prev.profit) / Math.abs(prev.profit)) * 100 : 0;
       const margin = cur.income ? (cur.profit / cur.income) * 100 : 0;
+
+      // Targets for previous month
+      const targetIncome = (targets.data ?? []).filter((r: any) => /income|deposit|revenue|আয়|ডিপোজিট/i.test(r.target_category)).reduce((s: number, r: any) => s + Number(r.target_amount ?? 0), 0);
+      const targetProfit = (targets.data ?? []).filter((r: any) => /profit|মুনাফা|লাভ/i.test(r.target_category)).reduce((s: number, r: any) => s + Number(r.target_amount ?? 0), 0);
+      const totalTargetAmount = (targets.data ?? []).reduce((s: number, r: any) => s + Number(r.target_amount ?? 0), 0);
+      const requiredProfit = targetProfit > 0 ? targetProfit : Math.max(0, cur.expense * 0.25); // fallback: 25% over expense
+      const profitGapPct = requiredProfit > 0 ? ((requiredProfit - cur.profit) / requiredProfit) * 100 : 0;
 
       const activeStaff = (staff.data ?? []).filter((s: any) => (s.status ?? "active") === "active").length;
       const openTasks = (tasks.data ?? []).filter((t: any) => t.status !== "done" && t.status !== "completed").length;
@@ -133,7 +144,10 @@ function BIDashboard() {
         activeStaff, openTasks, highPriorityTasks, overdueTasks, openPending,
         lowStock, outOfStock, activeLoans, overduePayments, upcomingDue,
         attendanceRate,
-        manualProfit: (mp.data ?? []).find((x: any) => x.year === now.getFullYear() && x.month === now.getMonth() + 1) ?? null,
+        prevMonth,
+        targetIncome, targetProfit, totalTargetAmount, requiredProfit, profitGapPct,
+        targetCount: (targets.data ?? []).length,
+        manualProfit: manualProfitRow ?? null,
       };
     },
   });
@@ -192,7 +206,11 @@ function BIDashboard() {
             <Brain className="w-7 h-7 text-primary" />
             {lang === "bn" ? "AI বিজনেস ইন্টেলিজেন্স" : "AI Business Intelligence"}
           </h1>
-          <p className="text-sm text-muted-foreground">{lang === "bn" ? "স্মার্ট বিশ্লেষণ, ঝুঁকি ও সুপারিশ" : "Smart analytics, risks & recommendations"}</p>
+          <p className="text-sm text-muted-foreground">
+            {lang === "bn"
+              ? `গত মাসের (${metrics.prevMonth.month}/${metrics.prevMonth.year}) ফাইনাল ডেটার উপর স্মার্ট বিশ্লেষণ`
+              : `Smart analytics on previous month's (${metrics.prevMonth.month}/${metrics.prevMonth.year}) finalized data`}
+          </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
@@ -205,17 +223,40 @@ function BIDashboard() {
         </div>
       </div>
 
-      {/* KPI Grid */}
+      {/* KPI Grid — Previous Month */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Kpi icon={<TrendingUp className="w-5 h-5" />} label={lang === "bn" ? "চলতি মাসের আয়" : "MTD Income"} value={fmtBDT(metrics.cur.income, lang)} change={metrics.incomeChange} tone="green" />
-        <Kpi icon={<TrendingDown className="w-5 h-5" />} label={lang === "bn" ? "চলতি মাসের ব্যয়" : "MTD Expense"} value={fmtBDT(metrics.cur.expense, lang)} change={metrics.expenseChange} tone="red" invertChange />
+        <Kpi icon={<TrendingUp className="w-5 h-5" />} label={lang === "bn" ? "গত মাসের আয়" : "Prev Month Income"} value={fmtBDT(metrics.cur.income, lang)} change={metrics.incomeChange} tone="green" />
+        <Kpi icon={<TrendingDown className="w-5 h-5" />} label={lang === "bn" ? "গত মাসের ব্যয়" : "Prev Month Expense"} value={fmtBDT(metrics.cur.expense, lang)} change={metrics.expenseChange} tone="red" invertChange />
         <Kpi icon={<Wallet className="w-5 h-5" />} label={lang === "bn" ? "নিট মুনাফা" : "Net Profit"} value={fmtBDT(metrics.cur.profit, lang)} change={metrics.profitChange} tone={metrics.cur.profit >= 0 ? "green" : "red"} />
         <Kpi icon={<Gauge className="w-5 h-5" />} label={lang === "bn" ? "মুনাফা মার্জিন" : "Profit Margin"} value={`${fmt.num(metrics.margin.toFixed(1))}%`} tone="blue" />
+        <Kpi icon={<Target className="w-5 h-5" />} label={lang === "bn" ? "প্রয়োজনীয় মুনাফা" : "Required Profit"} value={fmtBDT(metrics.requiredProfit, lang)} sub={metrics.targetProfit > 0 ? (lang === "bn" ? "টার্গেট থেকে" : "from target") : (lang === "bn" ? "প্রাক্কলিত (ব্যয়ের ২৫%)" : "est. 25% over expense")} tone={metrics.cur.profit >= metrics.requiredProfit ? "green" : "amber"} />
+        <Kpi icon={<Target className="w-5 h-5" />} label={lang === "bn" ? "মাসিক টার্গেট" : "Monthly Targets"} value={fmtBDT(metrics.totalTargetAmount, lang)} sub={`${fmt.num(metrics.targetCount)} ${lang === "bn" ? "এন্ট্রি" : "entries"}`} tone="blue" />
         <Kpi icon={<Users className="w-5 h-5" />} label={lang === "bn" ? "সক্রিয় স্টাফ" : "Active Staff"} value={fmt.num(metrics.activeStaff)} sub={`${fmt.num(metrics.attendanceRate.toFixed(0))}% ${lang === "bn" ? "হাজিরা" : "attendance"}`} tone="blue" />
         <Kpi icon={<ClipboardList className="w-5 h-5" />} label={lang === "bn" ? "ওপেন টাস্ক" : "Open Tasks"} value={fmt.num(metrics.openTasks)} sub={`${fmt.num(metrics.overdueTasks)} ${lang === "bn" ? "ওভারডিউ" : "overdue"}`} tone={metrics.overdueTasks > 0 ? "amber" : "blue"} />
         <Kpi icon={<Package className="w-5 h-5" />} label={lang === "bn" ? "লো স্টক" : "Low Stock"} value={fmt.num(metrics.lowStock)} sub={`${fmt.num(metrics.outOfStock)} ${lang === "bn" ? "শেষ" : "out"}`} tone={metrics.outOfStock > 0 ? "red" : "amber"} />
         <Kpi icon={<AlertTriangle className="w-5 h-5" />} label={lang === "bn" ? "ওভারডিউ পেমেন্ট" : "Overdue Payments"} value={fmtBDT(metrics.overduePayments, lang)} tone={metrics.overduePayments > 0 ? "red" : "green"} />
       </div>
+
+      {/* Profit Gap / Business Renewal hint */}
+      {metrics.requiredProfit > 0 && (
+        <Card className="p-4 bg-gradient-to-r from-amber-500/10 to-emerald-500/10 border-amber-500/30">
+          <div className="flex items-start gap-3">
+            <div className="p-2 rounded-lg bg-amber-500/15"><Target className="w-5 h-5 text-amber-600" /></div>
+            <div className="flex-1">
+              <div className="font-semibold">{lang === "bn" ? "ব্যবসা রিনিউ / বৃদ্ধির গাইড" : "Business Renewal / Growth Guide"}</div>
+              <div className="text-sm text-muted-foreground mt-1">
+                {metrics.cur.profit >= metrics.requiredProfit
+                  ? (lang === "bn"
+                    ? `✓ মুনাফা টার্গেট অর্জিত। আগামী মাসে বিনিয়োগ ও নতুন অ্যাকাউন্ট ওপেনিং বাড়িয়ে আরও বৃদ্ধি করুন।`
+                    : `✓ Profit target met. Grow further by boosting investments & new account openings.`)
+                  : (lang === "bn"
+                    ? `আরও ${fmtBDT(metrics.requiredProfit - metrics.cur.profit, lang)} মুনাফা দরকার (${fmt.num(Math.abs(metrics.profitGapPct).toFixed(0))}% ঘাটতি)। ব্যয় কমান, রেমিটেন্স/ডিপোজিট বাড়ান, পেন্ডিং পেমেন্ট আদায় করুন।`
+                    : `Need ${fmtBDT(metrics.requiredProfit - metrics.cur.profit, lang)} more profit (${fmt.num(Math.abs(metrics.profitGapPct).toFixed(0))}% gap). Cut expenses, boost remittance/deposits, collect overdue payments.`)}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* AI Insight Panel */}
       <Card className="p-5 bg-gradient-to-br from-primary/10 via-purple-500/5 to-transparent border-primary/30">
@@ -356,6 +397,51 @@ function BIDashboard() {
             ))}
           </div>
         )}
+      </Card>
+
+      {/* Feature Guide */}
+      <Card className="p-5">
+        <h2 className="font-semibold flex items-center gap-2 mb-3"><Lightbulb className="w-5 h-5 text-amber-500" />{lang === "bn" ? "ফিচার গাইড — কোনটা কী, কেন দরকার" : "Feature Guide — What & Why"}</h2>
+        <div className="grid sm:grid-cols-2 gap-3 text-sm">
+          {(lang === "bn" ? [
+            ["গত মাসের আয়", "মাসিক রিপোর্ট থেকে গত মাসের মোট আয়। নতুন বিনিয়োগ/সঞ্চয় প্ল্যান করতে দেখুন।"],
+            ["গত মাসের ব্যয়", "অপারেশনাল খরচ। কোথায় কমানো যায় বুঝতে পাই চার্ট দেখুন।"],
+            ["নিট মুনাফা", "আয় − ব্যয়। ম্যানুয়াল এন্ট্রি থাকলে সেটি প্রাধান্য পায়।"],
+            ["মুনাফা মার্জিন", "মুনাফা ÷ আয় × ১০০। ১৫–২৫% সুস্থ ব্যবসার সূচক।"],
+            ["প্রয়োজনীয় মুনাফা", "টার্গেট থেকে নেওয়া; না থাকলে ব্যয়ের ২৫% হিসাবে অনুমান।"],
+            ["মাসিক টার্গেট", "মাসিক টার্গেট পেজের যোগফল — প্রতিটি স্টাফ/ক্যাটাগরির লক্ষ্য।"],
+            ["সক্রিয় স্টাফ ও হাজিরা", "চলমান কর্মী সংখ্যা ও তাদের ৬-মাসের হাজিরার হার।"],
+            ["ওপেন টাস্ক / ওভারডিউ", "টাস্ক ম্যানেজমেন্টে অসমাপ্ত ও সময় পেরিয়ে যাওয়া কাজ।"],
+            ["লো স্টক", "ইনভেন্টরির ≤২ পিস আইটেম — দ্রুত রিঅর্ডার দরকার।"],
+            ["ওভারডিউ পেমেন্ট", "আসন্ন পেমেন্টে যেগুলো ডিউ ডেট পার করেছে — দ্রুত আদায় করুন।"],
+            ["৬-মাসের ট্রেন্ড", "আয়/ব্যয়/মুনাফার গতি — বৃদ্ধি না কমছে দেখুন।"],
+            ["টপ ব্যয় ক্যাটাগরি", "কোন খাতে বেশি খরচ — কমানোর সুযোগ চিহ্নিত করুন।"],
+            ["AI বিজনেস ইনসাইট", "Lovable AI আপনার ডেটা বিশ্লেষণ করে সারাংশ, ঝুঁকি, সুপারিশ ও হেলথ স্কোর দেয়।"],
+            ["AI কে জিজ্ঞেস করুন", "ব্যবসা সংক্রান্ত যেকোনো প্রশ্ন বাংলায় করুন — তাৎক্ষণিক উত্তর।"],
+            ["ব্যবসা রিনিউ গাইড", "টার্গেটের সাথে তুলনা করে কত মুনাফা ঘাটতি ও কীভাবে পূরণ করবেন তা জানায়।"],
+          ] : [
+            ["Prev Month Income", "Total income from monthly report — basis for planning new investments."],
+            ["Prev Month Expense", "Operational spend. Use the pie chart to spot cuts."],
+            ["Net Profit", "Income − Expense. Manual monthly profit entry overrides if present."],
+            ["Profit Margin", "Profit ÷ Income × 100. 15–25% is healthy."],
+            ["Required Profit", "From monthly targets; if none, estimated as 25% above expense."],
+            ["Monthly Targets", "Sum of all monthly target entries per staff/category."],
+            ["Active Staff & Attendance", "Active employees and 6-month attendance rate."],
+            ["Open Tasks / Overdue", "Unfinished tasks; overdue means past due date."],
+            ["Low Stock", "Inventory items with ≤2 pcs — reorder soon."],
+            ["Overdue Payments", "Upcoming payments past their due date — collect now."],
+            ["6-Month Trend", "Income/expense/profit trajectory — see growth direction."],
+            ["Top Expense Categories", "Where you spend most — find cut opportunities."],
+            ["AI Business Insights", "Lovable AI analyzes your data → summary, risks, recommendations, health score."],
+            ["Ask AI Anything", "Ask any business question — instant answer in your language."],
+            ["Business Renewal Guide", "Compares profit to target and tells you the gap & how to close it."],
+          ]).map(([title, desc]) => (
+            <div key={title} className="p-3 rounded-lg border bg-muted/30">
+              <div className="font-semibold text-sm mb-0.5">{title}</div>
+              <div className="text-xs text-muted-foreground leading-relaxed">{desc}</div>
+            </div>
+          ))}
+        </div>
       </Card>
     </div>
   );
