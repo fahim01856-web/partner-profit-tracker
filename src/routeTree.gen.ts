@@ -35,6 +35,7 @@ import { Route as AppDocumentsRouteImport } from './routes/_app/documents'
 import { Route as AppDashboardRouteImport } from './routes/_app/dashboard'
 import { Route as AppDailyDepositRouteImport } from './routes/_app/daily-deposit'
 import { Route as AppCashBookRouteImport } from './routes/_app/cash-book'
+import { Route as AppBiDashboardRouteImport } from './routes/_app/bi-dashboard'
 import { Route as AppAuditReportRouteImport } from './routes/_app/audit-report'
 import { Route as AppAttendanceRouteImport } from './routes/_app/attendance'
 import { Route as AppAgentBankInvestmentRouteImport } from './routes/_app/agent-bank-investment'
@@ -174,6 +175,11 @@ const AppCashBookRoute = AppCashBookRouteImport.update({
   path: '/cash-book',
   getParentRoute: () => AppRoute,
 } as any)
+const AppBiDashboardRoute = AppBiDashboardRouteImport.update({
+  id: '/bi-dashboard',
+  path: '/bi-dashboard',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppAuditReportRoute = AppAuditReportRouteImport.update({
   id: '/audit-report',
   path: '/audit-report',
@@ -226,6 +232,7 @@ export interface FileRoutesByFullPath {
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
   '/audit-report': typeof AppAuditReportRouteWithChildren
+  '/bi-dashboard': typeof AppBiDashboardRoute
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -261,6 +268,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/attendance': typeof AppAttendanceRoute
+  '/bi-dashboard': typeof AppBiDashboardRoute
   '/cash-book': typeof AppCashBookRoute
   '/daily-deposit': typeof AppDailyDepositRoute
   '/dashboard': typeof AppDashboardRoute
@@ -298,6 +306,7 @@ export interface FileRoutesById {
   '/_app/agent-bank-investment': typeof AppAgentBankInvestmentRoute
   '/_app/attendance': typeof AppAttendanceRoute
   '/_app/audit-report': typeof AppAuditReportRouteWithChildren
+  '/_app/bi-dashboard': typeof AppBiDashboardRoute
   '/_app/cash-book': typeof AppCashBookRoute
   '/_app/daily-deposit': typeof AppDailyDepositRoute
   '/_app/dashboard': typeof AppDashboardRoute
@@ -336,6 +345,7 @@ export interface FileRouteTypes {
     | '/agent-bank-investment'
     | '/attendance'
     | '/audit-report'
+    | '/bi-dashboard'
     | '/cash-book'
     | '/daily-deposit'
     | '/dashboard'
@@ -371,6 +381,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/agent-bank-investment'
     | '/attendance'
+    | '/bi-dashboard'
     | '/cash-book'
     | '/daily-deposit'
     | '/dashboard'
@@ -407,6 +418,7 @@ export interface FileRouteTypes {
     | '/_app/agent-bank-investment'
     | '/_app/attendance'
     | '/_app/audit-report'
+    | '/_app/bi-dashboard'
     | '/_app/cash-book'
     | '/_app/daily-deposit'
     | '/_app/dashboard'
@@ -628,6 +640,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppCashBookRouteImport
       parentRoute: typeof AppRoute
     }
+    '/_app/bi-dashboard': {
+      id: '/_app/bi-dashboard'
+      path: '/bi-dashboard'
+      fullPath: '/bi-dashboard'
+      preLoaderRoute: typeof AppBiDashboardRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/_app/audit-report': {
       id: '/_app/audit-report'
       path: '/audit-report'
@@ -749,6 +768,7 @@ interface AppRouteChildren {
   AppAgentBankInvestmentRoute: typeof AppAgentBankInvestmentRoute
   AppAttendanceRoute: typeof AppAttendanceRoute
   AppAuditReportRoute: typeof AppAuditReportRouteWithChildren
+  AppBiDashboardRoute: typeof AppBiDashboardRoute
   AppCashBookRoute: typeof AppCashBookRoute
   AppDailyDepositRoute: typeof AppDailyDepositRoute
   AppDashboardRoute: typeof AppDashboardRoute
@@ -778,6 +798,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppAgentBankInvestmentRoute: AppAgentBankInvestmentRoute,
   AppAttendanceRoute: AppAttendanceRoute,
   AppAuditReportRoute: AppAuditReportRouteWithChildren,
+  AppBiDashboardRoute: AppBiDashboardRoute,
   AppCashBookRoute: AppCashBookRoute,
   AppDailyDepositRoute: AppDailyDepositRoute,
   AppDashboardRoute: AppDashboardRoute,
