@@ -12,7 +12,7 @@ import { useFmt } from "@/lib/format";
 import { useI18n, type DictKey } from "@/lib/i18n";
 import { useState, useMemo } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Printer, FileDown, Pencil, X, ChevronDown, ChevronRight, Check, Sparkles } from "lucide-react";
+import { Plus, Trash2, Printer, FileDown, Pencil, X, ChevronDown, ChevronRight, Check, Sparkles, TrendingUp, TrendingDown, Calendar, Trophy, Flame, Wallet, BarChart3, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_app/expense")({ component: ExpensePage });
