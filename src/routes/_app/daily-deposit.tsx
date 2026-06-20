@@ -18,10 +18,11 @@ import { toast } from "sonner";
 import {
   Printer, Plus, Trash2, Pencil, TrendingUp, TrendingDown, Wallet,
   ArrowUp, ArrowDown, Minus, FileDown, BarChart3, Calendar, Save,
+  Sparkles, Trophy, Flame, Target, Activity, CalendarDays, Zap,
 } from "lucide-react";
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  CartesianGrid, Legend, Cell,
+  CartesianGrid, Legend, Cell, Area, AreaChart, RadialBarChart, RadialBar, PolarAngleAxis,
 } from "recharts";
 
 export const Route = createFileRoute("/_app/daily-deposit")({ component: DailyDepositPage });
