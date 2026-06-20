@@ -497,6 +497,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           description: string | null
+          file_mime: string | null
+          file_name: string | null
+          file_path: string | null
+          file_size: number | null
+          file_url: string | null
           id: string
           is_active: boolean
           is_default: boolean
@@ -510,6 +515,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          file_mime?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_url?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean
@@ -523,6 +533,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          file_mime?: string | null
+          file_name?: string | null
+          file_path?: string | null
+          file_size?: number | null
+          file_url?: string | null
           id?: string
           is_active?: boolean
           is_default?: boolean

@@ -1,0 +1,6 @@
+ALTER TABLE public.application_templates
+  ADD COLUMN IF NOT EXISTS file_url TEXT,
+  ADD COLUMN IF NOT EXISTS file_path TEXT,
+  ADD COLUMN IF NOT EXISTS file_name TEXT,
+  ADD COLUMN IF NOT EXISTS file_mime TEXT,
+  ADD COLUMN IF NOT EXISTS file_size BIGINT;

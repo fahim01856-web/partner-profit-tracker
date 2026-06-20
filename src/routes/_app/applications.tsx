@@ -240,7 +240,12 @@ function TemplatesTab() {
 
   const save = useMutation({
     mutationFn: async (t: any) => {
-      const payload = { name: t.name, category: t.category, description: t.description, body_html: t.body_html, is_active: t.is_active ?? true };
+      const payload: any = {
+        name: t.name, category: t.category, description: t.description,
+        body_html: t.body_html || "", is_active: t.is_active ?? true,
+        file_url: t.file_url ?? null, file_path: t.file_path ?? null,
+        file_name: t.file_name ?? null, file_mime: t.file_mime ?? null, file_size: t.file_size ?? null,
+      };
       if (t.id) {
         const { error } = await (supabase as any).from("application_templates").update(payload).eq("id", t.id);
         if (error) throw error;
@@ -299,12 +304,30 @@ function TemplatesTab() {
             <div className="flex items-start justify-between gap-2 mb-2">
               <div className="min-w-0">
                 <div className="font-semibold truncate">{t.name}</div>
-                <Badge variant="outline" className="text-[10px] mt-1">{t.category || "—"}</Badge>
+                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                  <Badge variant="outline" className="text-[10px]">{t.category || "—"}</Badge>
+                  {t.file_path && (
+                    <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-600">
+                      <FileText className="w-2.5 h-2.5 mr-0.5" />
+                      {(t.file_mime || "").includes("pdf") ? "PDF" : (t.file_mime || "").includes("word") || (t.file_name || "").match(/\.docx?$/i) ? "DOCX" : "FILE"}
+                    </Badge>
+                  )}
+                </div>
               </div>
               {!t.is_active && <Badge variant="secondary" className="text-[10px]">Inactive</Badge>}
             </div>
             {t.description && <div className="text-xs text-muted-foreground line-clamp-2 mb-2">{t.description}</div>}
+            {t.file_name && (
+              <div className="text-[11px] text-muted-foreground truncate mb-2 font-mono">📎 {t.file_name}</div>
+            )}
             <div className="flex gap-2 mt-2">
+              {t.file_path && (
+                <Button size="sm" variant="secondary" className="flex-1" onClick={async () => {
+                  const { data, error } = await supabase.storage.from("application-attachments").createSignedUrl(t.file_path, 300);
+                  if (error || !data?.signedUrl) { toast.error("ফাইল খোলা যাচ্ছে না"); return; }
+                  window.open(data.signedUrl, "_blank");
+                }}><Download className="w-3 h-3 mr-1" /> Open</Button>
+              )}
               <Button size="sm" variant="outline" className="flex-1" onClick={() => setEditing(t)}><Edit3 className="w-3 h-3 mr-1" /> Edit</Button>
               <Button size="sm" variant="ghost" onClick={() => { if (confirm("ডিলিট করবেন?")) del.mutate(t.id); }}><Trash2 className="w-3 h-3 text-destructive" /></Button>
             </div>
@@ -379,7 +402,9 @@ function defaultBody(name: string) {
 
 function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () => void; onSave: (v: any) => void }) {
   const [v, setV] = useState<any>(value);
+  const [uploading, setUploading] = useState(false);
   const taRef = useRef<HTMLTextAreaElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const insertPh = (ph: string) => {
     const ta = taRef.current; if (!ta) return;
@@ -387,6 +412,32 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
     const txt = `{{${ph}}}`;
     setV({ ...v, body_html: (v.body_html || "").slice(0, start) + txt + (v.body_html || "").slice(end) });
     setTimeout(() => { ta.focus(); ta.setSelectionRange(start + txt.length, start + txt.length); }, 0);
+  };
+
+  const uploadFile = async (file: File) => {
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "bin";
+      const path = `templates/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      const { error } = await supabase.storage.from("application-attachments").upload(path, file, { contentType: file.type, upsert: false });
+      if (error) throw error;
+      const { data: signed } = await supabase.storage.from("application-attachments").createSignedUrl(path, 60 * 60 * 24 * 365);
+      setV((prev: any) => ({ ...prev, file_path: path, file_url: signed?.signedUrl ?? null, file_name: file.name, file_mime: file.type, file_size: file.size }));
+      toast.success("ফাইল আপলোড হয়েছে");
+    } catch (e: any) { toast.error(e.message || "Upload failed"); }
+    finally { setUploading(false); }
+  };
+
+  const removeFile = async () => {
+    if (v.file_path) { try { await supabase.storage.from("application-attachments").remove([v.file_path]); } catch {} }
+    setV({ ...v, file_path: null, file_url: null, file_name: null, file_mime: null, file_size: null });
+  };
+
+  const openFile = async () => {
+    if (!v.file_path) return;
+    const { data, error } = await supabase.storage.from("application-attachments").createSignedUrl(v.file_path, 300);
+    if (error || !data?.signedUrl) { toast.error("ফাইল খোলা যাচ্ছে না"); return; }
+    window.open(data.signedUrl, "_blank");
   };
 
   return (
@@ -410,6 +461,33 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
                 </button>
               ))}
             </div>
+          </div>
+          <div className="col-span-2 rounded-lg border-2 border-dashed p-3 bg-muted/30">
+            <div className="flex items-center justify-between mb-2">
+              <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5 text-primary" /> ফাইল সংযুক্ত করুন (PDF / Word) — ঐচ্ছিক</Label>
+              {v.file_path && (
+                <div className="flex gap-1">
+                  <Button type="button" size="sm" variant="outline" onClick={openFile}><Eye className="w-3 h-3 mr-1" /> দেখুন</Button>
+                  <Button type="button" size="sm" variant="ghost" onClick={removeFile}><Trash2 className="w-3 h-3 text-destructive" /></Button>
+                </div>
+              )}
+            </div>
+            {v.file_path ? (
+              <div className="text-xs flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded p-2">
+                <FileText className="w-4 h-4 text-emerald-700 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium truncate">{v.file_name}</div>
+                  <div className="text-[10px] text-muted-foreground">{v.file_mime} • {(((v.file_size || 0) / 1024) | 0)} KB</div>
+                </div>
+                <Button type="button" size="sm" variant="secondary" onClick={() => fileRef.current?.click()} disabled={uploading}>প্রতিস্থাপন</Button>
+              </div>
+            ) : (
+              <Button type="button" variant="outline" className="w-full" onClick={() => fileRef.current?.click()} disabled={uploading}>
+                <Upload className="w-4 h-4 mr-1" /> {uploading ? "আপলোড হচ্ছে..." : "PDF / DOCX আপলোড"}
+              </Button>
+            )}
+            <input ref={fileRef} type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadFile(f); e.target.value = ""; }} />
+            <div className="text-[10px] text-muted-foreground mt-1.5">💡 আপনার রেডি-মেইড আবেদন (PDF/Word) এখানে সেভ করুন — পরে যেকোনো গ্রাহকের জন্য Open করে শুধু পরিবর্তনীয় তথ্য বসিয়ে প্রিন্ট করতে পারবেন।</div>
           </div>
           <div className="col-span-2 flex items-center gap-2">
             <input id="active" type="checkbox" checked={v.is_active ?? true} onChange={(e) => setV({ ...v, is_active: e.target.checked })} />
