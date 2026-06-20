@@ -45,22 +45,33 @@ function BIDashboard() {
       const firstStart = monthRange(months[0].year, months[0].month).start;
       const lastEnd = monthRange(months[5].year, months[5].month).end;
 
-      const [mri, mp, exp, expCats, staff, tasks, pending, assets, loan, deposits, remit, accts, payments, attendance, targets] = await Promise.all([
+      const ninetyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 90).toISOString().slice(0, 10);
+      const todayStr = now.toISOString().slice(0, 10);
+
+      const [mri, mp, exp, expCats, staff, tasks, pending, assets, loan, deposits, remit, accts, payments, attendance, targets,
+             cashEntries, cashOpening, kyc, perf, invest, audits, auditChecks] = await Promise.all([
         supabase.from("monthly_report_items").select("year,month,amount,item_type"),
         supabase.from("monthly_profits").select("*"),
         supabase.from("expenses").select("amount,category_id,date").gte("date", firstStart).lte("date", lastEnd),
         supabase.from("expense_categories").select("id,name_bn,name_en"),
-        supabase.from("staff").select("id,status,position"),
+        supabase.from("staff").select("id,name,status,position"),
         supabase.from("tasks").select("id,status,priority,due_date"),
         supabase.from("pending_works").select("id,status,priority"),
         supabase.from("agent_bank_assets").select("name,quantity"),
-        supabase.from("loan_persons").select("id,status"),
+        supabase.from("loan_persons").select("id,status,loan_amount,opening_balance"),
         supabase.from("daily_deposits").select("date,amount").gte("date", firstStart).lte("date", lastEnd),
         supabase.from("remittance_entries").select("date,amount,quantity").gte("date", firstStart).lte("date", lastEnd),
         supabase.from("account_opening_entries").select("year,month,num_accounts"),
         supabase.from("upcoming_payments").select("amount,status,due_date"),
         supabase.from("attendance").select("date,status").gte("date", firstStart).lte("date", lastEnd),
         supabase.from("monthly_targets").select("year,month,target_category,target_amount,target_quantity,staff_name,status,deadline,priority").eq("year", prevMonth.year).eq("month", prevMonth.month),
+        supabase.from("cash_book_entries").select("date,entry_type,amount").gte("date", ninetyDaysAgo).lte("date", todayStr),
+        supabase.from("cash_book_opening").select("date,opening_balance").order("date", { ascending: false }).limit(1),
+        supabase.from("kyc_profiles").select("id,customer_name,status,risk_level,monthly_income"),
+        supabase.from("staff_performance").select("staff_id,rating,review_date").order("review_date", { ascending: false }),
+        supabase.from("agent_bank_investments").select("amount,type"),
+        supabase.from("audit_reports").select("id,audit_date,auditor_name,audit_type,reference_number").order("audit_date", { ascending: false }).limit(5),
+        supabase.from("audit_compliance_checks").select("audit_report_id,status,title"),
       ]);
 
       const trend = months.map((m) => {
