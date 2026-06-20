@@ -300,6 +300,12 @@ function SalarySheetPage() {
           <Button variant="secondary" onClick={saveAll} disabled={Object.keys(drafts).length === 0}>
             <Save className="w-4 h-4 mr-1" /> {t("ss_save_all")} ({fmt.num(Object.keys(drafts).length)})
           </Button>
+          <Button variant="outline" onClick={exportCSV}>
+            <Download className="w-4 h-4 mr-1" /> CSV
+          </Button>
+          <Button variant="outline" onClick={markAllPaid} className="border-success/40 text-success hover:bg-success/10">
+            <BadgeCheck className="w-4 h-4 mr-1" /> Mark All Paid
+          </Button>
           <Button onClick={() => window.print()}>
             <Printer className="w-4 h-4 mr-1" /> {t("ss_print_sheet")}
           </Button>
