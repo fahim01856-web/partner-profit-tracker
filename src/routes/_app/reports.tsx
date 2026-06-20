@@ -14,6 +14,7 @@ import {
   FileBarChart, Globe2, BookPlus, FolderOpen,
   Plus, Trash2, Printer, Download, FileSpreadsheet,
   Handshake, TrendingUp, Receipt, Wallet, Pencil, Save, X,
+  FileCheck2, AlertTriangle, CheckCircle2, Clock,
 } from "lucide-react";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
