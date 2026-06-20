@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -20,7 +20,15 @@ import {
   History as HistoryIcon, ShieldCheck, Sparkles,
 } from "lucide-react";
 
-export const Route = createFileRoute("/_app/applications")({ component: ApplicationsPage });
+const APPLICATION_TABS = ["dashboard", "applications", "templates", "customers"] as const;
+type ApplicationTab = (typeof APPLICATION_TABS)[number];
+const normalizeApplicationTab = (tab: unknown): ApplicationTab =>
+  APPLICATION_TABS.includes(tab as ApplicationTab) ? (tab as ApplicationTab) : "dashboard";
+
+export const Route = createFileRoute("/_app/applications")({
+  validateSearch: (search) => ({ tab: normalizeApplicationTab(search.tab) }),
+  component: ApplicationsPage,
+});
 
 // ---------------- Constants ----------------
 const DEFAULT_TEMPLATES: { name: string; category: string }[] = [
@@ -55,10 +63,34 @@ const PLACEHOLDERS = [
 ];
 
 // ---------------- Helpers ----------------
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function sanitizeTemplateHtml(html: string) {
+  return String(html || "")
+    .replace(/<\s*(script|iframe|object|embed|link|meta|base)[\s\S]*?<\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|iframe|object|embed|link|meta|base)[^>]*\/?\s*>/gi, "")
+    .replace(/<\s*\/?\s*(html|head|body)[^>]*>/gi, "")
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/\s(href|src)\s*=\s*(['"]?)\s*javascript:[^\s>]*\2/gi, "");
+}
+
 function renderTemplate(html: string, fields: Record<string, any>) {
-  return html.replace(/\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/gi, (_, k) =>
-    fields[k] != null && fields[k] !== "" ? String(fields[k]) : `{{${k}}}`
+  return sanitizeTemplateHtml(html).replace(/\{\{\s*([a-z_][a-z0-9_]*)\s*\}\}/gi, (_, k) =>
+    fields[k] != null && fields[k] !== "" ? escapeHtml(String(fields[k])) : `{{${k}}}`
   );
+}
+
+function documentPreviewSrcDoc(html: string) {
+  return `<!doctype html><html><head><meta charset="utf-8" />
+    <style>body{margin:0;padding:16px;background:#fff;}img{max-width:100%;height:auto;}table{max-width:100%;border-collapse:collapse;}*{box-sizing:border-box;}</style>
+    </head><body>${html}</body></html>`;
 }
 
 function buildDocumentHtml(opts: {
@@ -137,7 +169,12 @@ function exportCsv(rows: any[], filename: string) {
 
 // ---------------- Main ----------------
 function ApplicationsPage() {
-  const [tab, setTab] = useState("dashboard");
+  const { tab } = Route.useSearch();
+  const navigate = useNavigate();
+  const setTab = (nextTab: string) => {
+    const normalized = normalizeApplicationTab(nextTab);
+    navigate({ to: "/applications", search: { tab: normalized }, replace: true });
+  };
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -364,14 +401,14 @@ function TemplatesTab() {
       </div>
 
       {editing && <TemplateEditor value={editing} onClose={() => setEditing(null)} onSave={(v) => save.mutate(v)} />}
-      {using && <TemplateQuickUse template={using} onClose={() => setUsing(null)} />}
+      {using && <TemplateQuickUse key={using.id || using.name} template={using} onClose={() => setUsing(null)} />}
       {aiOpen && <AiTemplateDialog onClose={() => setAiOpen(false)} onGenerated={(t) => { setAiOpen(false); setEditing({ ...t, is_active: true }); }} />}
     </div>
   );
 }
 
 function TemplateQuickUse({ template, onClose }: { template: any; onClose: () => void }) {
-  const placeholders = useMemo(() => extractPlaceholders(template.body_html || ""), [template]);
+  const placeholders = useMemo(() => extractPlaceholders(template.body_html || ""), [template.body_html]);
   const [fields, setFields] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = { date: new Date().toLocaleDateString("bn-BD") };
     placeholders.forEach((p) => { if (!(p in init)) init[p] = ""; });
@@ -420,7 +457,7 @@ function TemplateQuickUse({ template, onClose }: { template: any; onClose: () =>
   };
 
   return (
-    <Dialog open onOpenChange={onClose}>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent className="max-w-6xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -460,9 +497,9 @@ function TemplateQuickUse({ template, onClose }: { template: any; onClose: () =>
                     <div key={p}>
                       <Label className="text-[10px] text-muted-foreground">{`{{${p}}}`}</Label>
                       {["reason", "remarks", "address"].includes(p) ? (
-                        <Textarea rows={2} value={fields[p] || ""} onChange={(e) => setFields({ ...fields, [p]: e.target.value })} className="text-sm" />
+                        <Textarea rows={2} value={fields[p] || ""} onChange={(e) => setFields((prev) => ({ ...prev, [p]: e.target.value }))} className="text-sm" />
                       ) : (
-                        <Input value={fields[p] || ""} onChange={(e) => setFields({ ...fields, [p]: e.target.value })} className="h-8 text-sm" />
+                        <Input value={fields[p] || ""} onChange={(e) => setFields((prev) => ({ ...prev, [p]: e.target.value }))} className="h-8 text-sm" />
                       )}
                     </div>
                   ))}
@@ -474,7 +511,12 @@ function TemplateQuickUse({ template, onClose }: { template: any; onClose: () =>
           {/* Right: Live preview */}
           <div>
             <Label className="text-xs font-semibold flex items-center gap-1"><Eye className="w-3 h-3" /> Live Preview</Label>
-            <div className="bg-white border rounded p-4 mt-1 max-h-[60vh] overflow-y-auto text-xs" dangerouslySetInnerHTML={{ __html: html }} />
+            <iframe
+              title="Application live preview"
+              srcDoc={documentPreviewSrcDoc(html)}
+              sandbox=""
+              className="bg-white border rounded mt-1 h-[60vh] w-full"
+            />
           </div>
         </div>
         <DialogFooter className="flex flex-wrap gap-2">
