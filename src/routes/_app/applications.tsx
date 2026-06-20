@@ -285,6 +285,9 @@ function TemplatesTab() {
         <Button variant="outline" onClick={() => seedDefaults.mutate()} disabled={seedDefaults.isPending}>
           <Sparkles className="w-4 h-4 mr-1" /> ডিফল্ট লোড
         </Button>
+        <Button variant="secondary" onClick={() => setAiOpen(true)}>
+          <Sparkles className="w-4 h-4 mr-1" /> AI দিয়ে তৈরি
+        </Button>
         <Button onClick={() => setEditing({ name: "", category: "Custom", body_html: "", is_active: true })}>
           <Plus className="w-4 h-4 mr-1" /> নতুন টেমপ্লেট
         </Button>
