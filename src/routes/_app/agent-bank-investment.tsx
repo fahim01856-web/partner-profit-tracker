@@ -193,6 +193,73 @@ function InvestmentPage() {
     return { invested, withdrawn, balance: invested - withdrawn };
   }, [perPartner]);
 
+  const [search, setSearch] = useState("");
+
+  // ============== SMART ANALYTICS ==============
+  const analytics = useMemo(() => {
+    const now = new Date();
+    const ymThis = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const ymLast = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}`;
+    const sum = (pred: (r: Row) => boolean) => rows.filter(pred).reduce((s, r) => s + Number(r.amount), 0);
+
+    const thisMonthIn = sum((r) => r.type === "investment" && r.date.startsWith(ymThis));
+    const thisMonthOut = sum((r) => r.type === "withdrawal" && r.date.startsWith(ymThis));
+    const lastMonthIn = sum((r) => r.type === "investment" && r.date.startsWith(ymLast));
+    const lastMonthOut = sum((r) => r.type === "withdrawal" && r.date.startsWith(ymLast));
+    const thisNet = thisMonthIn - thisMonthOut;
+    const lastNet = lastMonthIn - lastMonthOut;
+    const momPct = lastNet === 0 ? 0 : ((thisNet - lastNet) / Math.abs(lastNet)) * 100;
+
+    // Last 12 months trend
+    const trend: { month: string; invested: number; withdrawn: number; net: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US", { month: "short", year: "2-digit" });
+      const inv = sum((r) => r.type === "investment" && r.date.startsWith(ym));
+      const wd = sum((r) => r.type === "withdrawal" && r.date.startsWith(ym));
+      trend.push({ month: label, invested: inv, withdrawn: wd, net: inv - wd });
+    }
+
+    const cashTotal = sum((r) => (r.payment_method ?? "cash") === "cash");
+    const bankTotal = sum((r) => r.payment_method === "bank");
+    const methodSplit = [
+      { name: lang === "bn" ? "ক্যাশ" : "Cash", value: cashTotal, color: "hsl(var(--success))" },
+      { name: lang === "bn" ? "ব্যাংক" : "Bank", value: bankTotal, color: "hsl(var(--primary))" },
+    ];
+
+    const partnerShare = perPartner
+      .filter((p) => p.invested > 0)
+      .sort((a, b) => b.invested - a.invested)
+      .slice(0, 6)
+      .map((p) => ({ name: p.name, value: p.invested }));
+
+    const topInvestor = perPartner.reduce<{ name: string; invested: number } | null>((m, p) => !m || p.invested > m.invested ? p : m, null);
+    const largestTx = rows.reduce<Row | null>((m, r) => !m || Number(r.amount) > Number(m.amount) ? r : m, null);
+    const avgTicket = rows.length ? rows.reduce((s, r) => s + Number(r.amount), 0) / rows.length : 0;
+    const activePartners = perPartner.filter((p) => p.balance > 0).length;
+
+    return { thisMonthIn, thisMonthOut, lastMonthIn, lastMonthOut, thisNet, lastNet, momPct, trend, methodSplit, partnerShare, topInvestor, largestTx, avgTicket, activePartners };
+  }, [rows, perPartner, lang]);
+
+  const exportCSV = () => {
+    const header = ["Date", "Voucher", "Partner", "Type", "Method", "Amount", "Description"];
+    const lines = [header.join(",")];
+    for (const r of rows) {
+      const vals = [r.date, r.voucher_no ?? "", r.partner_name, r.type, r.payment_method ?? "", String(r.amount), (r.description ?? "").replace(/[,\n]/g, " ")];
+      lines.push(vals.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `agent-bank-investments-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--destructive))", "#8b5cf6", "#f59e0b", "#06b6d4"];
+
   const payMethodLabel = (v: string | null) => {
     const m = PAY_METHODS.find((x) => x.value === (v ?? "cash"));
     return m ? (lang === "bn" ? m.bn : m.en) : (v ?? "-");
