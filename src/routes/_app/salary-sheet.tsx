@@ -11,7 +11,7 @@ import { useI18n } from "@/lib/i18n";
 import { amountInWords } from "@/lib/amount-words";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Printer, Save, Search, CheckCircle2, Clock } from "lucide-react";
+import { Printer, Save, Search, CheckCircle2, Clock, Download, TrendingUp, TrendingDown, Minus, Trophy, Wallet, Users, BadgeCheck, AlertTriangle, Sparkles, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StaffPhoto } from "@/components/StaffPhoto";
 
