@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
@@ -170,10 +170,10 @@ function exportCsv(rows: any[], filename: string) {
 // ---------------- Main ----------------
 function ApplicationsPage() {
   const { tab } = Route.useSearch();
-  const navigate = useNavigate();
+  const navigate = Route.useNavigate();
   const setTab = (nextTab: string) => {
     const normalized = normalizeApplicationTab(nextTab);
-    navigate({ search: (prev) => ({ ...prev, tab: normalized }), replace: true });
+    navigate({ search: { tab: normalized }, replace: true });
   };
   return (
     <div className="space-y-5">
