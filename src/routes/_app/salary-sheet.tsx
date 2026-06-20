@@ -84,6 +84,23 @@ function SalarySheetPage() {
     },
   });
 
+  // Previous month salaries for MoM comparison
+  const prevPeriod = useMemo(() => {
+    const m = month === 1 ? 12 : month - 1;
+    const y = month === 1 ? year - 1 : year;
+    return { m, y };
+  }, [month, year]);
+
+  const { data: prevSalaries = [] } = useQuery({
+    queryKey: ["ss-salaries-prev", prevPeriod.m, prevPeriod.y],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("salaries").select("*").eq("month", prevPeriod.m).eq("year", prevPeriod.y);
+      if (error) throw error;
+      return data as Salary[];
+    },
+  });
+
   // Local edit buffer keyed by staff_id
   const [drafts, setDrafts] = useState<Record<string, RowDraft>>({});
 
