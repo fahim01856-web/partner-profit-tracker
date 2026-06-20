@@ -173,7 +173,7 @@ function ApplicationsPage() {
   const navigate = useNavigate();
   const setTab = (nextTab: string) => {
     const normalized = normalizeApplicationTab(nextTab);
-    navigate({ to: "/applications", search: { tab: normalized }, replace: true });
+    navigate({ search: (prev) => ({ ...prev, tab: normalized }), replace: true });
   };
   return (
     <div className="space-y-5">
