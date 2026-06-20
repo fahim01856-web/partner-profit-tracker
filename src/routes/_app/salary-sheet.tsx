@@ -11,7 +11,7 @@ import { useI18n } from "@/lib/i18n";
 import { amountInWords } from "@/lib/amount-words";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Printer, Save, Search, CheckCircle2, Clock } from "lucide-react";
+import { Printer, Save, Search, CheckCircle2, Clock, Download, TrendingUp, TrendingDown, Minus, Trophy, Wallet, Users, BadgeCheck, AlertTriangle, Sparkles, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { StaffPhoto } from "@/components/StaffPhoto";
 
@@ -79,6 +79,23 @@ function SalarySheetPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("salaries").select("*").eq("month", month).eq("year", year);
+      if (error) throw error;
+      return data as Salary[];
+    },
+  });
+
+  // Previous month salaries for MoM comparison
+  const prevPeriod = useMemo(() => {
+    const m = month === 1 ? 12 : month - 1;
+    const y = month === 1 ? year - 1 : year;
+    return { m, y };
+  }, [month, year]);
+
+  const { data: prevSalaries = [] } = useQuery({
+    queryKey: ["ss-salaries-prev", prevPeriod.m, prevPeriod.y],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("salaries").select("*").eq("month", prevPeriod.m).eq("year", prevPeriod.y);
       if (error) throw error;
       return data as Salary[];
     },
@@ -192,6 +209,63 @@ function SalarySheetPage() {
   const initials = (name: string) =>
     name.split(/\s+/).map((s) => s[0]).slice(0, 2).join("").toUpperCase();
 
+  // Smart analytics
+  const analytics = useMemo(() => {
+    const rows = filtered.map((s) => {
+      const r = getRow(s);
+      const existing = salaries.find((x) => x.staff_id === s.id);
+      return { staff: s, net: computeNet(r), status: existing?.payment_status ?? "pending", paidOn: existing?.paid_on ?? null };
+    });
+    const paidCount = rows.filter((x) => x.status === "paid").length;
+    const pendingCount = rows.length - paidCount;
+    const paidAmount = rows.filter((x) => x.status === "paid").reduce((a, x) => a + x.net, 0);
+    const pendingAmount = totals.net - paidAmount;
+    const avg = rows.length ? totals.net / rows.length : 0;
+    const sorted = [...rows].sort((a, b) => b.net - a.net);
+    const top3 = sorted.slice(0, 3);
+    const highest = sorted[0];
+    const lowest = sorted[sorted.length - 1];
+    const prevTotal = prevSalaries.reduce((a, x) => a + Number(x.net_paid || 0), 0);
+    const momPct = prevTotal > 0 ? ((totals.net - prevTotal) / prevTotal) * 100 : 0;
+    const progress = rows.length ? Math.round((paidCount / rows.length) * 100) : 0;
+    const bonusRecipients = rows.filter((x) => Number(getRow(x.staff).bonus) > 0).length;
+    const deductionCount = rows.filter((x) => Number(getRow(x.staff).deductions) > 0).length;
+    return { paidCount, pendingCount, paidAmount, pendingAmount, avg, top3, highest, lowest, prevTotal, momPct, progress, bonusRecipients, deductionCount };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtered, drafts, salaries, prevSalaries, totals]);
+
+  const exportCSV = () => {
+    const headers = ["SL", "Name", "Designation", "Phone", "Working Days", "Basic", "Bonus", "Allowance", "Deduction", "Net", "Status"];
+    const lines = [headers.join(",")];
+    filtered.forEach((s, i) => {
+      const r = getRow(s);
+      const existing = salaries.find((x) => x.staff_id === s.id);
+      lines.push([
+        i + 1, `"${s.name}"`, `"${s.position ?? ""}"`, s.phone ?? "",
+        r.working_days, r.base_salary, r.bonus, r.allowance, r.deductions,
+        computeNet(r), existing?.payment_status ?? "pending",
+      ].join(","));
+    });
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `salary-sheet-${year}-${String(month).padStart(2, "0")}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+    toast.success("CSV exported");
+  };
+
+  const markAllPaid = async () => {
+    const pending = filtered.filter((s) => {
+      const ex = salaries.find((x) => x.staff_id === s.id);
+      return (ex?.payment_status ?? "pending") !== "paid";
+    });
+    if (pending.length === 0) { toast.info("All already paid"); return; }
+    for (const s of pending) {
+      await saveRow.mutateAsync({ staff_id: s.id, row: getRowSnapshot(s.id), status: "paid" });
+    }
+    toast.success(`Marked ${pending.length} as paid`);
+  };
+
   return (
     <div className="space-y-6">
       <style>{`@media print { @page { size: A4 landscape; margin: 8mm; } }`}</style>
@@ -226,6 +300,12 @@ function SalarySheetPage() {
           <Button variant="secondary" onClick={saveAll} disabled={Object.keys(drafts).length === 0}>
             <Save className="w-4 h-4 mr-1" /> {t("ss_save_all")} ({fmt.num(Object.keys(drafts).length)})
           </Button>
+          <Button variant="outline" onClick={exportCSV}>
+            <Download className="w-4 h-4 mr-1" /> CSV
+          </Button>
+          <Button variant="outline" onClick={markAllPaid} className="border-success/40 text-success hover:bg-success/10">
+            <BadgeCheck className="w-4 h-4 mr-1" /> Mark All Paid
+          </Button>
           <Button onClick={() => window.print()}>
             <Printer className="w-4 h-4 mr-1" /> {t("ss_print_sheet")}
           </Button>
@@ -241,6 +321,75 @@ function SalarySheetPage() {
         <SummaryCard label={t("ss_total_deduction")} value={fmt.bdt(totals.ded)} accent="text-destructive" />
         <SummaryCard label={t("ss_grand_total")} value={fmt.bdt(totals.net)} accent="text-primary" />
       </div>
+
+      {/* Smart Analytics Panel */}
+      <div className="no-print grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Payment Progress */}
+        <Card className="p-4 col-span-1 lg:col-span-2 bg-gradient-to-br from-primary/5 to-transparent border-primary/20">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <h3 className="font-semibold text-sm">Payment Progress — {periodLabel}</h3>
+            </div>
+            <span className="text-xs font-bold text-primary">{fmt.num(analytics.progress)}%</span>
+          </div>
+          <div className="h-2 rounded-full bg-muted overflow-hidden mb-3">
+            <div className="h-full bg-gradient-to-r from-success to-primary transition-all" style={{ width: `${analytics.progress}%` }} />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <MiniMetric icon={<BadgeCheck className="w-4 h-4" />} label="Paid" value={fmt.num(analytics.paidCount)} sub={fmt.bdt(analytics.paidAmount)} tone="success" />
+            <MiniMetric icon={<Clock className="w-4 h-4" />} label="Pending" value={fmt.num(analytics.pendingCount)} sub={fmt.bdt(analytics.pendingAmount)} tone="warn" />
+            <MiniMetric icon={<Wallet className="w-4 h-4" />} label="Avg / Staff" value={fmt.bdt(analytics.avg)} tone="default" />
+            <MiniMetric
+              icon={analytics.momPct > 0 ? <TrendingUp className="w-4 h-4" /> : analytics.momPct < 0 ? <TrendingDown className="w-4 h-4" /> : <Minus className="w-4 h-4" />}
+              label="vs Last Month"
+              value={`${analytics.momPct > 0 ? "+" : ""}${analytics.momPct.toFixed(1)}%`}
+              sub={fmt.bdt(analytics.prevTotal)}
+              tone={analytics.momPct > 0 ? "success" : analytics.momPct < 0 ? "danger" : "default"}
+            />
+          </div>
+        </Card>
+
+        {/* Top earners */}
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Trophy className="w-4 h-4 text-amber-500" />
+            <h3 className="font-semibold text-sm">Top Earners</h3>
+          </div>
+          <div className="space-y-2">
+            {analytics.top3.length === 0 && <p className="text-xs text-muted-foreground">No data</p>}
+            {analytics.top3.map((x, i) => (
+              <div key={x.staff.id} className="flex items-center gap-2 text-xs">
+                <span className={cn("w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
+                  i === 0 ? "bg-amber-100 text-amber-700" : i === 1 ? "bg-slate-100 text-slate-700" : "bg-orange-100 text-orange-700")}>
+                  {fmt.num(i + 1)}
+                </span>
+                <span className="flex-1 truncate font-medium">{x.staff.name}</span>
+                <span className="font-bold text-primary">{fmt.bdt(x.net)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Insights */}
+        <Card className="p-4 lg:col-span-3 bg-gradient-to-br from-accent/30 to-transparent">
+          <div className="flex items-center gap-2 mb-3">
+            <Calendar className="w-4 h-4 text-primary" />
+            <h3 className="font-semibold text-sm">Smart Insights</h3>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <InsightChip icon={<Users className="w-3.5 h-3.5" />} label="Active Staff" value={fmt.num(filtered.length)} />
+            <InsightChip icon={<TrendingUp className="w-3.5 h-3.5 text-success" />} label="Highest Pay" value={analytics.highest ? `${analytics.highest.staff.name} · ${fmt.bdt(analytics.highest.net)}` : "—"} />
+            <InsightChip icon={<TrendingDown className="w-3.5 h-3.5 text-destructive" />} label="Lowest Pay" value={analytics.lowest ? `${analytics.lowest.staff.name} · ${fmt.bdt(analytics.lowest.net)}` : "—"} />
+            <InsightChip icon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />} label="Bonus Recipients" value={`${fmt.num(analytics.bonusRecipients)} staff`} />
+            <InsightChip icon={<AlertTriangle className="w-3.5 h-3.5 text-destructive" />} label="With Deductions" value={`${fmt.num(analytics.deductionCount)} staff`} />
+            <InsightChip icon={<Wallet className="w-3.5 h-3.5" />} label="Payout Coverage" value={fmt.bdt(analytics.paidAmount)} />
+            <InsightChip icon={<Clock className="w-3.5 h-3.5 text-amber-600" />} label="Pending Payout" value={fmt.bdt(analytics.pendingAmount)} />
+            <InsightChip icon={<BadgeCheck className="w-3.5 h-3.5 text-success" />} label="Completion" value={`${fmt.num(analytics.progress)}%`} />
+          </div>
+        </Card>
+      </div>
+
 
       {/* A4 Print Sheet */}
       <div className="print-area">
@@ -391,3 +540,31 @@ function SummaryCard({ label, value, accent }: { label: string; value: string; a
     </Card>
   );
 }
+
+function MiniMetric({ icon, label, value, sub, tone = "default" }: { icon: React.ReactNode; label: string; value: string; sub?: string; tone?: "default" | "success" | "warn" | "danger" }) {
+  const toneCls =
+    tone === "success" ? "text-success border-success/30 bg-success/5" :
+    tone === "warn" ? "text-amber-600 border-amber-300 bg-amber-50 dark:bg-amber-900/10" :
+    tone === "danger" ? "text-destructive border-destructive/30 bg-destructive/5" :
+    "text-foreground border-border bg-muted/40";
+  return (
+    <div className={cn("rounded-lg border p-2.5", toneCls)}>
+      <div className="flex items-center gap-1.5 text-[11px] font-medium opacity-80">{icon}{label}</div>
+      <div className="text-base font-bold mt-0.5">{value}</div>
+      {sub && <div className="text-[10px] opacity-70 mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function InsightChip({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-md border bg-background/60 px-2.5 py-2">
+      <span className="shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <div className="text-[10px] text-muted-foreground uppercase tracking-wide">{label}</div>
+        <div className="text-xs font-semibold truncate">{value}</div>
+      </div>
+    </div>
+  );
+}
+
