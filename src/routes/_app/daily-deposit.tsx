@@ -668,7 +668,139 @@ function DailyDepositPage() {
         </TabsContent>
 
         {/* PRINT */}
+        {/* SMART INSIGHTS */}
+        <TabsContent value="insights" className="mt-4 space-y-4">
+          {/* KPI strip */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <GradientStat icon={<Flame className="w-4 h-4" />} label={lang === "bn" ? "বর্তমান স্ট্রিক" : "Current Streak"} value={`${fmt.num(insights.trailing)} ${lang === "bn" ? "দিন" : "days"}`} from="#f97316" to="#ef4444" />
+            <GradientStat icon={<Trophy className="w-4 h-4" />} label={lang === "bn" ? "সেরা স্ট্রিক" : "Best Streak"} value={`${fmt.num(insights.bestStreak)} ${lang === "bn" ? "দিন" : "days"}`} from="#eab308" to="#f59e0b" />
+            <GradientStat icon={<Zap className="w-4 h-4" />} label={lang === "bn" ? "কনসিস্টেন্সি" : "Consistency"} value={`${insights.consistency.toFixed(0)}%`} from="#10b981" to="#06b6d4" />
+            <GradientStat icon={<Activity className="w-4 h-4" />} label={lang === "bn" ? "মিডিয়ান" : "Median"} value={fmt.bdt(insights.median)} from="#8b5cf6" to="#ec4899" />
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Weekday performance */}
+            <Card className="p-4 lg:col-span-2">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><CalendarDays className="w-4 h-4 text-primary" />{lang === "bn" ? "সাপ্তাহিক পারফরমেন্স" : "Weekday Performance (Avg)"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={insights.wdData}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="day" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                    <Bar dataKey="avg" radius={[6, 6, 0, 0]}>
+                      {insights.wdData.map((d, i) => (
+                        <Cell key={i} fill={d.day === insights.bestWd.day ? "#10b981" : d.day === insights.worstWd.day ? "#ef4444" : "hsl(var(--primary))"} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+              <div className="grid grid-cols-2 gap-2 mt-3 text-xs">
+                <div className="p-2 rounded bg-emerald-50 text-emerald-700">
+                  <Trophy className="w-3 h-3 inline mr-1" />{lang === "bn" ? "সেরা দিন:" : "Best:"} <b>{insights.bestWd.day}</b> · {fmt.bdt(insights.bestWd.avg)}
+                </div>
+                <div className="p-2 rounded bg-red-50 text-red-700">
+                  <TrendingDown className="w-3 h-3 inline mr-1" />{lang === "bn" ? "দুর্বল দিন:" : "Weakest:"} <b>{insights.worstWd.day}</b> · {fmt.bdt(insights.worstWd.avg)}
+                </div>
+              </div>
+            </Card>
+
+            {/* Consistency gauge */}
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Zap className="w-4 h-4 text-primary" />{lang === "bn" ? "ধারাবাহিকতা স্কোর" : "Consistency Score"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={200}>
+                  <RadialBarChart innerRadius="65%" outerRadius="100%" data={[{ name: "x", value: insights.consistency, fill: insights.consistency > 70 ? "#10b981" : insights.consistency > 40 ? "#f59e0b" : "#ef4444" }]} startAngle={210} endAngle={-30}>
+                    <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                    <RadialBar background dataKey="value" cornerRadius={20} />
+                  </RadialBarChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+              <div className="text-center -mt-24 mb-16">
+                <div className="text-3xl font-extrabold">{insights.consistency.toFixed(0)}<span className="text-sm">%</span></div>
+                <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "ভোলাটিলিটি" : "Volatility"} {insights.volatility.toFixed(1)}%</div>
+              </div>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Cumulative deposit area */}
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><TrendingUp className="w-4 h-4 text-primary" />{lang === "bn" ? "ক্রমবর্ধমান ডিপোজিট" : "Cumulative Deposit"}</h3>
+              <ClientOnly fallback={<div className="h-64" />}>
+                <ResponsiveContainer width="100%" height={240}>
+                  <AreaChart data={(() => {
+                    let cum = 0;
+                    return ascSorted.slice(-60).map((d) => { cum += Number(d.amount); return { date: d.date.slice(5), cum }; });
+                  })()}>
+                    <defs>
+                      <linearGradient id="cumGrad" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.6} />
+                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="date" fontSize={11} />
+                    <YAxis fontSize={11} />
+                    <Tooltip formatter={(v: any) => fmt.bdt(Number(v))} />
+                    <Area type="monotone" dataKey="cum" stroke="hsl(var(--primary))" fill="url(#cumGrad)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </ClientOnly>
+            </Card>
+
+            {/* Top 5 days */}
+            <Card className="p-4">
+              <h3 className="font-semibold mb-3 flex items-center gap-2"><Trophy className="w-4 h-4 text-amber-500" />{lang === "bn" ? "সেরা ৫ দিন" : "Top 5 Days"}</h3>
+              <div className="space-y-2">
+                {insights.top5.map((d, i) => {
+                  const max = insights.top5[0]?.amount || 1;
+                  const pct = (Number(d.amount) / max) * 100;
+                  const medals = ["🥇", "🥈", "🥉", "4", "5"];
+                  return (
+                    <div key={d.id} className="flex items-center gap-3">
+                      <div className="w-7 text-center text-lg">{medals[i]}</div>
+                      <div className="flex-1">
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">{fmt.date(d.date)}</span>
+                          <span className="font-bold">{fmt.bdt(d.amount)}</span>
+                        </div>
+                        <div className="h-2 bg-muted rounded overflow-hidden">
+                          <div className="h-full rounded" style={{ width: `${pct}%`, background: "linear-gradient(90deg, #f59e0b, #ef4444)" }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {insights.top5.length === 0 && <div className="text-sm text-muted-foreground text-center py-4">{t("noEntries")}</div>}
+              </div>
+            </Card>
+          </div>
+
+          {/* Up/Down/Flat days summary */}
+          <Card className="p-4">
+            <h3 className="font-semibold mb-3 flex items-center gap-2"><Activity className="w-4 h-4 text-primary" />{lang === "bn" ? "দৈনিক পরিবর্তনের বিশ্লেষণ" : "Daily Movement Analysis"}</h3>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-3 rounded-lg bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border border-emerald-500/20">
+                <div className="text-xs text-emerald-700 flex items-center gap-1"><ArrowUp className="w-3 h-3" />{lang === "bn" ? "বৃদ্ধির দিন" : "Up Days"}</div>
+                <div className="text-2xl font-bold text-emerald-600 mt-1">{fmt.num(insights.ups)}</div>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-red-500/10 to-red-500/5 border border-red-500/20">
+                <div className="text-xs text-red-700 flex items-center gap-1"><ArrowDown className="w-3 h-3" />{lang === "bn" ? "কমে যাওয়া" : "Down Days"}</div>
+                <div className="text-2xl font-bold text-red-600 mt-1">{fmt.num(insights.downs)}</div>
+              </div>
+              <div className="p-3 rounded-lg bg-gradient-to-br from-muted to-transparent border">
+                <div className="text-xs text-muted-foreground flex items-center gap-1"><Minus className="w-3 h-3" />{lang === "bn" ? "অপরিবর্তিত" : "Flat"}</div>
+                <div className="text-2xl font-bold mt-1">{fmt.num(insights.flats)}</div>
+              </div>
+            </div>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="print" className="mt-4 space-y-4">
+
           <Card className="p-4"><FiltersBar /></Card>
           <div className="flex gap-2">
             <Button onClick={() => window.print()}><Printer className="w-4 h-4" /> {t("print")} (PDF)</Button>
