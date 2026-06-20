@@ -300,9 +300,12 @@ function BIDashboard() {
               : `Smart analytics on previous month's (${metrics.prevMonth.month}/${metrics.prevMonth.year}) finalized data`}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 print:hidden">
           <Button variant="outline" size="sm" onClick={() => refetch()} disabled={isFetching}>
             <RefreshCw className={`w-4 h-4 mr-1 ${isFetching ? "animate-spin" : ""}`} /> {lang === "bn" ? "রিফ্রেশ" : "Refresh"}
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Printer className="w-4 h-4 mr-1" /> {lang === "bn" ? "PDF এক্সপোর্ট" : "Export PDF"}
           </Button>
           <Button size="sm" onClick={() => analyze.mutate()} disabled={analyze.isPending}>
             {analyze.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Sparkles className="w-4 h-4 mr-1" />}
