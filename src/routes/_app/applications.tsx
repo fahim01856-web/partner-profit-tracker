@@ -226,6 +226,7 @@ function StatCard({ title, value, icon: Icon, color }: any) {
 function TemplatesTab() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any>(null);
+  const [aiOpen, setAiOpen] = useState(false);
   const [search, setSearch] = useState("");
 
   const { data: tpls = [] } = useQuery({
