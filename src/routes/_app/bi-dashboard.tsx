@@ -449,6 +449,73 @@ function BIDashboard() {
         )}
       </Card>
 
+      {/* Compliance, Audit, Target Tracking, Expense Control, Future Prediction */}
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2"><ShieldCheck className="w-5 h-5 text-emerald-500" /><div className="text-sm font-semibold">{lang === "bn" ? "কমপ্লায়েন্স স্কোর" : "Compliance Score"}</div></div>
+          <div className="text-3xl font-bold">{metrics.complianceScore}%</div>
+          <div className="w-full h-1.5 bg-muted rounded-full mt-2 overflow-hidden"><div className={`h-full ${metrics.complianceScore >= 80 ? "bg-emerald-500" : metrics.complianceScore >= 50 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${metrics.complianceScore}%` }} /></div>
+          <div className="text-[11px] text-muted-foreground mt-1">{metrics.latestChecks} {lang === "bn" ? "সর্বশেষ চেক" : "checks in latest audit"}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2"><FileCheck2 className="w-5 h-5 text-indigo-500" /><div className="text-sm font-semibold">{lang === "bn" ? "অডিট স্ট্যাটাস" : "Audit Status"}</div></div>
+          <div className="text-sm font-medium">{metrics.latestAudit?.audit_type ?? "—"}</div>
+          <div className="text-[11px] text-muted-foreground">{metrics.latestAudit?.audit_date ?? "—"} • {metrics.latestAudit?.auditor_name ?? "—"}</div>
+          <div className="text-[11px] mt-1">{metrics.auditCount} {lang === "bn" ? "সাম্প্রতিক রিপোর্ট" : "recent reports"}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2"><Target className="w-5 h-5 text-blue-500" /><div className="text-sm font-semibold">{lang === "bn" ? "টার্গেট ট্র্যাকিং" : "Target Tracking"}</div></div>
+          <div className="text-sm">{lang === "bn" ? "মুনাফা" : "Profit"}: <b>{Math.min(100, Math.round((metrics.cur.profit / Math.max(1, metrics.requiredProfit)) * 100))}%</b></div>
+          <div className="text-sm">{lang === "bn" ? "আয়" : "Income"}: <b>{metrics.targetIncome > 0 ? Math.min(100, Math.round((metrics.cur.income / metrics.targetIncome) * 100)) : 0}%</b></div>
+          <div className="text-[11px] text-muted-foreground mt-1">{metrics.targetCount} {lang === "bn" ? "টার্গেট এন্ট্রি" : "target entries"}</div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-2"><Gauge className="w-5 h-5 text-red-500" /><div className="text-sm font-semibold">{lang === "bn" ? "ব্যয় নিয়ন্ত্রণ" : "Expense Control"}</div></div>
+          <div className="text-3xl font-bold">{metrics.expenseRatio.toFixed(0)}%</div>
+          <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "আয়ের শতকরা ব্যয়" : "of income spent"}</div>
+          <div className={`text-[11px] font-semibold mt-1 ${metrics.expenseRatio > 80 ? "text-red-600" : metrics.expenseRatio > 60 ? "text-amber-600" : "text-emerald-600"}`}>
+            {metrics.expenseRatio > 80 ? (lang === "bn" ? "ঝুঁকিপূর্ণ" : "High risk") : metrics.expenseRatio > 60 ? (lang === "bn" ? "সতর্ক" : "Caution") : (lang === "bn" ? "ভালো" : "Healthy")}
+          </div>
+        </Card>
+      </div>
+
+      {/* Customers, VIP, Staff Ranking, AI Prediction */}
+      <div className="grid md:grid-cols-2 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3"><Crown className="w-5 h-5 text-amber-500" /><h3 className="font-semibold">{lang === "bn" ? "গ্রাহক ও VIP বিশ্লেষণ" : "Customer & VIP Analysis"}</h3></div>
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="p-3 rounded-md bg-muted/50"><div className="text-2xl font-bold">{fmt.num(metrics.totalCustomers)}</div><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "মোট গ্রাহক" : "Total Customers"}</div></div>
+            <div className="p-3 rounded-md bg-amber-500/10"><div className="text-2xl font-bold text-amber-600">{fmt.num(metrics.vipCustomers)}</div><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "VIP গ্রাহক" : "VIP Customers"}</div></div>
+            <div className="p-3 rounded-md bg-emerald-500/10"><div className="text-sm font-bold text-emerald-600">{fmtBDT(metrics.customerBusinessValue, lang)}</div><div className="text-[10px] text-muted-foreground">{lang === "bn" ? "বার্ষিক ভ্যালু" : "Yearly Value"}</div></div>
+          </div>
+        </Card>
+        <Card className="p-4">
+          <div className="flex items-center gap-2 mb-3"><Users className="w-5 h-5 text-blue-500" /><h3 className="font-semibold">{lang === "bn" ? "স্টাফ এফিসিয়েন্সি র‌্যাঙ্কিং" : "Staff Efficiency Ranking"}</h3></div>
+          {metrics.staffRanking.length === 0 ? (
+            <div className="text-xs text-muted-foreground">{lang === "bn" ? "এখনো পারফরম্যান্স রিভিউ নেই" : "No performance reviews yet"}</div>
+          ) : (
+            <div className="space-y-1.5">
+              {metrics.staffRanking.map((s: any, i: number) => (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center">{i + 1}</span>{s.name}</div>
+                  <div className="flex items-center gap-2"><span className="font-semibold">{s.rating.toFixed(1)}</span><span className="text-[10px] text-muted-foreground">★ ({s.reviews})</span></div>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+        <Card className="p-4 md:col-span-2 bg-gradient-to-br from-purple-500/10 to-transparent border-purple-500/30">
+          <div className="flex items-center gap-2 mb-3"><Brain className="w-5 h-5 text-purple-500" /><h3 className="font-semibold">{lang === "bn" ? "AI ফিউচার প্রেডিকশন" : "AI Future Prediction"}</h3></div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "এ মাসে প্রজেক্টেড মুনাফা" : "Projected next-month profit"}</div><div className="text-lg font-bold">{fmtBDT(metrics.projectedNext, lang)}</div></div>
+            <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "বার্ষিক প্রজেক্টেড মুনাফা" : "Projected yearly profit"}</div><div className="text-lg font-bold">{fmtBDT(metrics.projectedYear, lang)}</div></div>
+            <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "ডিপোজিট গ্রোথ" : "Deposit growth"}</div><div className={`text-lg font-bold ${metrics.depositGrowth >= 0 ? "text-emerald-600" : "text-red-600"}`}>{metrics.depositGrowth.toFixed(1)}%</div></div>
+            <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "ঝুঁকি লেভেল" : "Risk level"}</div><div className={`text-lg font-bold ${metrics.smartAlerts.some((a:any)=>a.level==="high") ? "text-red-600" : metrics.smartAlerts.some((a:any)=>a.level==="medium") ? "text-amber-600" : "text-emerald-600"}`}>{metrics.smartAlerts.some((a:any)=>a.level==="high") ? (lang==="bn"?"উচ্চ":"High") : metrics.smartAlerts.some((a:any)=>a.level==="medium") ? (lang==="bn"?"মাঝারি":"Medium") : (lang==="bn"?"নিম্ন":"Low")}</div></div>
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-2">{lang === "bn" ? "৬-মাসের গড় ও সর্বশেষ মাসের ওজনযুক্ত পূর্বাভাস। 'AI বিশ্লেষণ করুন' বাটনে আরও বিস্তারিত পান।" : "Weighted forecast from 6-month average + last month. Click 'Run AI Analysis' for deeper insight."}</div>
+        </Card>
+      </div>
+
       {/* Charts */}
       <div className="grid lg:grid-cols-2 gap-4">
         <Card className="p-4">
