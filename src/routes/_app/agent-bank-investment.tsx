@@ -13,7 +13,10 @@ import { toast } from "sonner";
 import {
   Plus, Trash2, Printer, Pencil, X, TrendingUp, TrendingDown, Wallet,
   ArrowLeft, Users, FileText, Image as ImageIcon, Upload, Banknote, Landmark,
+  Search, Download, Award, Activity, PieChart as PieIcon, BarChart3,
 } from "lucide-react";
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, PieChart, Pie, Cell, Legend } from "recharts";
+import { ClientOnly } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_app/agent-bank-investment")({ component: InvestmentPage });
 
@@ -189,6 +192,73 @@ function InvestmentPage() {
     const withdrawn = perPartner.reduce((s, p) => s + p.withdrawn, 0);
     return { invested, withdrawn, balance: invested - withdrawn };
   }, [perPartner]);
+
+  const [search, setSearch] = useState("");
+
+  // ============== SMART ANALYTICS ==============
+  const analytics = useMemo(() => {
+    const now = new Date();
+    const ymThis = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const lastDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const ymLast = `${lastDate.getFullYear()}-${String(lastDate.getMonth() + 1).padStart(2, "0")}`;
+    const sum = (pred: (r: Row) => boolean) => rows.filter(pred).reduce((s, r) => s + Number(r.amount), 0);
+
+    const thisMonthIn = sum((r) => r.type === "investment" && r.date.startsWith(ymThis));
+    const thisMonthOut = sum((r) => r.type === "withdrawal" && r.date.startsWith(ymThis));
+    const lastMonthIn = sum((r) => r.type === "investment" && r.date.startsWith(ymLast));
+    const lastMonthOut = sum((r) => r.type === "withdrawal" && r.date.startsWith(ymLast));
+    const thisNet = thisMonthIn - thisMonthOut;
+    const lastNet = lastMonthIn - lastMonthOut;
+    const momPct = lastNet === 0 ? 0 : ((thisNet - lastNet) / Math.abs(lastNet)) * 100;
+
+    // Last 12 months trend
+    const trend: { month: string; invested: number; withdrawn: number; net: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = d.toLocaleDateString(lang === "bn" ? "bn-BD" : "en-US", { month: "short", year: "2-digit" });
+      const inv = sum((r) => r.type === "investment" && r.date.startsWith(ym));
+      const wd = sum((r) => r.type === "withdrawal" && r.date.startsWith(ym));
+      trend.push({ month: label, invested: inv, withdrawn: wd, net: inv - wd });
+    }
+
+    const cashTotal = sum((r) => (r.payment_method ?? "cash") === "cash");
+    const bankTotal = sum((r) => r.payment_method === "bank");
+    const methodSplit = [
+      { name: lang === "bn" ? "ক্যাশ" : "Cash", value: cashTotal, color: "hsl(var(--success))" },
+      { name: lang === "bn" ? "ব্যাংক" : "Bank", value: bankTotal, color: "hsl(var(--primary))" },
+    ];
+
+    const partnerShare = perPartner
+      .filter((p) => p.invested > 0)
+      .sort((a, b) => b.invested - a.invested)
+      .slice(0, 6)
+      .map((p) => ({ name: p.name, value: p.invested }));
+
+    const topInvestor = perPartner.reduce<{ name: string; invested: number } | null>((m, p) => !m || p.invested > m.invested ? p : m, null);
+    const largestTx = rows.reduce<Row | null>((m, r) => !m || Number(r.amount) > Number(m.amount) ? r : m, null);
+    const avgTicket = rows.length ? rows.reduce((s, r) => s + Number(r.amount), 0) / rows.length : 0;
+    const activePartners = perPartner.filter((p) => p.balance > 0).length;
+
+    return { thisMonthIn, thisMonthOut, lastMonthIn, lastMonthOut, thisNet, lastNet, momPct, trend, methodSplit, partnerShare, topInvestor, largestTx, avgTicket, activePartners };
+  }, [rows, perPartner, lang]);
+
+  const exportCSV = () => {
+    const header = ["Date", "Voucher", "Partner", "Type", "Method", "Amount", "Description"];
+    const lines = [header.join(",")];
+    for (const r of rows) {
+      const vals = [r.date, r.voucher_no ?? "", r.partner_name, r.type, r.payment_method ?? "", String(r.amount), (r.description ?? "").replace(/[,\n]/g, " ")];
+      lines.push(vals.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `agent-bank-investments-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const PIE_COLORS = ["hsl(var(--primary))", "hsl(var(--success))", "hsl(var(--destructive))", "#8b5cf6", "#f59e0b", "#06b6d4"];
 
   const payMethodLabel = (v: string | null) => {
     const m = PAY_METHODS.find((x) => x.value === (v ?? "cash"));
@@ -384,6 +454,125 @@ function InvestmentPage() {
         </Card>
       </div>
 
+      {/* SMART ANALYTICS DASHBOARD */}
+      <Card className="p-5 bg-gradient-to-br from-primary/5 via-transparent to-success/5">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <h2 className="font-semibold flex items-center gap-2">
+            <Activity className="w-4 h-4 text-primary" /> {lang === "bn" ? "স্মার্ট বিশ্লেষণ" : "Smart Analytics"}
+          </h2>
+          <Button size="sm" variant="outline" onClick={exportCSV}>
+            <Download className="w-4 h-4 mr-1" /> {lang === "bn" ? "CSV রপ্তানি" : "Export CSV"}
+          </Button>
+        </div>
+
+        {/* KPI Strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+          <Card className="p-3">
+            <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "এই মাসে নেট" : "This Month Net"}</div>
+            <div className={`text-lg font-bold ${analytics.thisNet >= 0 ? "text-success" : "text-destructive"}`}>{fmt.bdt(analytics.thisNet)}</div>
+            <div className={`text-[11px] flex items-center gap-1 ${analytics.momPct >= 0 ? "text-success" : "text-destructive"}`}>
+              {analytics.momPct >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+              {analytics.momPct.toFixed(1)}% {lang === "bn" ? "গত মাস থেকে" : "vs last month"}
+            </div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-[11px] text-muted-foreground flex items-center gap-1"><Award className="w-3 h-3" /> {lang === "bn" ? "শীর্ষ বিনিয়োগকারী" : "Top Investor"}</div>
+            <div className="text-sm font-bold truncate">{analytics.topInvestor?.name ?? "—"}</div>
+            <div className="text-xs text-success">{analytics.topInvestor ? fmt.bdt(analytics.topInvestor.invested) : ""}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "গড় লেনদেন" : "Avg Transaction"}</div>
+            <div className="text-lg font-bold">{fmt.bdt(analytics.avgTicket)}</div>
+            <div className="text-[11px] text-muted-foreground">{fmt.num(rows.length)} {lang === "bn" ? "মোট" : "total"}</div>
+          </Card>
+          <Card className="p-3">
+            <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "সক্রিয় পার্টনার" : "Active Partners"}</div>
+            <div className="text-lg font-bold text-primary">{fmt.num(analytics.activePartners)} / {fmt.num(perPartner.length)}</div>
+            <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "ইতিবাচক ব্যালেন্স" : "positive balance"}</div>
+          </Card>
+        </div>
+
+        {/* Charts */}
+        <div className="grid lg:grid-cols-3 gap-4">
+          <Card className="p-4 lg:col-span-2">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><BarChart3 className="w-4 h-4 text-primary" /> {lang === "bn" ? "১২ মাসের ধারা" : "12-Month Trend"}</h3>
+            <ClientOnly fallback={<div className="h-64" />}>
+              <div className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={analytics.trend}>
+                    <defs>
+                      <linearGradient id="gIn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--success))" stopOpacity={0.6} /><stop offset="100%" stopColor="hsl(var(--success))" stopOpacity={0} /></linearGradient>
+                      <linearGradient id="gOut" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="hsl(var(--destructive))" stopOpacity={0.5} /><stop offset="100%" stopColor="hsl(var(--destructive))" stopOpacity={0} /></linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="month" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <Tooltip formatter={(v: number) => fmt.bdt(v)} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Area type="monotone" dataKey="invested" stroke="hsl(var(--success))" fill="url(#gIn)" name={lang === "bn" ? "বিনিয়োগ" : "Invested"} />
+                    <Area type="monotone" dataKey="withdrawn" stroke="hsl(var(--destructive))" fill="url(#gOut)" name={lang === "bn" ? "উত্তোলন" : "Withdrawn"} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </ClientOnly>
+          </Card>
+
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><PieIcon className="w-4 h-4 text-primary" /> {lang === "bn" ? "পার্টনার শেয়ার" : "Partner Share"}</h3>
+            <ClientOnly fallback={<div className="h-64" />}>
+              <div className="h-64">
+                {analytics.partnerShare.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-xs text-muted-foreground">{t("noEntries")}</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={analytics.partnerShare} dataKey="value" nameKey="name" cx="50%" cy="45%" outerRadius={70} label={(e) => e.name}>
+                        {analytics.partnerShare.map((_, i) => <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />)}
+                      </Pie>
+                      <Tooltip formatter={(v: number) => fmt.bdt(v)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </ClientOnly>
+          </Card>
+
+          <Card className="p-4">
+            <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Banknote className="w-4 h-4 text-success" /> {lang === "bn" ? "পেমেন্ট পদ্ধতি" : "Payment Method"}</h3>
+            <div className="space-y-2">
+              {analytics.methodSplit.map((m) => {
+                const tot = analytics.methodSplit.reduce((s, x) => s + x.value, 0) || 1;
+                const pct = (m.value / tot) * 100;
+                return (
+                  <div key={m.name}>
+                    <div className="flex justify-between text-xs mb-1"><span>{m.name}</span><span className="font-semibold">{fmt.bdt(m.value)} ({pct.toFixed(0)}%)</span></div>
+                    <div className="h-2 rounded bg-muted overflow-hidden"><div className="h-full" style={{ width: `${pct}%`, background: m.color }} /></div>
+                  </div>
+                );
+              })}
+            </div>
+            {analytics.largestTx && (
+              <div className="mt-4 pt-3 border-t">
+                <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "সর্বোচ্চ লেনদেন" : "Largest Transaction"}</div>
+                <div className="text-sm font-bold truncate">{analytics.largestTx.partner_name}</div>
+                <div className="text-xs"><span className={analytics.largestTx.type === "investment" ? "text-success" : "text-destructive"}>{fmt.bdt(Number(analytics.largestTx.amount))}</span> · {fmt.date(analytics.largestTx.date)}</div>
+              </div>
+            )}
+          </Card>
+
+          <Card className="p-4 lg:col-span-3">
+            <h3 className="text-sm font-semibold mb-3">{lang === "bn" ? "মাসিক তুলনা" : "Monthly Comparison"}</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+              <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "এই মাসে বিনিয়োগ" : "This Month In"}</div><div className="font-bold text-success">{fmt.bdt(analytics.thisMonthIn)}</div></div>
+              <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "এই মাসে উত্তোলন" : "This Month Out"}</div><div className="font-bold text-destructive">{fmt.bdt(analytics.thisMonthOut)}</div></div>
+              <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "গত মাসে বিনিয়োগ" : "Last Month In"}</div><div className="font-bold">{fmt.bdt(analytics.lastMonthIn)}</div></div>
+              <div><div className="text-[11px] text-muted-foreground">{lang === "bn" ? "গত মাসে উত্তোলন" : "Last Month Out"}</div><div className="font-bold">{fmt.bdt(analytics.lastMonthOut)}</div></div>
+            </div>
+          </Card>
+        </div>
+      </Card>
+
+
       <Card className={`p-5 ${editingId ? "ring-2 ring-primary" : ""}`}>
         <h2 className="font-semibold mb-4 flex items-center gap-2">
           {editingId ? <><Pencil className="w-4 h-4" /> {t("edit")}</> : <><Plus className="w-4 h-4" /> {lang === "bn" ? "নতুন এন্ট্রি" : "New Entry"}</>}
@@ -474,42 +663,66 @@ function InvestmentPage() {
       </Card>
 
       <Card className="p-5">
-        <h2 className="font-semibold mb-4 flex items-center gap-2">
-          <Users className="w-4 h-4" /> {lang === "bn" ? "পার্টনারদের তালিকা" : "Partners"}
-        </h2>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <h2 className="font-semibold flex items-center gap-2">
+            <Users className="w-4 h-4" /> {lang === "bn" ? "পার্টনারদের তালিকা" : "Partners"}
+            <span className="text-xs text-muted-foreground font-normal">({fmt.num(perPartner.length)})</span>
+          </h2>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              className="pl-8 h-9 w-56"
+              placeholder={lang === "bn" ? "পার্টনার খুঁজুন..." : "Search partner..."}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+        </div>
         {perPartner.length === 0 ? (
           <div className="text-center text-muted-foreground p-6">{t("noEntries")}</div>
         ) : (
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {perPartner.map((p) => (
-              <Card
-                key={p.name}
-                className="p-4 cursor-pointer hover:shadow-md hover:border-primary transition"
-                onClick={() => setSelectedPartner(p.name)}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="font-bold text-lg">{p.name}</div>
-                  <div className="text-xs text-muted-foreground">{fmt.num(p.count)} {lang === "bn" ? "এন্ট্রি" : "entries"}</div>
-                </div>
-                <div className="space-y-1 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{lang === "bn" ? "বিনিয়োগ" : "Invested"}</span>
-                    <span className="text-success font-semibold">{fmt.bdt(p.invested)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">{lang === "bn" ? "উত্তোলন" : "Withdrawn"}</span>
-                    <span className="text-destructive font-semibold">{fmt.bdt(p.withdrawn)}</span>
-                  </div>
-                  <div className="flex justify-between border-t pt-1 mt-1">
-                    <span className="font-medium">{lang === "bn" ? "ব্যালেন্স" : "Balance"}</span>
-                    <span className={`font-bold ${p.balance < 0 ? "text-destructive" : ""}`}>{fmt.bdt(p.balance)}</span>
-                  </div>
-                </div>
-                <Button size="sm" variant="outline" className="w-full mt-3">
-                  {lang === "bn" ? "স্টেটমেন্ট দেখুন" : "View Statement"}
-                </Button>
-              </Card>
-            ))}
+            {perPartner
+              .filter((p) => !search || p.name.toLowerCase().includes(search.toLowerCase()))
+              .map((p) => {
+                const sharePct = totals.invested > 0 ? (p.invested / totals.invested) * 100 : 0;
+                return (
+                  <Card
+                    key={p.name}
+                    className="p-4 cursor-pointer hover:shadow-md hover:border-primary transition"
+                    onClick={() => setSelectedPartner(p.name)}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="font-bold text-lg truncate">{p.name}</div>
+                      <div className="text-xs text-muted-foreground shrink-0">{fmt.num(p.count)} {lang === "bn" ? "এন্ট্রি" : "entries"}</div>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{lang === "bn" ? "বিনিয়োগ" : "Invested"}</span>
+                        <span className="text-success font-semibold">{fmt.bdt(p.invested)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">{lang === "bn" ? "উত্তোলন" : "Withdrawn"}</span>
+                        <span className="text-destructive font-semibold">{fmt.bdt(p.withdrawn)}</span>
+                      </div>
+                      <div className="flex justify-between border-t pt-1 mt-1">
+                        <span className="font-medium">{lang === "bn" ? "ব্যালেন্স" : "Balance"}</span>
+                        <span className={`font-bold ${p.balance < 0 ? "text-destructive" : ""}`}>{fmt.bdt(p.balance)}</span>
+                      </div>
+                      <div className="pt-2">
+                        <div className="flex justify-between text-[10px] text-muted-foreground mb-1">
+                          <span>{lang === "bn" ? "শেয়ার" : "Share"}</span><span>{sharePct.toFixed(1)}%</span>
+                        </div>
+                        <div className="h-1.5 bg-muted rounded overflow-hidden"><div className="h-full bg-primary" style={{ width: `${sharePct}%` }} /></div>
+                      </div>
+                      <div className="text-[10px] text-muted-foreground pt-1">{lang === "bn" ? "শেষ লেনদেন:" : "Last:"} {fmt.date(p.last)}</div>
+                    </div>
+                    <Button size="sm" variant="outline" className="w-full mt-3">
+                      {lang === "bn" ? "স্টেটমেন্ট দেখুন" : "View Statement"}
+                    </Button>
+                  </Card>
+                );
+              })}
           </div>
         )}
       </Card>
