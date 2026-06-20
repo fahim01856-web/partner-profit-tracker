@@ -384,6 +384,34 @@ function MonthlyReportPage() {
         );
       })()}
 
+            {hasAny && (
+              <Card className="p-4">
+                <h3 className="font-semibold mb-3 text-sm">{lang === "bn" ? "মাসভিত্তিক পার্থক্য" : "Month-over-Month Difference"} ({fmt.num(year)})</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead><tr className="border-b text-left"><th className="py-1.5 pr-2">{lang === "bn" ? "মাস" : "Month"}</th><th className="py-1.5 pr-2 text-right">{lang === "bn" ? "লাভ" : "Profit"}</th><th className="py-1.5 pr-2 text-right">{lang === "bn" ? "পার্থক্য" : "Diff"}</th><th className="py-1.5 text-right">%</th></tr></thead>
+                    <tbody>
+                      {monthDiffs.map((m, i) => {
+                        const prevV = i === 0 ? prev[11] : cur[i - 1];
+                        const pct = prevV === 0 ? 0 : (m.diff / Math.abs(prevV)) * 100;
+                        return (
+                          <tr key={i} className="border-b last:border-0">
+                            <td className="py-1.5 pr-2">{m.month}</td>
+                            <td className={`py-1.5 pr-2 text-right ${m.profit >= 0 ? "text-primary" : "text-destructive"}`}>{fmt.bdt(m.profit)}</td>
+                            <td className={`py-1.5 pr-2 text-right ${m.diff >= 0 ? "text-success" : "text-destructive"}`}>{m.diff >= 0 ? "+" : ""}{fmt.bdt(m.diff)}</td>
+                            <td className={`py-1.5 text-right ${m.diff >= 0 ? "text-success" : "text-destructive"}`}>{prevV === 0 ? "—" : `${pct >= 0 ? "+" : ""}${pct.toFixed(1)}%`}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </Card>
+            )}
+          </div>
+        );
+      })()}
+
       {/* A4 Print Sheet */}
       <div className="print-area">
         <div className="mx-auto bg-white text-black border print:border-0 shadow-sm print:shadow-none p-6 print:p-8" style={{ maxWidth: "210mm", minHeight: "297mm" }}>
