@@ -314,6 +314,50 @@ function BIDashboard() {
         </div>
       </div>
 
+      {/* Hero — Total Business Value, Health Score, Cash Position */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+        <Card className="p-4 bg-gradient-to-br from-indigo-600/20 to-purple-500/10 border-indigo-500/30 md:col-span-2">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground"><Building2 className="w-4 h-4" /> {lang === "bn" ? "মোট বিজনেস ভ্যালু" : "Total Business Value"}</div>
+          <div className="text-3xl font-bold mt-1">{fmtBDT(metrics.totalBusinessValue, lang)}</div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            {lang === "bn" ? "ডিপোজিট + রেমিট + বিনিয়োগ + ঋণ" : "Deposits + Remittance + Investment + Loans"}
+          </div>
+          <div className="grid grid-cols-4 gap-2 mt-3 text-[10px]">
+            <div><div className="text-muted-foreground">{lang === "bn" ? "ডিপোজিট" : "Deposits"}</div><div className="font-semibold">{fmtBDT(metrics.totalDeposits6m, lang)}</div></div>
+            <div><div className="text-muted-foreground">{lang === "bn" ? "রেমিট" : "Remit"}</div><div className="font-semibold">{fmtBDT(metrics.totalRemit6m, lang)}</div></div>
+            <div><div className="text-muted-foreground">{lang === "bn" ? "বিনিয়োগ" : "Invest"}</div><div className="font-semibold">{fmtBDT(metrics.totalInvestment, lang)}</div></div>
+            <div><div className="text-muted-foreground">{lang === "bn" ? "ঋণ" : "Loans"}</div><div className="font-semibold">{fmtBDT(metrics.totalLoanOutstanding, lang)}</div></div>
+          </div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-emerald-500/20 to-emerald-500/5 border-emerald-500/30">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground"><HeartPulse className="w-4 h-4" /> {lang === "bn" ? "বিজনেস হেলথ স্কোর" : "Business Health Score"}</div>
+          <div className="text-4xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{metrics.healthScore}<span className="text-base text-muted-foreground">/100</span></div>
+          <div className="w-full h-2 bg-muted rounded-full mt-2 overflow-hidden"><div className="h-full bg-gradient-to-r from-red-500 via-amber-500 to-emerald-500" style={{ width: `${metrics.healthScore}%` }} /></div>
+          <div className="text-[11px] text-muted-foreground mt-1">{metrics.healthScore >= 75 ? (lang === "bn" ? "উত্তম" : "Excellent") : metrics.healthScore >= 50 ? (lang === "bn" ? "মাঝারি" : "Moderate") : (lang === "bn" ? "মনোযোগ দরকার" : "Needs attention")}</div>
+        </Card>
+        <Card className="p-4 bg-gradient-to-br from-cyan-500/20 to-cyan-500/5 border-cyan-500/30">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground"><Banknote className="w-4 h-4" /> {lang === "bn" ? "ক্যাশ পজিশন" : "Cash Position"}</div>
+          <div className="text-2xl font-bold mt-1">{fmtBDT(metrics.cashPosition, lang)}</div>
+          <div className="text-[11px] text-muted-foreground mt-1">{lang === "bn" ? "ক্যাশ বুক — বর্তমান ব্যালেন্স" : "Cash book — current balance"}</div>
+          <div className={`text-[11px] font-semibold mt-2 ${metrics.depositGrowth >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            {metrics.depositGrowth >= 0 ? "▲" : "▼"} {Math.abs(metrics.depositGrowth).toFixed(1)}% {lang === "bn" ? "ডিপোজিট গ্রোথ" : "deposit growth"}
+          </div>
+        </Card>
+      </div>
+
+      {/* Smart Alerts */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-3"><Bell className="w-5 h-5 text-amber-500" /><h3 className="font-semibold">{lang === "bn" ? "স্মার্ট অ্যালার্ট" : "Smart Alerts"}</h3></div>
+        <div className="grid sm:grid-cols-2 gap-2">
+          {metrics.smartAlerts.map((a: any, i: number) => (
+            <div key={i} className={`flex items-start gap-2 p-2 rounded-md border ${a.level === "high" ? "bg-red-500/10 border-red-500/30" : a.level === "medium" ? "bg-amber-500/10 border-amber-500/30" : "bg-emerald-500/10 border-emerald-500/30"}`}>
+              <Badge variant={a.level === "high" ? "destructive" : a.level === "medium" ? "default" : "secondary"} className="capitalize text-[10px]">{a.level}</Badge>
+              <div className="text-xs leading-relaxed">{a.text}</div>
+            </div>
+          ))}
+        </div>
+      </Card>
+
       {/* KPI Grid — Previous Month */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Kpi icon={<TrendingUp className="w-5 h-5" />} label={lang === "bn" ? "গত মাসের আয়" : "Prev Month Income"} value={fmtBDT(metrics.cur.income, lang)} change={metrics.incomeChange} tone="green" />
