@@ -152,6 +152,7 @@ function InvestmentPage() {
 
   const startEdit = (r: Row) => {
     setEditingId(r.id);
+    setSelectedPartner(null);
     setForm({
       date: r.date,
       partner_name: r.partner_name,
