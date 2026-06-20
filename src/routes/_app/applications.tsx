@@ -314,7 +314,59 @@ function TemplatesTab() {
       </div>
 
       {editing && <TemplateEditor value={editing} onClose={() => setEditing(null)} onSave={(v) => save.mutate(v)} />}
+      {aiOpen && <AiTemplateDialog onClose={() => setAiOpen(false)} onGenerated={(t) => { setAiOpen(false); setEditing({ ...t, is_active: true }); }} />}
     </div>
+  );
+}
+
+function AiTemplateDialog({ onClose, onGenerated }: { onClose: () => void; onGenerated: (t: any) => void }) {
+  const [prompt, setPrompt] = useState("");
+  const [pasted, setPasted] = useState("");
+  const [loading, setLoading] = useState(false);
+  const gen = useServerFn(generateAppTemplate);
+
+  const run = async () => {
+    if (!prompt.trim() && !pasted.trim()) { toast.error("বর্ণনা বা আবেদন পেস্ট করুন"); return; }
+    setLoading(true);
+    try {
+      const out = await gen({ data: { prompt: prompt || "ফরম্যাট করে দাও", pasted: pasted || undefined } });
+      toast.success("AI টেমপ্লেট তৈরি হয়েছে");
+      onGenerated(out);
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (msg.includes("429")) toast.error("AI rate limit — একটু পরে চেষ্টা করুন");
+      else if (msg.includes("402")) toast.error("AI ক্রেডিট শেষ — Workspace → Usage এ যোগ করুন");
+      else toast.error(msg);
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> AI দিয়ে অ্যাপ্লিকেশন টেমপ্লেট তৈরি</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+          <div>
+            <Label>আবেদনের বর্ণনা / টপিক</Label>
+            <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="যেমন: মোবাইল নাম্বার পরিবর্তনের আবেদন" />
+          </div>
+          <div>
+            <Label>অথবা পুরোনো আবেদন পেস্ট করুন (ঐচ্ছিক)</Label>
+            <Textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={10} placeholder="এখানে যেকোনো আবেদনপত্র কপি-পেস্ট করুন — AI সেটিকে প্লেসহোল্ডার সহ টেমপ্লেটে রূপান্তর করবে..." className="font-mono text-sm" />
+          </div>
+          <div className="text-[11px] text-muted-foreground bg-muted/50 p-2 rounded">
+            💡 AI স্বয়ংক্রিয়ভাবে গ্রাহকের নাম, হিসাব নং, NID ইত্যাদির জায়গায় <code className="text-primary">{`{{placeholder}}`}</code> বসিয়ে দেবে।
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={loading}>বাতিল</Button>
+          <Button onClick={run} disabled={loading}>
+            {loading ? "তৈরি হচ্ছে..." : <><Sparkles className="w-4 h-4 mr-1" /> Generate</>}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
