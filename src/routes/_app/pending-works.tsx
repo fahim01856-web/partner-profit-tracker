@@ -13,7 +13,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { useI18n } from "@/lib/i18n";
 import { toast } from "sonner";
-import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList, Settings2, Download, Phone, MessageCircle, Copy, AlertTriangle, ListTodo, TrendingUp, CalendarClock, LayoutGrid, Search, Filter } from "lucide-react";
+import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList, Settings2, Download, Phone, MessageCircle, Copy, AlertTriangle, ListTodo, TrendingUp, CalendarClock, LayoutGrid, Search, Filter, Kanban, Table as TableIcon, Send, AlarmClock, Sparkles, CheckSquare, Square } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
@@ -97,6 +98,10 @@ function PendingWorksPage() {
   const [showForm, setShowForm] = useState(false);
   const [manageOpen, setManageOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<Partial<Category> | null>(null);
+  const [viewMode, setViewMode] = useState<"table" | "kanban">("table");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggleSel = (id: string) => setSelected((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  const clearSel = () => setSelected(new Set());
 
   const ALL = "__all__";
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -175,6 +180,41 @@ function PendingWorksPage() {
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["pending_works"] }),
   });
+
+  const snooze = useMutation({
+    mutationFn: async ({ id, days }: { id: string; days: number }) => {
+      const r = rows.find((x) => x.id === id);
+      const base = r?.due_date ? new Date(r.due_date) : new Date();
+      base.setDate(base.getDate() + days);
+      const { error } = await supabase.from("pending_works" as any).update({ due_date: base.toISOString().slice(0, 10) }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["pending_works"] }); toast.success(lang === "bn" ? "ডেডলাইন পেছানো হয়েছে" : "Snoozed"); },
+  });
+
+  const bulkAction = useMutation({
+    mutationFn: async ({ ids, action, value }: { ids: string[]; action: "status" | "priority" | "delete"; value?: string }) => {
+      if (action === "delete") {
+        const { error } = await supabase.from("pending_works" as any).delete().in("id", ids);
+        if (error) throw error;
+      } else if (action === "status") {
+        const { error } = await supabase.from("pending_works" as any).update({ status: value, completed_at: value === "completed" ? new Date().toISOString() : null }).in("id", ids);
+        if (error) throw error;
+      } else if (action === "priority") {
+        const { error } = await supabase.from("pending_works" as any).update({ priority: value }).in("id", ids);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["pending_works"] }); clearSel(); toast.success(lang === "bn" ? "বাল্ক অ্যাকশন সম্পন্ন" : "Bulk action done"); },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const buildReminderText = (r: Row) => {
+    const due = r.due_date ? (lang === "bn" ? ` (শেষ তারিখ: ${r.due_date})` : ` (Due: ${r.due_date})`) : "";
+    return lang === "bn"
+      ? `প্রিয় ${r.customer_name || "গ্রাহক"}, আপনার "${r.title}" সংক্রান্ত কাজটি পেন্ডিং রয়েছে${due}। দ্রুত যোগাযোগ করুন। — ফকিরবাজার এজেন্ট আউটলেট, ১২১/১১`
+      : `Dear ${r.customer_name || "Customer"}, your "${r.title}" task is pending${due}. Please contact us soon. — Fakirbazar Agent Outlet, 121/11`;
+  };
 
   const filtered = useMemo(() => {
     const priorityRank: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
@@ -459,9 +499,72 @@ function PendingWorksPage() {
             <X className="w-3 h-3 mr-1" />{lang === "bn" ? "ক্লিয়ার" : "Clear"}
           </Button>
         )}
-        <div className="ml-auto text-xs text-muted-foreground flex items-center gap-1"><Filter className="w-3 h-3" />{filtered.length} {lang === "bn" ? "টি" : "results"}</div>
+        <div className="ml-auto flex items-center gap-2">
+          <div className="text-xs text-muted-foreground flex items-center gap-1"><Filter className="w-3 h-3" />{filtered.length} {lang === "bn" ? "টি" : "results"}</div>
+          <div className="inline-flex rounded-md border overflow-hidden">
+            <Button size="sm" variant={viewMode === "table" ? "default" : "ghost"} className="rounded-none h-8" onClick={() => setViewMode("table")}><TableIcon className="w-4 h-4 mr-1" />{lang === "bn" ? "টেবিল" : "Table"}</Button>
+            <Button size="sm" variant={viewMode === "kanban" ? "default" : "ghost"} className="rounded-none h-8" onClick={() => setViewMode("kanban")}><Kanban className="w-4 h-4 mr-1" />{lang === "bn" ? "বোর্ড" : "Board"}</Button>
+          </div>
+        </div>
       </div>
 
+      {selected.size > 0 && (
+        <Card className="p-3 no-print border-primary/50 bg-primary/5 flex items-center gap-2 flex-wrap">
+          <CheckSquare className="w-4 h-4 text-primary" />
+          <span className="text-sm font-medium">{selected.size} {lang === "bn" ? "টি নির্বাচিত" : "selected"}</span>
+          <div className="ml-auto flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" onClick={() => bulkAction.mutate({ ids: [...selected], action: "status", value: "completed" })}><CheckCircle2 className="w-3 h-3 mr-1" />{lang === "bn" ? "সম্পন্ন" : "Complete"}</Button>
+            <Button size="sm" variant="outline" onClick={() => bulkAction.mutate({ ids: [...selected], action: "status", value: "in_progress" })}><Clock className="w-3 h-3 mr-1" />{lang === "bn" ? "চলমান" : "In Progress"}</Button>
+            <Button size="sm" variant="outline" onClick={() => bulkAction.mutate({ ids: [...selected], action: "priority", value: "urgent" })}><AlertTriangle className="w-3 h-3 mr-1" />{lang === "bn" ? "জরুরি" : "Urgent"}</Button>
+            <Button size="sm" variant="destructive" onClick={() => { if (confirm(lang === "bn" ? `${selected.size} টি মুছবেন?` : `Delete ${selected.size}?`)) bulkAction.mutate({ ids: [...selected], action: "delete" }); }}><Trash2 className="w-3 h-3 mr-1" />{lang === "bn" ? "মুছুন" : "Delete"}</Button>
+            <Button size="sm" variant="ghost" onClick={clearSel}><X className="w-3 h-3 mr-1" />{lang === "bn" ? "বাতিল" : "Clear"}</Button>
+          </div>
+        </Card>
+      )}
+
+      {viewMode === "kanban" ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {(["pending", "in_progress", "completed"] as const).map((col) => {
+            const items = filtered.filter((r) => r.status === col);
+            const colMeta = {
+              pending: { label: lang === "bn" ? "পেন্ডিং" : "Pending", color: "border-muted-foreground/30", icon: <Clock className="w-4 h-4" /> },
+              in_progress: { label: lang === "bn" ? "চলমান" : "In Progress", color: "border-amber-500/40 bg-amber-500/5", icon: <TrendingUp className="w-4 h-4 text-amber-600" /> },
+              completed: { label: lang === "bn" ? "সম্পন্ন" : "Done", color: "border-green-500/40 bg-green-500/5", icon: <CheckCircle2 className="w-4 h-4 text-green-600" /> },
+            }[col];
+            return (
+              <Card key={col} className={`p-3 ${colMeta.color}`}>
+                <div className="flex items-center gap-2 mb-3 pb-2 border-b">
+                  {colMeta.icon}
+                  <span className="font-semibold text-sm">{colMeta.label}</span>
+                  <Badge variant="secondary" className="ml-auto">{items.length}</Badge>
+                </div>
+                <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+                  {items.length === 0 && <div className="text-xs text-muted-foreground text-center py-4">{lang === "bn" ? "খালি" : "Empty"}</div>}
+                  {items.map((r) => {
+                    const d = r.due_date ? daysDiff(r.due_date) : null;
+                    const isOverdue = d !== null && d < 0 && r.status !== "completed";
+                    return (
+                      <div key={r.id} className={`p-2 rounded border bg-card hover:shadow-md transition cursor-pointer ${isOverdue ? "border-destructive/50" : ""}`} onClick={() => startEdit(r)}>
+                        <div className="flex items-start gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-sm truncate">{r.title}</div>
+                            {r.customer_name && <div className="text-xs text-muted-foreground truncate">{r.customer_name}</div>}
+                            <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              <Badge variant={r.priority === "urgent" ? "destructive" : r.priority === "high" ? "default" : "secondary"} className="text-[10px] h-4 px-1">{r.priority}</Badge>
+                              {r.due_date && <Badge variant={isOverdue ? "destructive" : "outline"} className="text-[10px] h-4 px-1">{r.due_date}</Badge>}
+                            </div>
+                          </div>
+                          <Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleSel(r.id)} onClick={(e) => e.stopPropagation()} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      ) : (
       <Card className="overflow-hidden print-area">
         <div className="hidden print:block p-4 text-center border-b">
           <div className="font-bold text-lg">{t("bankName")}</div>
@@ -473,6 +576,12 @@ function PendingWorksPage() {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-8 no-print">
+                  <Checkbox
+                    checked={filtered.length > 0 && filtered.every((r) => selected.has(r.id))}
+                    onCheckedChange={(v) => setSelected(v ? new Set(filtered.map((r) => r.id)) : new Set())}
+                  />
+                </TableHead>
                 <TableHead className="w-12">#</TableHead>
                 <TableHead>{lang === "bn" ? "শিরোনাম" : "Title"}</TableHead>
                 {activeCat === ALL && <TableHead>{lang === "bn" ? "ক্যাটাগরি" : "Category"}</TableHead>}
@@ -487,8 +596,8 @@ function PendingWorksPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading && <TableRow><TableCell colSpan={11} className="text-center py-6">{t("loading")}</TableCell></TableRow>}
-              {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={11} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো এন্ট্রি নেই" : "No entries"}</TableCell></TableRow>}
+              {isLoading && <TableRow><TableCell colSpan={12} className="text-center py-6">{t("loading")}</TableCell></TableRow>}
+              {!isLoading && filtered.length === 0 && <TableRow><TableCell colSpan={12} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোনো এন্ট্রি নেই" : "No entries"}</TableCell></TableRow>}
               {filtered.map((r, i) => {
                 const d = r.due_date ? daysDiff(r.due_date) : null;
                 const isOverdue = d !== null && d < 0 && r.status !== "completed";
@@ -497,6 +606,7 @@ function PendingWorksPage() {
                 const catLbl = categories.find((c) => c.slug === r.category);
                 return (
                 <TableRow key={r.id} className={rowClass}>
+                  <TableCell className="no-print"><Checkbox checked={selected.has(r.id)} onCheckedChange={() => toggleSel(r.id)} /></TableCell>
                   <TableCell>{i + 1}</TableCell>
                   <TableCell className="font-medium">
                     <div>{r.title}</div>
@@ -535,8 +645,12 @@ function PendingWorksPage() {
                   <TableCell className="no-print text-right whitespace-nowrap">
                     {r.mobile && <>
                       <Button size="icon" variant="ghost" className="h-8 w-8" asChild title="Call"><a href={`tel:${r.mobile}`}><Phone className="w-3.5 h-3.5 text-blue-600" /></a></Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8" asChild title="WhatsApp"><a href={`https://wa.me/${r.mobile.replace(/\D/g, "")}?text=${encodeURIComponent(r.title)}`} target="_blank" rel="noreferrer"><MessageCircle className="w-3.5 h-3.5 text-green-600" /></a></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" asChild title="WhatsApp"><a href={`https://wa.me/${r.mobile.replace(/\D/g, "")}?text=${encodeURIComponent(buildReminderText(r))}`} target="_blank" rel="noreferrer"><MessageCircle className="w-3.5 h-3.5 text-green-600" /></a></Button>
+                      <Button size="icon" variant="ghost" className="h-8 w-8" title={lang === "bn" ? "SMS রিমাইন্ডার কপি" : "Copy SMS reminder"} onClick={() => { navigator.clipboard.writeText(buildReminderText(r)); toast.success(lang === "bn" ? "রিমাইন্ডার কপি হয়েছে" : "Reminder copied"); }}><Send className="w-3.5 h-3.5 text-primary" /></Button>
                     </>}
+                    {r.status !== "completed" && (
+                      <Button size="icon" variant="ghost" className="h-8 w-8" title={lang === "bn" ? "স্নুজ +১ দিন" : "Snooze +1 day"} onClick={() => snooze.mutate({ id: r.id, days: 1 })}><AlarmClock className="w-3.5 h-3.5 text-amber-600" /></Button>
+                    )}
                     <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => toggleStatus.mutate(r)} title={r.status === "completed" ? "Mark pending" : "Mark complete"}>
                       <CheckCircle2 className={`w-4 h-4 ${r.status === "completed" ? "text-green-600" : ""}`} />
                     </Button>
@@ -549,6 +663,7 @@ function PendingWorksPage() {
           </Table>
         </div>
       </Card>
+      )}
 
       <Dialog open={manageOpen} onOpenChange={(o) => { setManageOpen(o); if (!o) setEditingCat(null); }}>
         <DialogContent className="max-w-lg">
