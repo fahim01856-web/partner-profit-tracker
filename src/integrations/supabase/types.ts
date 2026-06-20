@@ -1249,6 +1249,36 @@ export type Database = {
         }
         Relationships: []
       }
+      inactive_account_entries: {
+        Row: {
+          category: string
+          count: number
+          created_at: string
+          entry_date: string
+          id: string
+          note: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          count?: number
+          created_at?: string
+          entry_date?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          count?: number
+          created_at?: string
+          entry_date?: string
+          id?: string
+          note?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       inventory_distributions: {
         Row: {
           account_number: string

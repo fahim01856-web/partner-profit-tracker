@@ -14,8 +14,9 @@ import {
   FileBarChart, Globe2, BookPlus, FolderOpen,
   Plus, Trash2, Printer, Download, FileSpreadsheet,
   Handshake, TrendingUp, Receipt, Wallet, Pencil, Save, X,
-  FileCheck2, AlertTriangle, CheckCircle2, Clock,
+  FileCheck2, AlertTriangle, CheckCircle2, Clock, UserX, TrendingDown,
 } from "lucide-react";
+
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 
 export const Route = createFileRoute("/_app/reports")({ component: ReportsPage });
@@ -56,6 +57,7 @@ function ReportsPage() {
           <TabsTrigger value="remit" className="gap-1.5"><Globe2 className="w-4 h-4" /> {lang === "bn" ? "ফরেন রেমিট্যান্স" : "Foreign Remittance"}</TabsTrigger>
           <TabsTrigger value="ao" className="gap-1.5"><BookPlus className="w-4 h-4" /> {lang === "bn" ? "একাউন্ট ওপেনিং" : "Account Opening"}</TabsTrigger>
           <TabsTrigger value="tin" className="gap-1.5"><FileCheck2 className="w-4 h-4" /> {lang === "bn" ? "টিন ই-রিটার্ন" : "TIN E-Return"}</TabsTrigger>
+          <TabsTrigger value="inactive" className="gap-1.5"><UserX className="w-4 h-4" /> {lang === "bn" ? "ইনএক্টিভ একাউন্ট" : "Inactive Accounts"}</TabsTrigger>
           <TabsTrigger value="center" className="gap-1.5"><FolderOpen className="w-4 h-4" /> {lang === "bn" ? "রিপোর্ট সেন্টার" : "Report Center"}</TabsTrigger>
         </TabsList>
 
@@ -63,7 +65,9 @@ function ReportsPage() {
         <TabsContent value="remit"><RemittanceTab /></TabsContent>
         <TabsContent value="ao"><AccountOpeningTab /></TabsContent>
         <TabsContent value="tin"><TinEReturnTab /></TabsContent>
+        <TabsContent value="inactive"><InactiveAccountsTab /></TabsContent>
         <TabsContent value="center"><ReportCenterTab /></TabsContent>
+
       </Tabs>
     </div>
   );
@@ -1203,6 +1207,225 @@ function TinEReturnTab() {
           </div>
         </Card>
       </div>
+    </div>
+  );
+}
+
+/* ============== Inactive Accounts Tab ============== */
+type InactiveCat = "inoperative" | "irregular" | "dormant" | "zero_balance";
+type InactiveEntry = { id: string; category: InactiveCat; entry_date: string; count: number; note: string | null; created_at: string };
+
+const INACTIVE_CATS: { key: InactiveCat; bn: string; en: string; icon: any; color: string }[] = [
+  { key: "inoperative", bn: "ইনঅপারেটিভ একাউন্ট", en: "Inoperative Account", icon: Clock, color: "text-amber-600" },
+  { key: "irregular", bn: "ইরেগুলার একাউন্ট", en: "Irregular Account", icon: AlertTriangle, color: "text-orange-600" },
+  { key: "dormant", bn: "ডরমেন্ট একাউন্ট", en: "Dormant Account", icon: UserX, color: "text-rose-600" },
+  { key: "zero_balance", bn: "জিরো ব্যালেন্স একাউন্ট", en: "Zero Balance Account", icon: Wallet, color: "text-slate-600" },
+];
+
+function InactiveAccountsTab() {
+  const { lang } = useI18n();
+  const qc = useQueryClient();
+  const [cat, setCat] = useState<InactiveCat>("inoperative");
+  const [form, setForm] = useState({ entry_date: new Date().toISOString().slice(0, 10), count: "", note: "" });
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const { data: entries = [] } = useQuery({
+    queryKey: ["inactive_account_entries"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("inactive_account_entries" as any).select("*").order("entry_date", { ascending: false });
+      if (error) throw error;
+      return (data || []) as unknown as InactiveEntry[];
+    },
+  });
+
+  const save = useMutation({
+    mutationFn: async () => {
+      const payload = { category: cat, entry_date: form.entry_date, count: Number(form.count) || 0, note: form.note || null };
+      if (editingId) {
+        const { error } = await supabase.from("inactive_account_entries" as any).update(payload).eq("id", editingId);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("inactive_account_entries" as any).insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["inactive_account_entries"] });
+      toast.success(lang === "bn" ? "সংরক্ষণ হয়েছে" : "Saved");
+      setForm({ entry_date: new Date().toISOString().slice(0, 10), count: "", note: "" });
+      setEditingId(null);
+    },
+    onError: (e: any) => toast.error(e.message),
+  });
+
+  const del = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("inactive_account_entries" as any).delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["inactive_account_entries"] }); toast.success(lang === "bn" ? "মুছে ফেলা হয়েছে" : "Deleted"); },
+  });
+
+  const latestByCat = useMemo(() => {
+    const m: Record<string, InactiveEntry | undefined> = {};
+    for (const c of INACTIVE_CATS) m[c.key] = entries.find((e) => e.category === c.key);
+    return m;
+  }, [entries]);
+
+  const filtered = useMemo(() => entries.filter((e) => e.category === cat), [entries, cat]);
+  const chartData = useMemo(() => [...filtered].reverse().map((e) => ({ date: e.entry_date, count: e.count })), [filtered]);
+
+  const trend = useMemo(() => {
+    if (filtered.length < 2) return null;
+    const diff = filtered[0].count - filtered[1].count;
+    return { diff, prev: filtered[1] };
+  }, [filtered]);
+
+  return (
+    <div className="space-y-4 mt-4">
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {INACTIVE_CATS.map((c) => {
+          const Icon = c.icon;
+          const latest = latestByCat[c.key];
+          const active = cat === c.key;
+          return (
+            <button key={c.key} onClick={() => { setCat(c.key); setEditingId(null); }}
+              className={`text-left p-4 rounded-lg border-2 transition-all ${active ? "border-primary bg-primary/5" : "border-border bg-card hover:border-primary/40"}`}>
+              <div className="flex items-center justify-between mb-2">
+                <Icon className={`w-5 h-5 ${c.color}`} />
+                <span className="text-2xl font-bold">{latest?.count ?? 0}</span>
+              </div>
+              <div className="text-sm font-medium">{lang === "bn" ? c.bn : c.en}</div>
+              <div className="text-xs text-muted-foreground mt-1">
+                {latest ? (lang === "bn" ? `সর্বশেষ: ${latest.entry_date}` : `Last: ${latest.entry_date}`) : (lang === "bn" ? "কোন এন্ট্রি নেই" : "No entries")}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Entry form */}
+      <Card className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Plus className="w-4 h-4 text-primary" />
+          <h3 className="font-semibold">
+            {editingId ? (lang === "bn" ? "এন্ট্রি সম্পাদনা" : "Edit Entry") : (lang === "bn" ? "নতুন এন্ট্রি" : "New Entry")} — {lang === "bn" ? INACTIVE_CATS.find((c) => c.key === cat)!.bn : INACTIVE_CATS.find((c) => c.key === cat)!.en}
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <div>
+            <Label>{lang === "bn" ? "তারিখ" : "Date"}</Label>
+            <Input type="date" value={form.entry_date} onChange={(e) => setForm({ ...form, entry_date: e.target.value })} />
+          </div>
+          <div>
+            <Label>{lang === "bn" ? "একাউন্ট সংখ্যা" : "Account Count"}</Label>
+            <Input type="number" min="0" value={form.count} onChange={(e) => setForm({ ...form, count: e.target.value })} placeholder="0" />
+          </div>
+          <div className="md:col-span-2">
+            <Label>{lang === "bn" ? "নোট (ঐচ্ছিক)" : "Note (optional)"}</Label>
+            <Input value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} placeholder={lang === "bn" ? "মন্তব্য..." : "Remarks..."} />
+          </div>
+        </div>
+        <div className="flex gap-2 mt-3">
+          <Button onClick={() => save.mutate()} disabled={save.isPending || !form.count}>
+            <Save className="w-4 h-4 mr-1" /> {editingId ? (lang === "bn" ? "আপডেট" : "Update") : (lang === "bn" ? "সংরক্ষণ" : "Save")}
+          </Button>
+          {editingId && (
+            <Button variant="outline" onClick={() => { setEditingId(null); setForm({ entry_date: new Date().toISOString().slice(0, 10), count: "", note: "" }); }}>
+              <X className="w-4 h-4 mr-1" /> {lang === "bn" ? "বাতিল" : "Cancel"}
+            </Button>
+          )}
+        </div>
+      </Card>
+
+      {/* Trend */}
+      {trend && (
+        <Card className="p-4">
+          <div className="flex items-center gap-2">
+            {trend.diff > 0 ? <TrendingUp className="w-5 h-5 text-rose-600" /> : trend.diff < 0 ? <TrendingDown className="w-5 h-5 text-emerald-600" /> : <Clock className="w-5 h-5 text-muted-foreground" />}
+            <span className="text-sm">
+              {lang === "bn" ? "পূর্ববর্তী এন্ট্রি থেকে" : "Change from previous"} ({trend.prev.entry_date}):{" "}
+              <strong className={trend.diff > 0 ? "text-rose-600" : trend.diff < 0 ? "text-emerald-600" : ""}>
+                {trend.diff > 0 ? "+" : ""}{trend.diff}
+              </strong>
+            </span>
+          </div>
+        </Card>
+      )}
+
+      {/* Chart */}
+      {chartData.length > 1 && (
+        <Card className="p-4">
+          <h3 className="font-semibold mb-3 text-sm">{lang === "bn" ? "ট্রেন্ড গ্রাফ" : "Trend Chart"}</h3>
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" fontSize={11} />
+                <YAxis fontSize={11} />
+                <Tooltip />
+                <Bar dataKey="count" fill="hsl(var(--primary))" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
+
+      {/* History table */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-semibold">{lang === "bn" ? "ইতিহাস" : "History"}</h3>
+          <Button size="sm" variant="outline" onClick={() => {
+            const rows: (string | number)[][] = [["Date", "Count", "Note"]];
+            filtered.forEach((e) => rows.push([e.entry_date, e.count, e.note || ""]));
+            downloadCSV(`inactive-${cat}.csv`, rows);
+          }}><Download className="w-4 h-4 mr-1" /> CSV</Button>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-muted">
+              <tr>
+                <th className="px-3 py-2 text-left">{lang === "bn" ? "তারিখ" : "Date"}</th>
+                <th className="px-3 py-2 text-right">{lang === "bn" ? "সংখ্যা" : "Count"}</th>
+                <th className="px-3 py-2 text-right">{lang === "bn" ? "পরিবর্তন" : "Change"}</th>
+                <th className="px-3 py-2 text-left">{lang === "bn" ? "নোট" : "Note"}</th>
+                <th className="px-3 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan={5} className="text-center py-6 text-muted-foreground">{lang === "bn" ? "কোন এন্ট্রি নেই" : "No entries yet"}</td></tr>
+              )}
+              {filtered.map((e, i) => {
+                const next = filtered[i + 1];
+                const diff = next ? e.count - next.count : null;
+                return (
+                  <tr key={e.id} className="border-b hover:bg-muted/40">
+                    <td className="px-3 py-2">{e.entry_date}</td>
+                    <td className="px-3 py-2 text-right font-semibold">{e.count}</td>
+                    <td className="px-3 py-2 text-right">
+                      {diff === null ? <span className="text-muted-foreground">—</span> :
+                        diff > 0 ? <span className="text-rose-600">+{diff}</span> :
+                        diff < 0 ? <span className="text-emerald-600">{diff}</span> :
+                        <span className="text-muted-foreground">0</span>}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">{e.note || "—"}</td>
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
+                      <Button size="sm" variant="ghost" onClick={() => { setEditingId(e.id); setForm({ entry_date: e.entry_date, count: String(e.count), note: e.note || "" }); }}>
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => { if (confirm(lang === "bn" ? "নিশ্চিত?" : "Delete?")) del.mutate(e.id); }}>
+                        <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                      </Button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </Card>
     </div>
   );
 }
