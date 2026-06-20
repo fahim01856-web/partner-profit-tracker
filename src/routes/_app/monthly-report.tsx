@@ -380,9 +380,7 @@ function MonthlyReportPage() {
                 </ClientOnly>
               </Card>
             )}
-          </div>
-        );
-      })()}
+
 
             {hasAny && (
               <Card className="p-4">
