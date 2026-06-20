@@ -110,6 +110,32 @@ function AgentBankingPage() {
   }, [incomes]);
   const totalIncome = Object.values(incomeByType).reduce((s, n) => s + n, 0);
 
+  // ===== Daily income aggregation =====
+  const dailyIncome = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const i of incomes) m.set(i.date, (m.get(i.date) || 0) + Number(i.amount));
+    return Array.from(m.entries()).map(([date, total]) => ({ date, total })).sort((a, b) => a.date.localeCompare(b.date));
+  }, [incomes]);
+
+  const incomeStats = useMemo(() => {
+    if (dailyIncome.length === 0) {
+      return { today: 0, yesterday: 0, changePct: 0, maxDay: null as null | { date: string; total: number }, minDay: null as null | { date: string; total: number }, avg7: 0, avg30: 0 };
+    }
+    const today = todayStr();
+    const yest = new Date(Date.now() - 864e5).toISOString().slice(0, 10);
+    const todayTotal = dailyIncome.find((d) => d.date === today)?.total ?? 0;
+    const yestTotal = dailyIncome.find((d) => d.date === yest)?.total ?? 0;
+    const changePct = yestTotal > 0 ? ((todayTotal - yestTotal) / yestTotal) * 100 : (todayTotal > 0 ? 100 : 0);
+    const sorted = [...dailyIncome].sort((a, b) => b.total - a.total);
+    const maxDay = sorted[0];
+    const minDay = sorted[sorted.length - 1];
+    const last7 = dailyIncome.slice(-7);
+    const last30 = dailyIncome.slice(-30);
+    const avg7 = last7.reduce((s, d) => s + d.total, 0) / (last7.length || 1);
+    const avg30 = last30.reduce((s, d) => s + d.total, 0) / (last30.length || 1);
+    return { today: todayTotal, yesterday: yestTotal, changePct, maxDay, minDay, avg7, avg30 };
+  }, [dailyIncome]);
+
   // ===== Monthly aggregation =====
   const monthlyIncome = useMemo(() => {
     const m = new Map<string, { month: string; Online: number; Remittance: number; Other: number; total: number }>();
@@ -122,6 +148,13 @@ function AgentBankingPage() {
     }
     return Array.from(m.values()).sort((a, b) => a.month.localeCompare(b.month)).slice(-12);
   }, [incomes]);
+
+  const monthChangePct = useMemo(() => {
+    if (monthlyIncome.length < 2) return 0;
+    const cur = monthlyIncome[monthlyIncome.length - 1].total;
+    const prev = monthlyIncome[monthlyIncome.length - 2].total;
+    return prev > 0 ? ((cur - prev) / prev) * 100 : (cur > 0 ? 100 : 0);
+  }, [monthlyIncome]);
 
   return (
     <div className="space-y-4">
