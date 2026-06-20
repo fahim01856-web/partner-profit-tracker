@@ -710,17 +710,19 @@ function DailyDepositPage() {
             {/* Consistency gauge */}
             <Card className="p-4">
               <h3 className="font-semibold mb-3 flex items-center gap-2"><Zap className="w-4 h-4 text-primary" />{lang === "bn" ? "ধারাবাহিকতা স্কোর" : "Consistency Score"}</h3>
-              <ClientOnly fallback={<div className="h-64" />}>
-                <ResponsiveContainer width="100%" height={200}>
-                  <RadialBarChart innerRadius="65%" outerRadius="100%" data={[{ name: "x", value: insights.consistency, fill: insights.consistency > 70 ? "#10b981" : insights.consistency > 40 ? "#f59e0b" : "#ef4444" }]} startAngle={210} endAngle={-30}>
-                    <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
-                    <RadialBar background dataKey="value" cornerRadius={20} />
-                  </RadialBarChart>
-                </ResponsiveContainer>
-              </ClientOnly>
-              <div className="text-center -mt-24 mb-16">
-                <div className="text-3xl font-extrabold">{insights.consistency.toFixed(0)}<span className="text-sm">%</span></div>
-                <div className="text-[11px] text-muted-foreground">{lang === "bn" ? "ভোলাটিলিটি" : "Volatility"} {insights.volatility.toFixed(1)}%</div>
+              <div className="relative">
+                <ClientOnly fallback={<div className="h-[200px]" />}>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <RadialBarChart innerRadius="70%" outerRadius="100%" data={[{ name: "x", value: insights.consistency, fill: insights.consistency > 70 ? "#10b981" : insights.consistency > 40 ? "#f59e0b" : "#ef4444" }]} startAngle={210} endAngle={-30}>
+                      <PolarAngleAxis type="number" domain={[0, 100]} tick={false} />
+                      <RadialBar background dataKey="value" cornerRadius={20} />
+                    </RadialBarChart>
+                  </ResponsiveContainer>
+                </ClientOnly>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <div className="text-3xl font-extrabold leading-none">{insights.consistency.toFixed(0)}<span className="text-sm">%</span></div>
+                  <div className="text-[11px] text-muted-foreground mt-1">{lang === "bn" ? "ভোলাটিলিটি" : "Volatility"} {insights.volatility.toFixed(1)}%</div>
+                </div>
               </div>
             </Card>
           </div>
