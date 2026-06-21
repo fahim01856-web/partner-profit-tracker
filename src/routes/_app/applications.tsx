@@ -1065,12 +1065,20 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
   const templatePlaceholders = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
 
 
-  const mergedFields = useMemo(() => ({
-    ...v.fields,
-    customer_name: v.customer_name, nid: v.customer_nid, mobile: v.customer_mobile,
-    account_number: v.account_number, account_type: v.account_type,
-    date: v.application_date, amount: v.amount, reason: v.reason, remarks: v.remarks,
-  }), [v]);
+  const mergedFields = useMemo(() => {
+    const defaults: Record<string, any> = {
+      customer_name: v.customer_name, nid: v.customer_nid, mobile: v.customer_mobile,
+      account_number: v.account_number, account_type: v.account_type,
+      date: v.application_date, amount: v.amount, reason: v.reason, remarks: v.remarks,
+    };
+    const out: Record<string, any> = { ...defaults };
+    // User-edited template fields ALWAYS win over auto-filled customer defaults
+    for (const [k, val] of Object.entries(v.fields || {})) {
+      if (val !== undefined && val !== null && val !== "") out[k] = val;
+      else if (!(k in out)) out[k] = val;
+    }
+    return out;
+  }, [v]);
 
   const save = useMutation({
     mutationFn: async (status?: string) => {
