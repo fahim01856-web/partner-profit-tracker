@@ -5,8 +5,9 @@ import { z } from "zod";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 
 const Input = z.object({
-  prompt: z.string().min(2),
+  prompt: z.string().optional(),
   pasted: z.string().optional(),
+  image: z.string().optional(), // data:image/...;base64,...
 });
 
 const Schema = z.object({
@@ -16,32 +17,18 @@ const Schema = z.object({
   body_html: z.string(),
 });
 
-const SYSTEM = `তুমি একজন বাংলাদেশী এজেন্ট ব্যাংকিং অ্যাপ্লিকেশন বিশেষজ্ঞ। ব্যবহারকারীর প্রম্পট বা পেস্ট করা টেক্সট থেকে একটি প্রফেশনাল বাংলা ব্যাংক অ্যাপ্লিকেশন তৈরি করো।
+const SYSTEM = `তুমি একজন বাংলাদেশী এজেন্ট ব্যাংকিং অ্যাপ্লিকেশন বিশেষজ্ঞ। ব্যবহারকারীর প্রম্পট, পেস্ট করা টেক্সট, অথবা আপলোড করা ছবি থেকে একটি প্রফেশনাল বাংলা ব্যাংক অ্যাপ্লিকেশন টেমপ্লেট তৈরি করো।
 
-ফরম্যাট কাঠামো (অবশ্যই অনুসরণ করো):
-তারিখ: {{date}}
+ছবি দেওয়া হলে (অত্যন্ত গুরুত্বপূর্ণ):
+- ছবিতে যা দেখছো হুবহু ১০০% সেম ফরম্যাটে HTML বানাও — একই হেডিং, একই টেবিল কাঠামো, একই সারি/কলাম, একই ক্রম, একই লেবেল।
+- ফর্মের প্রতিটি field/cell একটি <table> এর <td> হিসেবে রাখো (border="1" cellpadding="6" cellspacing="0" style="width:100%;border-collapse:collapse;font-family:SolaimanLipi,serif").
+- যেখানে গ্রাহকের নির্দিষ্ট তথ্য আছে (নাম, হিসাব নং, NID, মোবাইল, ঠিকানা, অ্যামাউন্ট, তারিখ, রাউটিং, ব্যাংক, শাখা ইত্যাদি) সেখানে {{placeholder}} বসাও — যাতে এডিট করা যায়।
+- চেকবক্স/ডিজিট-বক্স থাকলে একই রকম রেন্ডার করো (<span style="border:1px solid #000;display:inline-block;width:18px;height:22px;margin:0 1px"></span>)।
+- কোনো লেআউট পরিবর্তন করবে না — যেমন আছে তেমন রাখো।
 
-বরাবর,
-ব্যবস্থাপক
-ইসলামী ব্যাংক বাংলাদেশ পিএলসি
-এজেন্ট আউটলেট, ফকির বাজার, বুড়িচং
+প্লেসহোল্ডার অবশ্যই {{key}} ফরম্যাটে: customer_name, father_name, mother_name, address, account_number, account_title, account_type, nid, mobile, date, day, month, year, reason, amount, total_amount, branch_name, bank_name, routing_no, cheque_no, cheque_date, sender_name, receiver_name, receiver_account, commission, vat ইত্যাদি।
 
-বিষয়: <স্পষ্ট বিষয়>
-
-জনাব,
-
-<মূল আবেদন — গ্রাহকের তথ্য সহ, প্লেসহোল্ডার ব্যবহার করে>
-
-অতএব মহোদয়ের নিকট আমার বিনীত নিবেদন এই যে, ... প্রয়োজনীয় ব্যবস্থা গ্রহণে আপনার মর্জি হয়।
-
-নিবেদক,
-{{customer_name}}
-হিসাব নং: {{account_number}}
-এনআইডি: {{nid}}
-মোবাইল: {{mobile}}
-
-প্লেসহোল্ডার অবশ্যই {{key}} ফরম্যাটে রাখো। উপলব্ধ: customer_name, father_name, mother_name, address, account_number, account_type, nid, mobile, date, reason, old_mobile, new_mobile, old_address, new_address, amount, branch_name।
-JSON আউটপুট: name (সংক্ষিপ্ত শিরোনাম), category (Account/Service/Loan/KYC/Other), description (এক লাইন), body_html (পুরো আবেদনপত্র টেক্সট)।`;
+JSON আউটপুট: name (সংক্ষিপ্ত শিরোনাম), category (Account/Service/Loan/KYC/Remittance/Other), description (এক লাইন), body_html (পুরো HTML — টেবিল সহ)।`;
 
 export const generateAppTemplate = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -49,15 +36,25 @@ export const generateAppTemplate = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const key = process.env.LOVABLE_API_KEY;
     if (!key) throw new Error("LOVABLE_API_KEY missing");
+    if (!data.prompt && !data.pasted && !data.image) throw new Error("prompt, pasted বা image যেকোনো একটি দিন");
     const gateway = createLovableAiGatewayProvider(key);
-    const userMsg = data.pasted
-      ? `নিচের পেস্ট করা আবেদন থেকে একটি পুনঃব্যবহারযোগ্য টেমপ্লেট তৈরি করো (নির্দিষ্ট নাম/নম্বরের জায়গায় প্লেসহোল্ডার বসাও):\n\n${data.pasted}\n\nঅতিরিক্ত নির্দেশনা: ${data.prompt}`
-      : `নিচের বর্ণনা অনুযায়ী টেমপ্লেট তৈরি করো:\n\n${data.prompt}`;
+
+    const textParts: string[] = [];
+    if (data.image) {
+      textParts.push("নিচের ছবিতে যে অ্যাপ্লিকেশন ফর্ম আছে সেটি হুবহু ১০০% সেম HTML টেবিল ফরম্যাটে রূপান্তর করো — কোনো কিছু বাদ দিও না, কোনো কিছু বদলিও না। শুধু গ্রাহকের নির্দিষ্ট তথ্যের জায়গায় {{placeholder}} বসাও।");
+    }
+    if (data.pasted) textParts.push(`পেস্ট করা আবেদন:\n${data.pasted}`);
+    if (data.prompt) textParts.push(`অতিরিক্ত নির্দেশনা: ${data.prompt}`);
+
+    const content: any[] = [{ type: "text", text: textParts.join("\n\n") }];
+    if (data.image) {
+      content.push({ type: "image", image: data.image });
+    }
 
     const { experimental_output } = await generateText({
       model: gateway("google/gemini-3-flash-preview"),
       system: SYSTEM,
-      prompt: userMsg,
+      messages: [{ role: "user", content }],
       experimental_output: Output.object({ schema: Schema }),
     });
     return experimental_output;
