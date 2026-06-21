@@ -210,6 +210,12 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={deleteRow}>− রো</Button>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={deleteCol}>− কলাম</Button>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2 text-destructive" onClick={deleteTable}>× টেবিল</Button>
+            <span className="mx-1 w-px bg-border" />
+            <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={mergeRight}>⇆ মার্জ</Button>
+            <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={mergeDown}>⇣ মার্জ</Button>
+            <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={splitCell}>স্প্লিট</Button>
+            <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={insertNestedTable}>+ নেস্টেড</Button>
+            <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={setCellSize}>সাইজ</Button>
           </>
         )}
       </div>
