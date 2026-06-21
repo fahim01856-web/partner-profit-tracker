@@ -119,7 +119,12 @@ export function BranchPendingList() {
   const update = (id: string, patch: Partial<Item>) => {
     setItems((s) => s.map((r) => (r.id === id ? { ...r, ...patch } : r)));
     if (!userId) return;
-    const dbPatch: Record<string, unknown> = {};
+    const dbPatch: {
+      sl?: string;
+      work_date?: string | null;
+      work?: string;
+      done?: boolean;
+    } = {};
     if ("sl" in patch) dbPatch.sl = patch.sl;
     if ("date" in patch) dbPatch.work_date = patch.date || null;
     if ("work" in patch) dbPatch.work = patch.work;
