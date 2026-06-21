@@ -1005,19 +1005,41 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
             ) : (
               <div className="grid grid-cols-2 gap-1.5 mt-2">
                 {currentPhs.map((p) => (
-                  <div key={p} className="flex items-center gap-1 bg-white rounded border px-1.5 py-1">
-                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">{`{{${p}}}`}</span>
-                    <Input
-                      value={renameDraft[p] ?? p}
-                      onChange={(e) => setRenameDraft((d) => ({ ...d, [p]: e.target.value }))}
-                      onBlur={() => { if (renameDraft[p] !== undefined && renameDraft[p] !== p) applyRename(p); }}
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyRename(p); } }}
-                      className="h-7 text-xs"
-                      placeholder="new_name"
-                    />
-                    <Button type="button" size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => deletePh(p)} title="মুছুন">
-                      <Trash2 className="w-3 h-3 text-destructive" />
-                    </Button>
+                  <div key={p} className="space-y-1 bg-white rounded border px-1.5 py-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground font-mono shrink-0">{`{{${p}}}`}</span>
+                      <Input
+                        value={renameDraft[p] ?? p}
+                        onChange={(e) => setRenameDraft((d) => ({ ...d, [p]: e.target.value }))}
+                        onBlur={() => { if (renameDraft[p] !== undefined && renameDraft[p] !== p) applyRename(p); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyRename(p); } }}
+                        className="h-7 text-xs"
+                        placeholder="new_name"
+                      />
+                      <Button type="button" size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => deletePh(p)} title="মুছুন">
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                    {imageTemplate && (
+                      <div className="grid grid-cols-4 gap-1">
+                        {(["left", "top", "width", "fontSize"] as const).map((prop) => {
+                          const labels = { left: "বাম %", top: "উপর %", width: "চওড়া %", fontSize: "ফন্ট" };
+                          const units = { left: "%", top: "%", width: "%", fontSize: "px" };
+                          const style = getOverlayFieldStyle(v.body_html || "", p);
+                          return (
+                            <div key={prop}>
+                              <Label className="text-[9px] text-muted-foreground">{labels[prop]}</Label>
+                              <Input
+                                type="number"
+                                value={style[prop]}
+                                onChange={(e) => setV((prev: any) => ({ ...prev, body_html: updateOverlayFieldStyle(prev.body_html || "", p, { [prop === "fontSize" ? "font-size" : prop]: `${e.target.value}${units[prop]}` }) }))}
+                                className="h-7 text-xs px-1"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
