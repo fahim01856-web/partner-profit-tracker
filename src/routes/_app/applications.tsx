@@ -19,6 +19,7 @@ import {
   CheckCircle2, Clock, XCircle, FileCheck2, Send, Files, LayoutGrid, FolderOpen,
   History as HistoryIcon, ShieldCheck, Sparkles,
 } from "lucide-react";
+import { RichBodyEditor } from "@/components/RichBodyEditor";
 
 const APPLICATION_TABS = ["dashboard", "applications", "templates", "customers"] as const;
 type ApplicationTab = (typeof APPLICATION_TABS)[number];
@@ -992,7 +993,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
                 </details>
               </div>
             ) : (
-              <Textarea ref={taRef} rows={14} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-sm" />
+              <RichBodyEditor value={v.body_html || ""} onChange={(html) => setV({ ...v, body_html: html })} rows={14} />
             )}
             <div className="flex flex-wrap gap-1 mt-2">
               {PLACEHOLDERS.map((p) => (
