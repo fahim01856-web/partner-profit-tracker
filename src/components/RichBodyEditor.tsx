@@ -299,7 +299,7 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
               setTimeout(emit, 0);
             }
           }}
-          className="p-3 min-h-[280px] max-h-[60vh] overflow-auto text-sm focus:outline-none prose prose-sm max-w-none [&_table]:border-collapse [&_td]:border [&_td]:border-gray-400 [&_td]:p-1.5 [&_th]:border [&_th]:border-gray-400 [&_th]:p-1.5"
+          className="p-3 min-h-[280px] max-h-[60vh] overflow-auto text-sm focus:outline-none prose prose-sm max-w-none [&_table]:resize [&_table]:overflow-auto [&_table]:border-collapse [&_td]:resize [&_td]:overflow-auto [&_td]:border [&_td]:border-gray-400 [&_td]:p-1.5 [&_th]:border [&_th]:border-gray-400 [&_th]:p-1.5"
           style={{ minHeight: `${rows * 20}px` }}
         />
       ) : (
