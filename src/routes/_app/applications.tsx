@@ -912,10 +912,10 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
           const r = new FileReader(); r.onload = () => res(String(r.result || "")); r.onerror = rej; r.readAsDataURL(file);
         });
       }
-      // Directly embed the image as the body — no HTML/AI conversion
-      const html = `<div style="text-align:center;margin:0;padding:0;"><img src="${imgSrc}" alt="application" style="max-width:100%;height:auto;display:block;margin:0 auto;" /></div>`;
+      // Keep the original image, but make it a positioned template surface so editable variables can be placed over it.
+      const html = createImageBodyHtml(imgSrc);
       setV((prev: any) => ({ ...prev, body_html: html }));
-      toast.success("ছবি হুবহু বডিতে যোগ হয়েছে");
+      toast.success("ছবি যোগ হয়েছে — এখন নিচে ফিল্ড যোগ করে ছবির উপর বসান");
     } catch (e: any) {
       toast.error(e?.message || "ছবি যোগ করা যায়নি");
     } finally { setAiBusy(false); }
