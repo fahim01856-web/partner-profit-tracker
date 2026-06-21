@@ -890,6 +890,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
 function ApplicationsTab() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any>(null);
+  const [viewing, setViewing] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
