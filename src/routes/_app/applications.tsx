@@ -536,14 +536,29 @@ function TemplateQuickUse({ template, onClose }: { template: any; onClose: () =>
 function AiTemplateDialog({ onClose, onGenerated }: { onClose: () => void; onGenerated: (t: any) => void }) {
   const [prompt, setPrompt] = useState("");
   const [pasted, setPasted] = useState("");
+  const [image, setImage] = useState<string>("");
+  const [imageName, setImageName] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const gen = useServerFn(generateAppTemplate);
 
+  const onPickImage = (file: File | null | undefined) => {
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { toast.error("ছবি ৮MB এর কম হতে হবে"); return; }
+    const reader = new FileReader();
+    reader.onload = () => { setImage(String(reader.result || "")); setImageName(file.name); };
+    reader.readAsDataURL(file);
+  };
+
+  const onPaste = (e: React.ClipboardEvent) => {
+    const item = Array.from(e.clipboardData.items).find((i) => i.type.startsWith("image/"));
+    if (item) { e.preventDefault(); onPickImage(item.getAsFile()); }
+  };
+
   const run = async () => {
-    if (!prompt.trim() && !pasted.trim()) { toast.error("বর্ণনা বা আবেদন পেস্ট করুন"); return; }
+    if (!prompt.trim() && !pasted.trim() && !image) { toast.error("বর্ণনা, আবেদন পেস্ট, অথবা ছবি দিন"); return; }
     setLoading(true);
     try {
-      const out = await gen({ data: { prompt: prompt || "ফরম্যাট করে দাও", pasted: pasted || undefined } });
+      const out = await gen({ data: { prompt: prompt || undefined, pasted: pasted || undefined, image: image || undefined } });
       toast.success("AI টেমপ্লেট তৈরি হয়েছে");
       onGenerated(out);
     } catch (e: any) {
@@ -556,21 +571,32 @@ function AiTemplateDialog({ onClose, onGenerated }: { onClose: () => void; onGen
 
   return (
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-3xl" onPaste={onPaste}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><Sparkles className="w-4 h-4 text-primary" /> AI দিয়ে অ্যাপ্লিকেশন টেমপ্লেট তৈরি</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 max-h-[70vh] overflow-y-auto">
+          <div className="rounded border-2 border-dashed border-primary/40 bg-primary/5 p-3">
+            <Label className="text-sm font-semibold">📷 আবেদনের ছবি আপলোড করুন (হুবহু কপি হবে)</Label>
+            <div className="flex items-center gap-2 mt-2">
+              <Input type="file" accept="image/*" onChange={(e) => onPickImage(e.target.files?.[0])} className="text-xs" />
+              {image && <Button variant="outline" size="sm" onClick={() => { setImage(""); setImageName(""); }}>মুছুন</Button>}
+            </div>
+            {image && (
+              <div className="mt-2">
+                <div className="text-[11px] text-muted-foreground mb-1">✓ {imageName}</div>
+                <img src={image} alt="preview" className="max-h-48 rounded border" />
+              </div>
+            )}
+            <div className="text-[11px] text-muted-foreground mt-2">💡 ছবি তুলে আপলোড করুন বা Ctrl+V দিয়ে পেস্ট করুন — AI হুবহু ১০০% সেম ফরম্যাটে টেবিল আকারে টেমপ্লেট বানাবে।</div>
+          </div>
           <div>
-            <Label>আবেদনের বর্ণনা / টপিক</Label>
+            <Label>আবেদনের বর্ণনা / টপিক (ঐচ্ছিক)</Label>
             <Input value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="যেমন: মোবাইল নাম্বার পরিবর্তনের আবেদন" />
           </div>
           <div>
             <Label>অথবা পুরোনো আবেদন পেস্ট করুন (ঐচ্ছিক)</Label>
-            <Textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={10} placeholder="এখানে যেকোনো আবেদনপত্র কপি-পেস্ট করুন — AI সেটিকে প্লেসহোল্ডার সহ টেমপ্লেটে রূপান্তর করবে..." className="font-mono text-sm" />
-          </div>
-          <div className="text-[11px] text-muted-foreground bg-muted/50 p-2 rounded">
-            💡 AI স্বয়ংক্রিয়ভাবে গ্রাহকের নাম, হিসাব নং, NID ইত্যাদির জায়গায় <code className="text-primary">{`{{placeholder}}`}</code> বসিয়ে দেবে।
+            <Textarea value={pasted} onChange={(e) => setPasted(e.target.value)} rows={6} placeholder="এখানে যেকোনো আবেদনপত্র কপি-পেস্ট করুন..." className="font-mono text-sm" />
           </div>
         </div>
         <DialogFooter>
