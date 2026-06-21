@@ -1241,6 +1241,7 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
     return { ...base, ...value, fields: { ...(value?.fields || {}) } };
   });
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [newDocPh, setNewDocPh] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: attachments = [], refetch: refetchAtt } = useQuery({
@@ -1274,6 +1275,18 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
   };
 
   const templatePlaceholders = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
+  const bodyIsImageTemplate = isImageBodyTemplate(v.body_html || "");
+
+  const addDocPlaceholder = () => {
+    const safe = sanitizePlaceholderKey(newDocPh);
+    if (!safe) return;
+    setV((prev: any) => ({
+      ...prev,
+      body_html: addOverlayFieldToImageTemplate(prev.body_html || "", safe),
+      fields: { ...(prev.fields || {}), [safe]: prev.fields?.[safe] || "" },
+    }));
+    setNewDocPh("");
+  };
 
 
   const mergedFields = useMemo(() => {
