@@ -856,8 +856,13 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
   const aiImgRef = useRef<HTMLInputElement>(null);
 
   const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
+  const imageTemplate = isImageBodyTemplate(v.body_html || "");
 
   const insertPh = (ph: string) => {
+    if (isImageBodyTemplate(v.body_html || "")) {
+      setV((prev: any) => ({ ...prev, body_html: addOverlayFieldToImageTemplate(prev.body_html || "", ph) }));
+      return;
+    }
     const ta = taRef.current;
     const txt = `{{${ph}}}`;
     if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + txt })); return; }
@@ -884,7 +889,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
   const addPh = () => {
     const safe = sanitizePlaceholderKey(newPh);
     if (!safe) return;
-    if (isImageBodyTemplate(v.body_html || "")) {
+    if (imageTemplate) {
       setV((prev: any) => ({ ...prev, body_html: addOverlayFieldToImageTemplate(prev.body_html || "", safe) }));
     } else {
       insertPh(safe);
