@@ -16,6 +16,24 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<"wysiwyg" | "html">("wysiwyg");
   const lastValueRef = useRef<string>("");
+  const savedRangeRef = useRef<Range | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickR, setPickR] = useState(0);
+  const [pickC, setPickC] = useState(0);
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && ref.current?.contains(sel.anchorNode)) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+  const restoreSelection = () => {
+    const r = savedRangeRef.current;
+    if (!r) { ref.current?.focus(); return; }
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(r);
+  };
 
   // Sync external value -> editor (only when it differs from what we emitted)
   useEffect(() => {
@@ -57,11 +75,11 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
     const el = ref.current;
     if (!el) return;
     el.focus();
-    let html = `<table style="border-collapse:collapse;width:100%;margin:8px 0;" border="1"><tbody>`;
+    let html = `<table style="border-collapse:collapse;width:auto;margin:8px 0;resize:both;overflow:auto;display:inline-table;" border="1"><tbody>`;
     for (let r = 0; r < rows; r++) {
       html += "<tr>";
       for (let c = 0; c < cols; c++) {
-        html += `<td style="border:1px solid #999;padding:6px;min-width:40px;">&nbsp;</td>`;
+        html += `<td style="border:1px solid #999;padding:6px;min-width:40px;resize:both;overflow:auto;">&nbsp;</td>`;
       }
       html += "</tr>";
     }
@@ -198,11 +216,43 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2 italic" onClick={() => exec("italic")}>I</Button>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2 underline" onClick={() => exec("underline")}>U</Button>
             <span className="mx-1 w-px bg-border" />
-            <Button type="button" size="sm" variant="secondary" className="h-7 px-2" onClick={() => {
-              const r = parseInt(prompt("রো সংখ্যা?", "3") || "0", 10);
-              const c = parseInt(prompt("কলাম সংখ্যা?", "3") || "0", 10);
-              if (r > 0 && c > 0) insertTable(r, c);
-            }}>+ টেবিল</Button>
+            <div
+              className="relative"
+              onMouseLeave={() => { setPickerOpen(false); setPickR(0); setPickC(0); }}
+            >
+              <Button
+                type="button" size="sm" variant="secondary" className="h-7 px-2"
+                onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
+                onClick={() => setPickerOpen((o) => !o)}
+              >+ টেবিল ▾</Button>
+              {pickerOpen && (
+                <div
+                  className="absolute z-50 left-0 top-8 bg-popover border rounded shadow p-2"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <div className="text-[10px] mb-1 text-muted-foreground">{pickR || "—"} × {pickC || "—"} (ক্লিক করুন)</div>
+                  <div className="grid gap-[2px]" style={{ gridTemplateColumns: "repeat(10, 14px)" }}>
+                    {Array.from({ length: 100 }).map((_, i) => {
+                      const r = Math.floor(i / 10) + 1;
+                      const c = (i % 10) + 1;
+                      const active = r <= pickR && c <= pickC;
+                      return (
+                        <div
+                          key={i}
+                          onMouseEnter={() => { setPickR(r); setPickC(c); }}
+                          onClick={() => {
+                            restoreSelection();
+                            insertTable(r, c);
+                            setPickerOpen(false); setPickR(0); setPickC(0);
+                          }}
+                          className={`w-[14px] h-[14px] border cursor-pointer ${active ? "bg-primary border-primary" : "bg-background border-border"}`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={() => addRow("above")}>↑ রো</Button>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={() => addRow("below")}>↓ রো</Button>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={() => addCol("left")}>← কলাম</Button>
@@ -249,7 +299,7 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
               setTimeout(emit, 0);
             }
           }}
-          className="p-3 min-h-[280px] max-h-[60vh] overflow-auto text-sm focus:outline-none prose prose-sm max-w-none [&_table]:border-collapse [&_td]:border [&_td]:border-gray-400 [&_td]:p-1.5 [&_th]:border [&_th]:border-gray-400 [&_th]:p-1.5"
+          className="p-3 min-h-[280px] max-h-[60vh] overflow-auto text-sm focus:outline-none prose prose-sm max-w-none [&_table]:resize [&_table]:overflow-auto [&_table]:border-collapse [&_td]:resize [&_td]:overflow-auto [&_td]:border [&_td]:border-gray-400 [&_td]:p-1.5 [&_th]:border [&_th]:border-gray-400 [&_th]:p-1.5"
           style={{ minHeight: `${rows * 20}px` }}
         />
       ) : (
