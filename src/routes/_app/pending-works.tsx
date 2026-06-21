@@ -393,6 +393,10 @@ function PendingWorksPage() {
         <Progress value={stats.progress} className="h-2" />
       </Card>
 
+      <BranchPendingList />
+
+
+
       <Tabs value={activeCat} onValueChange={(v) => { setActiveCat(v); setForm(empty(v === ALL ? (categories[0]?.slug || "") : v)); }} className="no-print">
         <TabsList className="flex flex-wrap h-auto justify-start">
           <TabsTrigger value={ALL} className="text-xs"><LayoutGrid className="w-3 h-3 mr-1" />{lang === "bn" ? "সব" : "All"}</TabsTrigger>
