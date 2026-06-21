@@ -786,15 +786,70 @@ function rtgsBody() {
 function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () => void; onSave: (v: any) => void }) {
   const [v, setV] = useState<any>(value);
   const [uploading, setUploading] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [newPh, setNewPh] = useState("");
+  const [renameDraft, setRenameDraft] = useState<Record<string, string>>({});
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const aiImgRef = useRef<HTMLInputElement>(null);
+  const genTpl = useServerFn(generateAppTemplate);
+
+  const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
 
   const insertPh = (ph: string) => {
-    const ta = taRef.current; if (!ta) return;
-    const start = ta.selectionStart, end = ta.selectionEnd;
+    const ta = taRef.current;
     const txt = `{{${ph}}}`;
+    if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + txt })); return; }
+    const start = ta.selectionStart, end = ta.selectionEnd;
     setV({ ...v, body_html: (v.body_html || "").slice(0, start) + txt + (v.body_html || "").slice(end) });
     setTimeout(() => { ta.focus(); ta.setSelectionRange(start + txt.length, start + txt.length); }, 0);
+  };
+
+  const applyRename = (oldKey: string) => {
+    const raw = (renameDraft[oldKey] ?? "").trim();
+    const safe = raw.replace(/[^a-zA-Z0-9_]/g, "_");
+    if (!safe || safe === oldKey) { setRenameDraft((d) => { const n = { ...d }; delete n[oldKey]; return n; }); return; }
+    const re = new RegExp(`\\{\\{\\s*${oldKey}\\s*\\}\\}`, "g");
+    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, `{{${safe}}}`) }));
+    setRenameDraft((d) => { const n = { ...d }; delete n[oldKey]; return n; });
+    toast.success(`{{${oldKey}}} → {{${safe}}}`);
+  };
+
+  const deletePh = (key: string) => {
+    const re = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g");
+    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, "") }));
+  };
+
+  const addPh = () => {
+    const safe = newPh.trim().replace(/[^a-zA-Z0-9_]/g, "_");
+    if (!safe) return;
+    insertPh(safe);
+    setNewPh("");
+  };
+
+  const aiFromImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("শুধু ছবি (JPG/PNG) দিন। PDF হলে স্ক্রিনশট নিয়ে আপলোড করুন।"); return; }
+    if (file.size > 8 * 1024 * 1024) { toast.error("ছবি ৮MB এর কম হতে হবে"); return; }
+    setAiBusy(true);
+    try {
+      const dataUrl: string = await new Promise((res, rej) => {
+        const r = new FileReader(); r.onload = () => res(String(r.result || "")); r.onerror = rej; r.readAsDataURL(file);
+      });
+      const out: any = await genTpl({ data: { image: dataUrl } });
+      setV((prev: any) => ({
+        ...prev,
+        body_html: out.body_html || prev.body_html,
+        name: prev.name || out.name,
+        category: prev.category || out.category,
+        description: prev.description || out.description,
+      }));
+      toast.success("বডি AI থেকে হুবহু তৈরি হয়েছে");
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (msg.includes("429")) toast.error("AI rate limit");
+      else if (msg.includes("402")) toast.error("AI ক্রেডিট শেষ");
+      else toast.error(msg);
+    } finally { setAiBusy(false); }
   };
 
   const uploadFile = async (file: File) => {
