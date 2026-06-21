@@ -126,6 +126,66 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
     emit();
   };
 
+  const mergeRight = () => {
+    const cell = getSelectionCell();
+    if (!cell) return;
+    const next = cell.nextElementSibling as HTMLTableCellElement | null;
+    if (!next) return;
+    cell.colSpan = (cell.colSpan || 1) + (next.colSpan || 1);
+    cell.innerHTML = (cell.innerHTML + " " + next.innerHTML).trim() || "&nbsp;";
+    next.remove();
+    emit();
+  };
+
+  const mergeDown = () => {
+    const cell = getSelectionCell();
+    const row = cell?.parentElement as HTMLTableRowElement | null;
+    if (!cell || !row) return;
+    const nextRow = row.nextElementSibling as HTMLTableRowElement | null;
+    const below = nextRow?.cells[cell.cellIndex];
+    if (!below) return;
+    cell.rowSpan = (cell.rowSpan || 1) + (below.rowSpan || 1);
+    cell.innerHTML = (cell.innerHTML + " " + below.innerHTML).trim() || "&nbsp;";
+    below.remove();
+    emit();
+  };
+
+  const splitCell = () => {
+    const cell = getSelectionCell();
+    if (!cell) return;
+    cell.colSpan = 1;
+    cell.rowSpan = 1;
+    emit();
+  };
+
+  const insertNestedTable = () => {
+    const cell = getSelectionCell();
+    if (!cell) return;
+    const r = parseInt(prompt("ভিতরের টেবিলের রো?", "2") || "0", 10);
+    const c = parseInt(prompt("ভিতরের টেবিলের কলাম?", "2") || "0", 10);
+    if (r <= 0 || c <= 0) return;
+    let html = `<table style="border-collapse:collapse;width:100%;margin:4px 0;" border="1"><tbody>`;
+    for (let i = 0; i < r; i++) {
+      html += "<tr>";
+      for (let j = 0; j < c; j++) html += `<td style="border:1px solid #999;padding:4px;">&nbsp;</td>`;
+      html += "</tr>";
+    }
+    html += "</tbody></table>";
+    ref.current?.focus();
+    document.execCommand("insertHTML", false, html);
+    emit();
+  };
+
+  const setCellSize = () => {
+    const cell = getSelectionCell();
+    if (!cell) return;
+    const w = prompt("সেলের width (px বা %, খালি = অপরিবর্তিত)", cell.style.width || "");
+    const h = prompt("সেলের height (px, খালি = অপরিবর্তিত)", cell.style.height || "");
+    if (w !== null && w !== "") cell.style.width = w;
+    if (h !== null && h !== "") cell.style.height = h;
+    emit();
+  };
+
   return (
     <div className="border rounded">
       <div className="flex flex-wrap gap-1 p-1 border-b bg-muted/30 text-xs">
