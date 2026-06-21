@@ -892,12 +892,13 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
           <div><Label>ক্যাটাগরি</Label><Input value={v.category || ""} onChange={(e) => setV({ ...v, category: e.target.value })} placeholder="Account / Service / Loan ..." /></div>
           <div className="col-span-2"><Label>বিবরণ</Label><Input value={v.description || ""} onChange={(e) => setV({ ...v, description: e.target.value })} /></div>
           <div className="col-span-2 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-3">
-            <Label className="text-sm font-semibold flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-primary" /> 📷 আবেদনের ছবি আপলোড করুন — AI হুবহু বডি বানাবে</Label>
+            <Label className="text-sm font-semibold flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-primary" /> 📷 আবেদনের ছবি আপলোড করুন — হুবহু বডিতে বসবে</Label>
             <div className="flex items-center gap-2 mt-2">
               <Button type="button" variant="outline" size="sm" onClick={() => aiImgRef.current?.click()} disabled={aiBusy}>
-                {aiBusy ? "AI প্রসেস হচ্ছে..." : <><Upload className="w-3.5 h-3.5 mr-1" /> ছবি দিন</>}
+                {aiBusy ? "আপলোড হচ্ছে..." : <><Upload className="w-3.5 h-3.5 mr-1" /> ছবি দিন</>}
               </Button>
-              <span className="text-[11px] text-muted-foreground">নিচের HTML বডি হুবহু রিপ্লেস হবে। PDF হলে স্ক্রিনশট আপলোড করুন।</span>
+              <span className="text-[11px] text-muted-foreground">ছবিটি সরাসরি বডিতে দেখা যাবে — কোনো HTML কোড লিখতে হবে না।</span>
+
             </div>
             <input ref={aiImgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) aiFromImage(f); e.target.value = ""; }} />
           </div>
