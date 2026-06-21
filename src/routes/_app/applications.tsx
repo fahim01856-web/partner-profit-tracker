@@ -19,6 +19,7 @@ import {
   CheckCircle2, Clock, XCircle, FileCheck2, Send, Files, LayoutGrid, FolderOpen,
   History as HistoryIcon, ShieldCheck, Sparkles,
 } from "lucide-react";
+import { RichBodyEditor } from "@/components/RichBodyEditor";
 
 const APPLICATION_TABS = ["dashboard", "applications", "templates", "customers"] as const;
 type ApplicationTab = (typeof APPLICATION_TABS)[number];
