@@ -886,10 +886,21 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
           <div><Label>নাম *</Label><Input value={v.name || ""} onChange={(e) => setV({ ...v, name: e.target.value })} /></div>
           <div><Label>ক্যাটাগরি</Label><Input value={v.category || ""} onChange={(e) => setV({ ...v, category: e.target.value })} placeholder="Account / Service / Loan ..." /></div>
           <div className="col-span-2"><Label>বিবরণ</Label><Input value={v.description || ""} onChange={(e) => setV({ ...v, description: e.target.value })} /></div>
+          <div className="col-span-2 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-3">
+            <Label className="text-sm font-semibold flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-primary" /> 📷 আবেদনের ছবি আপলোড করুন — AI হুবহু বডি বানাবে</Label>
+            <div className="flex items-center gap-2 mt-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => aiImgRef.current?.click()} disabled={aiBusy}>
+                {aiBusy ? "AI প্রসেস হচ্ছে..." : <><Upload className="w-3.5 h-3.5 mr-1" /> ছবি দিন</>}
+              </Button>
+              <span className="text-[11px] text-muted-foreground">নিচের HTML বডি হুবহু রিপ্লেস হবে। PDF হলে স্ক্রিনশট আপলোড করুন।</span>
+            </div>
+            <input ref={aiImgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) aiFromImage(f); e.target.value = ""; }} />
+          </div>
+
           <div className="col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <Label>আবেদনের বডি (Copy-Paste করতে পারেন)</Label>
-              <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`}, {`{{account_number}}`} ...</div>
+              <Label>আবেদনের বডি (HTML — সরাসরি এডিট করতে পারেন)</Label>
+              <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
             <Textarea ref={taRef} rows={14} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-sm" />
             <div className="flex flex-wrap gap-1 mt-2">
@@ -900,6 +911,38 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
               ))}
             </div>
           </div>
+
+          <div className="col-span-2 rounded-lg border bg-amber-50/40 p-3">
+            <Label className="text-sm font-semibold">🏷️ এই টেমপ্লেটের ফিল্ডসমূহ ({currentPhs.length}) — নাম পরিবর্তন / মুছুন / যোগ করুন</Label>
+            {currentPhs.length === 0 ? (
+              <div className="text-xs text-muted-foreground mt-2">এখনো কোনো {`{{field}}`} নেই।</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-1.5 mt-2">
+                {currentPhs.map((p) => (
+                  <div key={p} className="flex items-center gap-1 bg-white rounded border px-1.5 py-1">
+                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">{`{{${p}}}`}</span>
+                    <Input
+                      value={renameDraft[p] ?? p}
+                      onChange={(e) => setRenameDraft((d) => ({ ...d, [p]: e.target.value }))}
+                      onBlur={() => { if (renameDraft[p] !== undefined && renameDraft[p] !== p) applyRename(p); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyRename(p); } }}
+                      className="h-7 text-xs"
+                      placeholder="new_name"
+                    />
+                    <Button type="button" size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => deletePh(p)} title="মুছুন">
+                      <Trash2 className="w-3 h-3 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 mt-2">
+              <Input value={newPh} onChange={(e) => setNewPh(e.target.value)} placeholder="নতুন ফিল্ড নাম (যেমন: new_mobile)" className="h-8 text-xs" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPh(); } }} />
+              <Button type="button" size="sm" variant="secondary" onClick={addPh}>+ যোগ করুন</Button>
+            </div>
+            <div className="text-[10px] text-muted-foreground mt-1">নাম পরিবর্তন করলে বডিতে সকল জায়গায় অটো রিপ্লেস হবে।</div>
+          </div>
+
           <div className="col-span-2 rounded-lg border-2 border-dashed p-3 bg-muted/30">
             <div className="flex items-center justify-between mb-2">
               <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5 text-primary" /> ফাইল সংযুক্ত করুন (PDF / Word) — ঐচ্ছিক</Label>
