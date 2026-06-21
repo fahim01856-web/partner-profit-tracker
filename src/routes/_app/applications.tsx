@@ -152,7 +152,9 @@ function escapeRegExp(value: string) {
 }
 
 function isImageBodyTemplate(html: string) {
-  return /data-image-template=["']true["']/i.test(html || "");
+  if (/data-image-template=["']true["']/i.test(html || "")) return true;
+  const textWithoutImage = String(html || "").replace(/<img\b[^>]*>/gi, "").replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, "").trim();
+  return /<img\b/i.test(html || "") && textWithoutImage.length === 0;
 }
 
 function createImageBodyHtml(imgSrc: string) {
@@ -167,10 +169,13 @@ function createOverlayFieldHtml(key: string, index = 0) {
 
 function addOverlayFieldToImageTemplate(html: string, key: string) {
   if (!isImageBodyTemplate(html)) return `${html || ""}\n{{${key}}}`;
-  if (extractPlaceholders(html).includes(key)) return html;
-  const insertAt = html.lastIndexOf("</div>");
-  const fieldHtml = createOverlayFieldHtml(key, extractPlaceholders(html).length);
-  return insertAt >= 0 ? `${html.slice(0, insertAt)}${fieldHtml}${html.slice(insertAt)}` : `${html}${fieldHtml}`;
+  const normalized = /data-image-template=["']true["']/i.test(html || "")
+    ? html
+    : `<div data-image-template="true" style="position:relative;width:100%;max-width:760px;margin:0 auto;padding:0;line-height:1;">${html || ""}</div>`;
+  if (extractPlaceholders(normalized).includes(key)) return normalized;
+  const insertAt = normalized.lastIndexOf("</div>");
+  const fieldHtml = createOverlayFieldHtml(key, extractPlaceholders(normalized).length);
+  return insertAt >= 0 ? `${normalized.slice(0, insertAt)}${fieldHtml}${normalized.slice(insertAt)}` : `${normalized}${fieldHtml}`;
 }
 
 function mergeInlineStyle(style: string, patch: Record<string, string>) {
