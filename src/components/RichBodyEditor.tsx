@@ -160,7 +160,26 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
           suppressContentEditableWarning
           onInput={emit}
           onBlur={emit}
-          onPaste={() => setTimeout(emit, 0)}
+          onPaste={(e) => {
+            const html = e.clipboardData.getData("text/html");
+            const text = e.clipboardData.getData("text/plain");
+            if (html) {
+              e.preventDefault();
+              // Strip Office/Word wrappers but keep inline styles, tables, images
+              const cleaned = html
+                .replace(/<!--[\s\S]*?-->/g, "")
+                .replace(/<\/?(html|head|body|meta|link|style|o:p|xml)[^>]*>/gi, "")
+                .replace(/\sclass="[^"]*"/gi, "");
+              document.execCommand("insertHTML", false, cleaned);
+              emit();
+            } else if (text) {
+              e.preventDefault();
+              document.execCommand("insertText", false, text);
+              emit();
+            } else {
+              setTimeout(emit, 0);
+            }
+          }}
           className="p-3 min-h-[280px] max-h-[60vh] overflow-auto text-sm focus:outline-none prose prose-sm max-w-none [&_table]:border-collapse [&_td]:border [&_td]:border-gray-400 [&_td]:p-1.5 [&_th]:border [&_th]:border-gray-400 [&_th]:p-1.5"
           style={{ minHeight: `${rows * 20}px` }}
         />
