@@ -143,6 +143,73 @@ function extractPlaceholders(html: string): string[] {
   return Array.from(set);
 }
 
+function sanitizePlaceholderKey(value: string) {
+  return value.trim().replace(/[^a-zA-Z0-9_]/g, "_").replace(/^_+|_+$/g, "").replace(/^([0-9])/, "_$1");
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isImageBodyTemplate(html: string) {
+  if (/data-image-template=["']true["']/i.test(html || "")) return true;
+  const textWithoutImage = String(html || "").replace(/<img\b[^>]*>/gi, "").replace(/<[^>]+>/g, "").replace(/&nbsp;/gi, "").trim();
+  return /<img\b/i.test(html || "") && textWithoutImage.length === 0;
+}
+
+function createImageBodyHtml(imgSrc: string) {
+  return `<div data-image-template="true" style="position:relative;width:100%;max-width:760px;margin:0 auto;padding:0;line-height:1;"><img src="${escapeHtml(imgSrc)}" alt="application" style="width:100%;height:auto;display:block;margin:0 auto;" /></div>`;
+}
+
+function createOverlayFieldHtml(key: string, index = 0) {
+  const left = 8 + (index % 2) * 42;
+  const top = 10 + Math.floor(index / 2) * 7;
+  return `<span data-template-field="${key}" style="position:absolute;left:${left}%;top:${top}%;width:30%;min-height:18px;font-size:14px;line-height:1.35;color:#111827;white-space:pre-wrap;font-weight:600;">{{${key}}}</span>`;
+}
+
+function addOverlayFieldToImageTemplate(html: string, key: string) {
+  if (!isImageBodyTemplate(html)) return `${html || ""}\n{{${key}}}`;
+  const normalized = /data-image-template=["']true["']/i.test(html || "")
+    ? html
+    : `<div data-image-template="true" style="position:relative;width:100%;max-width:760px;margin:0 auto;padding:0;line-height:1;">${html || ""}</div>`;
+  if (extractPlaceholders(normalized).includes(key)) return normalized;
+  const insertAt = normalized.lastIndexOf("</div>");
+  const fieldHtml = createOverlayFieldHtml(key, extractPlaceholders(normalized).length);
+  return insertAt >= 0 ? `${normalized.slice(0, insertAt)}${fieldHtml}${normalized.slice(insertAt)}` : `${normalized}${fieldHtml}`;
+}
+
+function mergeInlineStyle(style: string, patch: Record<string, string>) {
+  const map: Record<string, string> = {};
+  style.split(";").forEach((part) => {
+    const [rawKey, ...rest] = part.split(":");
+    const key = rawKey?.trim();
+    if (key && rest.length) map[key] = rest.join(":").trim();
+  });
+  Object.assign(map, patch);
+  return Object.entries(map).map(([k, val]) => `${k}:${val}`).join(";");
+}
+
+function getOverlayFieldStyle(html: string, key: string) {
+  const re = new RegExp(`<span\\b(?=[^>]*data-template-field=["']${escapeRegExp(key)}["'])[^>]*style=["']([^"']*)["'][^>]*>`, "i");
+  const style = re.exec(html || "")?.[1] || "";
+  const read = (name: string, fallback: number) => {
+    const m = new RegExp(`${name}\\s*:\\s*([0-9.]+)`, "i").exec(style);
+    return m ? Number(m[1]) : fallback;
+  };
+  return { left: read("left", 8), top: read("top", 10), width: read("width", 30), fontSize: read("font-size", 14) };
+}
+
+function updateOverlayFieldStyle(html: string, key: string, patch: Record<string, string>) {
+  const re = new RegExp(`(<span\\b(?=[^>]*data-template-field=["']${escapeRegExp(key)}["'])[^>]*style=["'])([^"']*)(["'][^>]*>)`, "i");
+  return (html || "").replace(re, (_, start, style, end) => `${start}${mergeInlineStyle(style, patch)}${end}`);
+}
+
+function removePlaceholderFromHtml(html: string, key: string) {
+  const overlayRe = new RegExp(`<span\\b(?=[^>]*data-template-field=["']${escapeRegExp(key)}["'])[^>]*>[\\s\\S]*?<\\/span>`, "gi");
+  const phRe = new RegExp(`\\{\\{\\s*${escapeRegExp(key)}\\s*\\}\\}`, "g");
+  return (html || "").replace(overlayRe, "").replace(phRe, "");
+}
+
 async function copyHtmlAsText(html: string) {
   const tmp = document.createElement("div");
   tmp.innerHTML = html;
@@ -792,11 +859,15 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const aiImgRef = useRef<HTMLInputElement>(null);
-  const genTpl = useServerFn(generateAppTemplate);
 
   const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
+  const imageTemplate = isImageBodyTemplate(v.body_html || "");
 
   const insertPh = (ph: string) => {
+    if (isImageBodyTemplate(v.body_html || "")) {
+      setV((prev: any) => ({ ...prev, body_html: addOverlayFieldToImageTemplate(prev.body_html || "", ph) }));
+      return;
+    }
     const ta = taRef.current;
     const txt = `{{${ph}}}`;
     if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + txt })); return; }
@@ -807,23 +878,27 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
 
   const applyRename = (oldKey: string) => {
     const raw = (renameDraft[oldKey] ?? "").trim();
-    const safe = raw.replace(/[^a-zA-Z0-9_]/g, "_");
+    const safe = sanitizePlaceholderKey(raw);
     if (!safe || safe === oldKey) { setRenameDraft((d) => { const n = { ...d }; delete n[oldKey]; return n; }); return; }
-    const re = new RegExp(`\\{\\{\\s*${oldKey}\\s*\\}\\}`, "g");
-    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, `{{${safe}}}`) }));
+    const re = new RegExp(`\\{\\{\\s*${escapeRegExp(oldKey)}\\s*\\}\\}`, "g");
+    const attrRe = new RegExp(`(data-template-field=["'])${escapeRegExp(oldKey)}(["'])`, "g");
+    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, `{{${safe}}}`).replace(attrRe, `$1${safe}$2`) }));
     setRenameDraft((d) => { const n = { ...d }; delete n[oldKey]; return n; });
     toast.success(`{{${oldKey}}} → {{${safe}}}`);
   };
 
   const deletePh = (key: string) => {
-    const re = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g");
-    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, "") }));
+    setV((prev: any) => ({ ...prev, body_html: removePlaceholderFromHtml(prev.body_html || "", key) }));
   };
 
   const addPh = () => {
-    const safe = newPh.trim().replace(/[^a-zA-Z0-9_]/g, "_");
+    const safe = sanitizePlaceholderKey(newPh);
     if (!safe) return;
-    insertPh(safe);
+    if (imageTemplate) {
+      setV((prev: any) => ({ ...prev, body_html: addOverlayFieldToImageTemplate(prev.body_html || "", safe) }));
+    } else {
+      insertPh(safe);
+    }
     setNewPh("");
   };
 
@@ -847,10 +922,10 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
           const r = new FileReader(); r.onload = () => res(String(r.result || "")); r.onerror = rej; r.readAsDataURL(file);
         });
       }
-      // Directly embed the image as the body — no HTML/AI conversion
-      const html = `<div style="text-align:center;margin:0;padding:0;"><img src="${imgSrc}" alt="application" style="max-width:100%;height:auto;display:block;margin:0 auto;" /></div>`;
+      // Keep the original image, but make it a positioned template surface so editable variables can be placed over it.
+      const html = createImageBodyHtml(imgSrc);
       setV((prev: any) => ({ ...prev, body_html: html }));
-      toast.success("ছবি হুবহু বডিতে যোগ হয়েছে");
+      toast.success("ছবি যোগ হয়েছে — এখন নিচে ফিল্ড যোগ করে ছবির উপর বসান");
     } catch (e: any) {
       toast.error(e?.message || "ছবি যোগ করা যায়নি");
     } finally { setAiBusy(false); }
@@ -905,10 +980,20 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
 
           <div className="col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <Label>আবেদনের বডি (HTML — সরাসরি এডিট করতে পারেন)</Label>
+              <Label>{imageTemplate ? "আবেদনের বডি (ছবি + এডিটযোগ্য ফিল্ড)" : "আবেদনের বডি"}</Label>
               <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
-            <Textarea ref={taRef} rows={14} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-sm" />
+            {imageTemplate ? (
+              <div className="space-y-2">
+                <iframe title="Template image preview" srcDoc={documentPreviewSrcDoc(v.body_html || "")} sandbox="" className="bg-white border rounded h-[420px] w-full" />
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">⚙️ Raw HTML এডিট করুন (অ্যাডভান্সড)</summary>
+                  <Textarea ref={taRef} rows={8} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-xs mt-2" />
+                </details>
+              </div>
+            ) : (
+              <Textarea ref={taRef} rows={14} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-sm" />
+            )}
             <div className="flex flex-wrap gap-1 mt-2">
               {PLACEHOLDERS.map((p) => (
                 <button key={p} type="button" onClick={() => insertPh(p)} className="text-[10px] px-2 py-0.5 rounded border hover:bg-muted">
@@ -925,19 +1010,41 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
             ) : (
               <div className="grid grid-cols-2 gap-1.5 mt-2">
                 {currentPhs.map((p) => (
-                  <div key={p} className="flex items-center gap-1 bg-white rounded border px-1.5 py-1">
-                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">{`{{${p}}}`}</span>
-                    <Input
-                      value={renameDraft[p] ?? p}
-                      onChange={(e) => setRenameDraft((d) => ({ ...d, [p]: e.target.value }))}
-                      onBlur={() => { if (renameDraft[p] !== undefined && renameDraft[p] !== p) applyRename(p); }}
-                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyRename(p); } }}
-                      className="h-7 text-xs"
-                      placeholder="new_name"
-                    />
-                    <Button type="button" size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => deletePh(p)} title="মুছুন">
-                      <Trash2 className="w-3 h-3 text-destructive" />
-                    </Button>
+                  <div key={p} className="space-y-1 bg-white rounded border px-1.5 py-1">
+                    <div className="flex items-center gap-1">
+                      <span className="text-[10px] text-muted-foreground font-mono shrink-0">{`{{${p}}}`}</span>
+                      <Input
+                        value={renameDraft[p] ?? p}
+                        onChange={(e) => setRenameDraft((d) => ({ ...d, [p]: e.target.value }))}
+                        onBlur={() => { if (renameDraft[p] !== undefined && renameDraft[p] !== p) applyRename(p); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyRename(p); } }}
+                        className="h-7 text-xs"
+                        placeholder="new_name"
+                      />
+                      <Button type="button" size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => deletePh(p)} title="মুছুন">
+                        <Trash2 className="w-3 h-3 text-destructive" />
+                      </Button>
+                    </div>
+                    {imageTemplate && (
+                      <div className="grid grid-cols-4 gap-1">
+                        {(["left", "top", "width", "fontSize"] as const).map((prop) => {
+                          const labels = { left: "বাম %", top: "উপর %", width: "চওড়া %", fontSize: "ফন্ট" };
+                          const units = { left: "%", top: "%", width: "%", fontSize: "px" };
+                          const style = getOverlayFieldStyle(v.body_html || "", p);
+                          return (
+                            <div key={prop}>
+                              <Label className="text-[9px] text-muted-foreground">{labels[prop]}</Label>
+                              <Input
+                                type="number"
+                                value={style[prop]}
+                                onChange={(e) => setV((prev: any) => ({ ...prev, body_html: updateOverlayFieldStyle(prev.body_html || "", p, { [prop === "fontSize" ? "font-size" : prop]: `${e.target.value}${units[prop]}` }) }))}
+                                className="h-7 text-xs px-1"
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -1134,6 +1241,7 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
     return { ...base, ...value, fields: { ...(value?.fields || {}) } };
   });
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [newDocPh, setNewDocPh] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: attachments = [], refetch: refetchAtt } = useQuery({
@@ -1167,6 +1275,18 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
   };
 
   const templatePlaceholders = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
+  const bodyIsImageTemplate = isImageBodyTemplate(v.body_html || "");
+
+  const addDocPlaceholder = () => {
+    const safe = sanitizePlaceholderKey(newDocPh);
+    if (!safe) return;
+    setV((prev: any) => ({
+      ...prev,
+      body_html: addOverlayFieldToImageTemplate(prev.body_html || "", safe),
+      fields: { ...(prev.fields || {}), [safe]: prev.fields?.[safe] || "" },
+    }));
+    setNewDocPh("");
+  };
 
 
   const mergedFields = useMemo(() => {
@@ -1298,7 +1418,7 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
                 <Label className="text-xs font-semibold">টেমপ্লেট ফিল্ড ({templatePlaceholders.length}) — এডিট করলে ডানদিকে সাথে সাথে আপডেট হবে</Label>
                 {templatePlaceholders.length === 0 ? (
                   <div className="text-xs text-muted-foreground py-2 border rounded p-3 bg-muted/30">
-                    এই টেমপ্লেটে কোনো {`{{variable}}`} নেই। নিচে raw HTML এডিট করুন অথবা উপরের "তথ্য" ট্যাব থেকে টেমপ্লেট বাছুন।
+                    এই টেমপ্লেটে কোনো {`{{variable}}`} নেই। নিচে নতুন ফিল্ড যোগ করলে ছবির উপর এডিটযোগ্য লেখা বসবে।
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2 border rounded p-2 bg-muted/20">
@@ -1310,8 +1430,33 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
                         ) : (
                           <Input value={v.fields?.[p] ?? mergedFields[p] ?? ""} onChange={(e) => setV({ ...v, fields: { ...v.fields, [p]: e.target.value } })} className="h-8 text-sm" />
                         )}
+                        {bodyIsImageTemplate && (
+                          <div className="grid grid-cols-4 gap-1 mt-1">
+                            {(["left", "top", "width", "fontSize"] as const).map((prop) => {
+                              const labels = { left: "বাম %", top: "উপর %", width: "চওড়া %", fontSize: "ফন্ট" };
+                              const units = { left: "%", top: "%", width: "%", fontSize: "px" };
+                              const style = getOverlayFieldStyle(v.body_html || "", p);
+                              return (
+                                <Input
+                                  key={prop}
+                                  type="number"
+                                  title={labels[prop]}
+                                  value={style[prop]}
+                                  onChange={(e) => setV((prev: any) => ({ ...prev, body_html: updateOverlayFieldStyle(prev.body_html || "", p, { [prop === "fontSize" ? "font-size" : prop]: `${e.target.value}${units[prop]}` }) }))}
+                                  className="h-7 text-xs px-1"
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     ))}
+                  </div>
+                )}
+                {bodyIsImageTemplate && (
+                  <div className="flex items-center gap-1.5 rounded border bg-muted/20 p-2">
+                    <Input value={newDocPh} onChange={(e) => setNewDocPh(e.target.value)} placeholder="নতুন ফিল্ড (যেমন: new_mobile)" className="h-8 text-xs" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDocPlaceholder(); } }} />
+                    <Button type="button" size="sm" variant="secondary" onClick={addDocPlaceholder}>+ ফিল্ড</Button>
                   </div>
                 )}
                 <details className="text-xs">
