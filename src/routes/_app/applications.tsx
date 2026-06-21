@@ -1286,6 +1286,51 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
   );
 }
 
+// ---------------- Application Viewer (read-only body) ----------------
+function ApplicationViewer({ record, onClose }: any) {
+  const mergedFields = useMemo(() => ({
+    ...(record.fields || {}),
+    customer_name: record.customer_name, nid: record.customer_nid, mobile: record.customer_mobile,
+    account_number: record.account_number, account_type: record.account_type,
+    date: record.application_date, amount: record.amount, reason: record.reason, remarks: record.remarks,
+  }), [record]);
+  const html = buildDocumentHtml({
+    bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি",
+    outlet: "ফকিরবাজার এজেন্ট আউটলেট ১২১/১১, বুড়িচং, কুমিল্লা",
+    bodyHtml: record.body_html || "",
+    fields: mergedFields,
+  });
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>{record.application_type || "আবেদন"} — {record.customer_name}</DialogTitle>
+        </DialogHeader>
+        {record.body_html ? (
+          <iframe
+            title="Application body"
+            srcDoc={documentPreviewSrcDoc(html)}
+            sandbox=""
+            className="bg-white border rounded h-[70vh] w-full"
+          />
+        ) : (
+          <div className="text-sm text-muted-foreground text-center py-10">
+            এই আবেদনে কোনো বডি নেই। এডিট থেকে টেমপ্লেট নির্বাচন করুন।
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>বন্ধ</Button>
+          {record.body_html && (
+            <Button onClick={() => printHtml(html, record.application_type || "Application")}>
+              <Printer className="w-4 h-4 mr-1" /> Print / PDF
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 // ---------------- Customer Docs Tab ----------------
 function CustomerDocsTab() {
   const qc = useQueryClient();
