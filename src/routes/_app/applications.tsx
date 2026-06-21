@@ -42,6 +42,7 @@ const DEFAULT_TEMPLATES: { name: string; category: string }[] = [
   { name: "ATM Card Request", category: "Service" },
   { name: "Certificate Request", category: "Service" },
   { name: "Complaint Application", category: "Complaint" },
+  { name: "RTGS Application", category: "Remittance" },
 ];
 
 const STATUS_META: Record<string, { label: string; color: string; icon: any }> = {
