@@ -890,6 +890,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
 function ApplicationsTab() {
   const qc = useQueryClient();
   const [editing, setEditing] = useState<any>(null);
+  const [viewing, setViewing] = useState<any>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
@@ -993,6 +994,7 @@ function ApplicationsTab() {
                   <td className="p-2"><Badge className={`${s.color} text-white text-[10px]`}>{s.label}</Badge></td>
                   <td className="p-2">
                     <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => setViewing(a)} title="View body"><Eye className="w-3.5 h-3.5" /></Button>
                       <Button size="sm" variant="ghost" onClick={() => setEditing(a)} title="Edit"><Edit3 className="w-3.5 h-3.5" /></Button>
                       <Select value={a.status} onValueChange={(v) => updateStatus.mutate({ id: a.id, status: v })}>
                         <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
@@ -1012,6 +1014,7 @@ function ApplicationsTab() {
       </div>
 
       {editing && <ApplicationEditor value={editing} templates={tpls} onClose={() => setEditing(null)} onSaved={() => { qc.invalidateQueries({ queryKey: ["app_records_full"] }); qc.invalidateQueries({ queryKey: ["app_records"] }); }} />}
+      {viewing && <ApplicationViewer record={viewing} onClose={() => setViewing(null)} />}
     </div>
   );
 }
@@ -1278,6 +1281,51 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
             </DialogContent>
           </Dialog>
         )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------- Application Viewer (read-only body) ----------------
+function ApplicationViewer({ record, onClose }: any) {
+  const mergedFields = useMemo(() => ({
+    ...(record.fields || {}),
+    customer_name: record.customer_name, nid: record.customer_nid, mobile: record.customer_mobile,
+    account_number: record.account_number, account_type: record.account_type,
+    date: record.application_date, amount: record.amount, reason: record.reason, remarks: record.remarks,
+  }), [record]);
+  const html = buildDocumentHtml({
+    bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি",
+    outlet: "ফকিরবাজার এজেন্ট আউটলেট ১২১/১১, বুড়িচং, কুমিল্লা",
+    bodyHtml: record.body_html || "",
+    fields: mergedFields,
+  });
+  return (
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>{record.application_type || "আবেদন"} — {record.customer_name}</DialogTitle>
+        </DialogHeader>
+        {record.body_html ? (
+          <iframe
+            title="Application body"
+            srcDoc={documentPreviewSrcDoc(html)}
+            sandbox=""
+            className="bg-white border rounded h-[70vh] w-full"
+          />
+        ) : (
+          <div className="text-sm text-muted-foreground text-center py-10">
+            এই আবেদনে কোনো বডি নেই। এডিট থেকে টেমপ্লেট নির্বাচন করুন।
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>বন্ধ</Button>
+          {record.body_html && (
+            <Button onClick={() => printHtml(html, record.application_type || "Application")}>
+              <Printer className="w-4 h-4 mr-1" /> Print / PDF
+            </Button>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
