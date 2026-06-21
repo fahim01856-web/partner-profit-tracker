@@ -16,6 +16,24 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<"wysiwyg" | "html">("wysiwyg");
   const lastValueRef = useRef<string>("");
+  const savedRangeRef = useRef<Range | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickR, setPickR] = useState(0);
+  const [pickC, setPickC] = useState(0);
+
+  const saveSelection = () => {
+    const sel = window.getSelection();
+    if (sel && sel.rangeCount > 0 && ref.current?.contains(sel.anchorNode)) {
+      savedRangeRef.current = sel.getRangeAt(0).cloneRange();
+    }
+  };
+  const restoreSelection = () => {
+    const r = savedRangeRef.current;
+    if (!r) { ref.current?.focus(); return; }
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(r);
+  };
 
   // Sync external value -> editor (only when it differs from what we emitted)
   useEffect(() => {
