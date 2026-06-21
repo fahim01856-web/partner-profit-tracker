@@ -17,6 +17,7 @@ import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList, S
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { BranchPendingList } from "@/components/BranchPendingList";
 
 export const Route = createFileRoute("/_app/pending-works")({ component: PendingWorksPage });
 
@@ -391,6 +392,10 @@ function PendingWorksPage() {
         </div>
         <Progress value={stats.progress} className="h-2" />
       </Card>
+
+      <BranchPendingList />
+
+
 
       <Tabs value={activeCat} onValueChange={(v) => { setActiveCat(v); setForm(empty(v === ALL ? (categories[0]?.slug || "") : v)); }} className="no-print">
         <TabsList className="flex flex-wrap h-auto justify-start">
