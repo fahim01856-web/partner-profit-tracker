@@ -975,10 +975,20 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
 
           <div className="col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <Label>আবেদনের বডি (HTML — সরাসরি এডিট করতে পারেন)</Label>
+              <Label>{imageTemplate ? "আবেদনের বডি (ছবি + এডিটযোগ্য ফিল্ড)" : "আবেদনের বডি"}</Label>
               <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
-            <Textarea ref={taRef} rows={14} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-sm" />
+            {imageTemplate ? (
+              <div className="space-y-2">
+                <iframe title="Template image preview" srcDoc={documentPreviewSrcDoc(v.body_html || "")} sandbox="" className="bg-white border rounded h-[420px] w-full" />
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">⚙️ Raw HTML এডিট করুন (অ্যাডভান্সড)</summary>
+                  <Textarea ref={taRef} rows={8} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-xs mt-2" />
+                </details>
+              </div>
+            ) : (
+              <Textarea ref={taRef} rows={14} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-sm" />
+            )}
             <div className="flex flex-wrap gap-1 mt-2">
               {PLACEHOLDERS.map((p) => (
                 <button key={p} type="button" onClick={() => insertPh(p)} className="text-[10px] px-2 py-0.5 rounded border hover:bg-muted">
