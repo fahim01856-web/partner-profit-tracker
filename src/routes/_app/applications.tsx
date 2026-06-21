@@ -993,7 +993,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
                 </details>
               </div>
             ) : (
-              <Textarea ref={taRef} rows={14} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-sm" />
+              <RichBodyEditor value={v.body_html || ""} onChange={(html) => setV({ ...v, body_html: html })} rows={14} />
             )}
             <div className="flex flex-wrap gap-1 mt-2">
               {PLACEHOLDERS.map((p) => (
