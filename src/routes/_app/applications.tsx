@@ -832,25 +832,30 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
     if (file.size > 8 * 1024 * 1024) { toast.error("ছবি ৮MB এর কম হতে হবে"); return; }
     setAiBusy(true);
     try {
-      const dataUrl: string = await new Promise((res, rej) => {
-        const r = new FileReader(); r.onload = () => res(String(r.result || "")); r.onerror = rej; r.readAsDataURL(file);
-      });
-      const out: any = await genTpl({ data: { image: dataUrl } });
-      setV((prev: any) => ({
-        ...prev,
-        body_html: out.body_html || prev.body_html,
-        name: prev.name || out.name,
-        category: prev.category || out.category,
-        description: prev.description || out.description,
-      }));
-      toast.success("বডি AI থেকে হুবহু তৈরি হয়েছে");
+      // Upload to storage to get a stable URL (avoid huge data URLs in body_html)
+      let imgSrc = "";
+      try {
+        const ext = file.name.split(".").pop() || "png";
+        const path = `templates/img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        const { error } = await supabase.storage.from("application-attachments").upload(path, file, { contentType: file.type, upsert: false });
+        if (error) throw error;
+        const { data: signed } = await supabase.storage.from("application-attachments").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
+        imgSrc = signed?.signedUrl || "";
+      } catch {
+        // fallback: inline data URL
+        imgSrc = await new Promise<string>((res, rej) => {
+          const r = new FileReader(); r.onload = () => res(String(r.result || "")); r.onerror = rej; r.readAsDataURL(file);
+        });
+      }
+      // Directly embed the image as the body — no HTML/AI conversion
+      const html = `<div style="text-align:center;margin:0;padding:0;"><img src="${imgSrc}" alt="application" style="max-width:100%;height:auto;display:block;margin:0 auto;" /></div>`;
+      setV((prev: any) => ({ ...prev, body_html: html }));
+      toast.success("ছবি হুবহু বডিতে যোগ হয়েছে");
     } catch (e: any) {
-      const msg = String(e?.message || e);
-      if (msg.includes("429")) toast.error("AI rate limit");
-      else if (msg.includes("402")) toast.error("AI ক্রেডিট শেষ");
-      else toast.error(msg);
+      toast.error(e?.message || "ছবি যোগ করা যায়নি");
     } finally { setAiBusy(false); }
   };
+
 
   const uploadFile = async (file: File) => {
     setUploading(true);
