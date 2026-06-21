@@ -15,7 +15,7 @@ import {
   Activity, Loader2, MessageSquare, ShieldAlert, Gauge, Printer,
   Crown, ShieldCheck, FileCheck2, HeartPulse, Bell, Building2, Banknote,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   BarChart, Bar, PieChart, Pie, Cell, Legend,
@@ -275,6 +275,15 @@ function BIDashboard() {
     onSuccess: (res, q) => setChat((c) => [...c, { q, a: res.answer }]),
   });
 
+  // Auto-run AI analysis once metrics are ready
+  useEffect(() => {
+    if (summary && !analyze.data && !analyze.isPending && !analyze.isError) {
+      analyze.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summary]);
+
+
   const presetQs = lang === "bn"
     ? ["এই মাসে কোথায় বেশি খরচ হচ্ছে?", "মুনাফা বাড়ানোর ৩টি উপায়?", "কোন ঝুঁকিগুলো এখনই দেখা দরকার?", "পরের মাসের পূর্বাভাস কী?"]
     : ["Where are we overspending this month?", "Top 3 ways to grow profit?", "Which risks need attention now?", "What's next month's forecast?"];
@@ -417,12 +426,56 @@ function BIDashboard() {
         )}
         {ai && (
           <div className="space-y-4">
-            <p className="text-sm leading-relaxed">{ai.summary}</p>
-            {ai.insights?.length > 0 && (
-              <Section title={lang === "bn" ? "মূল পয়েন্ট" : "Key Insights"} icon={<Lightbulb className="w-4 h-4" />}>
-                <ul className="space-y-1.5 text-sm">{ai.insights.map((x: string, i: number) => <li key={i} className="flex gap-2"><span className="text-primary">•</span>{x}</li>)}</ul>
-              </Section>
-            )}
+            <div className="p-3 rounded-lg bg-background/60 border">
+              <div className="text-[11px] font-semibold text-muted-foreground mb-1">{lang === "bn" ? "সহজ ভাষায় সারাংশ" : "Plain-language summary"}</div>
+              <p className="text-sm leading-relaxed">{ai.summary}</p>
+            </div>
+
+            {/* Simple 5-panel breakdown */}
+            <div className="grid md:grid-cols-2 gap-3">
+              <SimpleList
+                title={lang === "bn" ? "এই মাসের সমস্যা" : "Problems this month"}
+                items={ai.problems}
+                tone="red"
+                icon={<AlertTriangle className="w-4 h-4" />}
+                emptyText={lang === "bn" ? "কোনো বড় সমস্যা নেই" : "No major problems"}
+              />
+              <SimpleList
+                title={lang === "bn" ? "এখনই সমাধান করুন" : "Fix right now"}
+                items={ai.quick_fixes}
+                tone="amber"
+                icon={<Target className="w-4 h-4" />}
+                emptyText={lang === "bn" ? "এখনই করার কিছু নেই" : "Nothing urgent"}
+              />
+              <SimpleList
+                title={lang === "bn" ? "যা ডেভেলপ করা দরকার" : "What to develop"}
+                items={ai.develop}
+                tone="blue"
+                icon={<Lightbulb className="w-4 h-4" />}
+                emptyText={lang === "bn" ? "—" : "—"}
+              />
+              <SimpleList
+                title={lang === "bn" ? "ভবিষ্যতে যা বাড়াবেন (➕)" : "Future plus (➕ add)"}
+                items={ai.future_plus}
+                tone="green"
+                icon={<TrendingUp className="w-4 h-4" />}
+                emptyText="—"
+              />
+              <SimpleList
+                title={lang === "bn" ? "ভবিষ্যতে যা কমাবেন (➖)" : "Future minus (➖ cut)"}
+                items={ai.future_minus}
+                tone="red"
+                icon={<TrendingDown className="w-4 h-4" />}
+                emptyText="—"
+              />
+              {ai.forecast && (
+                <div className="p-3 rounded-lg border bg-purple-500/10 border-purple-500/30">
+                  <div className="flex items-center gap-2 mb-1 text-sm font-semibold"><Activity className="w-4 h-4 text-purple-600" />{lang === "bn" ? "পরের মাসের পূর্বাভাস" : "Next month forecast"}</div>
+                  <p className="text-sm leading-relaxed">{ai.forecast}</p>
+                </div>
+              )}
+            </div>
+
             {ai.risks?.length > 0 && (
               <Section title={lang === "bn" ? "ঝুঁকি ও সতর্কতা" : "Risks & Alerts"} icon={<ShieldAlert className="w-4 h-4" />}>
                 <div className="space-y-2">
@@ -433,16 +486,6 @@ function BIDashboard() {
                     </div>
                   ))}
                 </div>
-              </Section>
-            )}
-            {ai.recommendations?.length > 0 && (
-              <Section title={lang === "bn" ? "সুপারিশ" : "Recommendations"} icon={<Target className="w-4 h-4" />}>
-                <ul className="space-y-1.5 text-sm">{ai.recommendations.map((x: string, i: number) => <li key={i} className="flex gap-2"><span className="text-emerald-500">✓</span>{x}</li>)}</ul>
-              </Section>
-            )}
-            {ai.forecast && (
-              <Section title={lang === "bn" ? "পূর্বাভাস" : "Forecast"} icon={<Activity className="w-4 h-4" />}>
-                <p className="text-sm">{ai.forecast}</p>
               </Section>
             )}
           </div>
@@ -686,3 +729,30 @@ function Section({ title, icon, children }: { title: string; icon: React.ReactNo
     </div>
   );
 }
+
+function SimpleList({ title, items, tone, icon, emptyText }: {
+  title: string; items?: string[]; tone: "red" | "amber" | "blue" | "green"; icon: React.ReactNode; emptyText: string;
+}) {
+  const toneCls = {
+    red: "bg-red-500/10 border-red-500/30 text-red-700 dark:text-red-300",
+    amber: "bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-300",
+    blue: "bg-blue-500/10 border-blue-500/30 text-blue-700 dark:text-blue-300",
+    green: "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300",
+  }[tone];
+  const bullet = { red: "✗", amber: "!", blue: "•", green: "✓" }[tone];
+  return (
+    <div className={`p-3 rounded-lg border ${toneCls}`}>
+      <div className="flex items-center gap-2 mb-2 text-sm font-semibold">{icon}{title}</div>
+      {items && items.length > 0 ? (
+        <ul className="space-y-1.5 text-sm text-foreground">
+          {items.map((x, i) => (
+            <li key={i} className="flex gap-2 leading-relaxed"><span className="opacity-70 shrink-0">{bullet}</span><span>{x}</span></li>
+          ))}
+        </ul>
+      ) : (
+        <div className="text-xs text-muted-foreground">{emptyText}</div>
+      )}
+    </div>
+  );
+}
+
