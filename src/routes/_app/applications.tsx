@@ -878,14 +878,17 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
   };
 
   const deletePh = (key: string) => {
-    const re = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g");
-    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, "") }));
+    setV((prev: any) => ({ ...prev, body_html: removePlaceholderFromHtml(prev.body_html || "", key) }));
   };
 
   const addPh = () => {
-    const safe = newPh.trim().replace(/[^a-zA-Z0-9_]/g, "_");
+    const safe = sanitizePlaceholderKey(newPh);
     if (!safe) return;
-    insertPh(safe);
+    if (isImageBodyTemplate(v.body_html || "")) {
+      setV((prev: any) => ({ ...prev, body_html: addOverlayFieldToImageTemplate(prev.body_html || "", safe) }));
+    } else {
+      insertPh(safe);
+    }
     setNewPh("");
   };
 
