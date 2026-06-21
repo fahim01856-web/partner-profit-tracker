@@ -17,6 +17,7 @@ import { Printer, Plus, Trash2, Pencil, CheckCircle2, Clock, X, ClipboardList, S
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { BranchPendingList } from "@/components/BranchPendingList";
 
 export const Route = createFileRoute("/_app/pending-works")({ component: PendingWorksPage });
 
