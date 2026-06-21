@@ -870,8 +870,9 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
     const raw = (renameDraft[oldKey] ?? "").trim();
     const safe = sanitizePlaceholderKey(raw);
     if (!safe || safe === oldKey) { setRenameDraft((d) => { const n = { ...d }; delete n[oldKey]; return n; }); return; }
-    const re = new RegExp(`\\{\\{\\s*${oldKey}\\s*\\}\\}`, "g");
-    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, `{{${safe}}}`) }));
+    const re = new RegExp(`\\{\\{\\s*${escapeRegExp(oldKey)}\\s*\\}\\}`, "g");
+    const attrRe = new RegExp(`(data-template-field=["'])${escapeRegExp(oldKey)}(["'])`, "g");
+    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, `{{${safe}}}`).replace(attrRe, `$1${safe}$2`) }));
     setRenameDraft((d) => { const n = { ...d }; delete n[oldKey]; return n; });
     toast.success(`{{${oldKey}}} → {{${safe}}}`);
   };
