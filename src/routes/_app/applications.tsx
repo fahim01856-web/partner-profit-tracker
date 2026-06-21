@@ -786,15 +786,70 @@ function rtgsBody() {
 function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () => void; onSave: (v: any) => void }) {
   const [v, setV] = useState<any>(value);
   const [uploading, setUploading] = useState(false);
+  const [aiBusy, setAiBusy] = useState(false);
+  const [newPh, setNewPh] = useState("");
+  const [renameDraft, setRenameDraft] = useState<Record<string, string>>({});
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const aiImgRef = useRef<HTMLInputElement>(null);
+  const genTpl = useServerFn(generateAppTemplate);
+
+  const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
 
   const insertPh = (ph: string) => {
-    const ta = taRef.current; if (!ta) return;
-    const start = ta.selectionStart, end = ta.selectionEnd;
+    const ta = taRef.current;
     const txt = `{{${ph}}}`;
+    if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + txt })); return; }
+    const start = ta.selectionStart, end = ta.selectionEnd;
     setV({ ...v, body_html: (v.body_html || "").slice(0, start) + txt + (v.body_html || "").slice(end) });
     setTimeout(() => { ta.focus(); ta.setSelectionRange(start + txt.length, start + txt.length); }, 0);
+  };
+
+  const applyRename = (oldKey: string) => {
+    const raw = (renameDraft[oldKey] ?? "").trim();
+    const safe = raw.replace(/[^a-zA-Z0-9_]/g, "_");
+    if (!safe || safe === oldKey) { setRenameDraft((d) => { const n = { ...d }; delete n[oldKey]; return n; }); return; }
+    const re = new RegExp(`\\{\\{\\s*${oldKey}\\s*\\}\\}`, "g");
+    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, `{{${safe}}}`) }));
+    setRenameDraft((d) => { const n = { ...d }; delete n[oldKey]; return n; });
+    toast.success(`{{${oldKey}}} → {{${safe}}}`);
+  };
+
+  const deletePh = (key: string) => {
+    const re = new RegExp(`\\{\\{\\s*${key}\\s*\\}\\}`, "g");
+    setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "").replace(re, "") }));
+  };
+
+  const addPh = () => {
+    const safe = newPh.trim().replace(/[^a-zA-Z0-9_]/g, "_");
+    if (!safe) return;
+    insertPh(safe);
+    setNewPh("");
+  };
+
+  const aiFromImage = async (file: File) => {
+    if (!file.type.startsWith("image/")) { toast.error("শুধু ছবি (JPG/PNG) দিন। PDF হলে স্ক্রিনশট নিয়ে আপলোড করুন।"); return; }
+    if (file.size > 8 * 1024 * 1024) { toast.error("ছবি ৮MB এর কম হতে হবে"); return; }
+    setAiBusy(true);
+    try {
+      const dataUrl: string = await new Promise((res, rej) => {
+        const r = new FileReader(); r.onload = () => res(String(r.result || "")); r.onerror = rej; r.readAsDataURL(file);
+      });
+      const out: any = await genTpl({ data: { image: dataUrl } });
+      setV((prev: any) => ({
+        ...prev,
+        body_html: out.body_html || prev.body_html,
+        name: prev.name || out.name,
+        category: prev.category || out.category,
+        description: prev.description || out.description,
+      }));
+      toast.success("বডি AI থেকে হুবহু তৈরি হয়েছে");
+    } catch (e: any) {
+      const msg = String(e?.message || e);
+      if (msg.includes("429")) toast.error("AI rate limit");
+      else if (msg.includes("402")) toast.error("AI ক্রেডিট শেষ");
+      else toast.error(msg);
+    } finally { setAiBusy(false); }
   };
 
   const uploadFile = async (file: File) => {
@@ -831,10 +886,21 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
           <div><Label>নাম *</Label><Input value={v.name || ""} onChange={(e) => setV({ ...v, name: e.target.value })} /></div>
           <div><Label>ক্যাটাগরি</Label><Input value={v.category || ""} onChange={(e) => setV({ ...v, category: e.target.value })} placeholder="Account / Service / Loan ..." /></div>
           <div className="col-span-2"><Label>বিবরণ</Label><Input value={v.description || ""} onChange={(e) => setV({ ...v, description: e.target.value })} /></div>
+          <div className="col-span-2 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-3">
+            <Label className="text-sm font-semibold flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-primary" /> 📷 আবেদনের ছবি আপলোড করুন — AI হুবহু বডি বানাবে</Label>
+            <div className="flex items-center gap-2 mt-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => aiImgRef.current?.click()} disabled={aiBusy}>
+                {aiBusy ? "AI প্রসেস হচ্ছে..." : <><Upload className="w-3.5 h-3.5 mr-1" /> ছবি দিন</>}
+              </Button>
+              <span className="text-[11px] text-muted-foreground">নিচের HTML বডি হুবহু রিপ্লেস হবে। PDF হলে স্ক্রিনশট আপলোড করুন।</span>
+            </div>
+            <input ref={aiImgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) aiFromImage(f); e.target.value = ""; }} />
+          </div>
+
           <div className="col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <Label>আবেদনের বডি (Copy-Paste করতে পারেন)</Label>
-              <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`}, {`{{account_number}}`} ...</div>
+              <Label>আবেদনের বডি (HTML — সরাসরি এডিট করতে পারেন)</Label>
+              <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
             <Textarea ref={taRef} rows={14} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-sm" />
             <div className="flex flex-wrap gap-1 mt-2">
@@ -845,6 +911,38 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
               ))}
             </div>
           </div>
+
+          <div className="col-span-2 rounded-lg border bg-amber-50/40 p-3">
+            <Label className="text-sm font-semibold">🏷️ এই টেমপ্লেটের ফিল্ডসমূহ ({currentPhs.length}) — নাম পরিবর্তন / মুছুন / যোগ করুন</Label>
+            {currentPhs.length === 0 ? (
+              <div className="text-xs text-muted-foreground mt-2">এখনো কোনো {`{{field}}`} নেই।</div>
+            ) : (
+              <div className="grid grid-cols-2 gap-1.5 mt-2">
+                {currentPhs.map((p) => (
+                  <div key={p} className="flex items-center gap-1 bg-white rounded border px-1.5 py-1">
+                    <span className="text-[10px] text-muted-foreground font-mono shrink-0">{`{{${p}}}`}</span>
+                    <Input
+                      value={renameDraft[p] ?? p}
+                      onChange={(e) => setRenameDraft((d) => ({ ...d, [p]: e.target.value }))}
+                      onBlur={() => { if (renameDraft[p] !== undefined && renameDraft[p] !== p) applyRename(p); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); applyRename(p); } }}
+                      className="h-7 text-xs"
+                      placeholder="new_name"
+                    />
+                    <Button type="button" size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => deletePh(p)} title="মুছুন">
+                      <Trash2 className="w-3 h-3 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 mt-2">
+              <Input value={newPh} onChange={(e) => setNewPh(e.target.value)} placeholder="নতুন ফিল্ড নাম (যেমন: new_mobile)" className="h-8 text-xs" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addPh(); } }} />
+              <Button type="button" size="sm" variant="secondary" onClick={addPh}>+ যোগ করুন</Button>
+            </div>
+            <div className="text-[10px] text-muted-foreground mt-1">নাম পরিবর্তন করলে বডিতে সকল জায়গায় অটো রিপ্লেস হবে।</div>
+          </div>
+
           <div className="col-span-2 rounded-lg border-2 border-dashed p-3 bg-muted/30">
             <div className="flex items-center justify-between mb-2">
               <Label className="flex items-center gap-1.5"><Upload className="w-3.5 h-3.5 text-primary" /> ফাইল সংযুক্ত করুন (PDF / Word) — ঐচ্ছিক</Label>
