@@ -1014,6 +1014,7 @@ function ApplicationsTab() {
       </div>
 
       {editing && <ApplicationEditor value={editing} templates={tpls} onClose={() => setEditing(null)} onSaved={() => { qc.invalidateQueries({ queryKey: ["app_records_full"] }); qc.invalidateQueries({ queryKey: ["app_records"] }); }} />}
+      {viewing && <ApplicationViewer record={viewing} onClose={() => setViewing(null)} />}
     </div>
   );
 }
