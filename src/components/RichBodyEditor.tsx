@@ -231,12 +231,15 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
             const text = e.clipboardData.getData("text/plain");
             if (html) {
               e.preventDefault();
-              // Strip Office/Word wrappers but keep inline styles, tables, images
-              const cleaned = html
-                .replace(/<!--[\s\S]*?-->/g, "")
-                .replace(/<\/?(html|head|body|meta|link|style|o:p|xml)[^>]*>/gi, "")
-                .replace(/\sclass="[^"]*"/gi, "");
-              document.execCommand("insertHTML", false, cleaned);
+              const doc = new DOMParser().parseFromString(html, "text/html");
+              const styleTags = Array.from(doc.querySelectorAll("style"))
+                .map((s) => s.textContent || "")
+                .join("\n");
+              const bodyHtml = doc.body ? doc.body.innerHTML : html;
+              const wrapped = styleTags
+                ? `<div><style>${styleTags}</style>${bodyHtml}</div>`
+                : bodyHtml;
+              document.execCommand("insertHTML", false, wrapped);
               emit();
             } else if (text) {
               e.preventDefault();
