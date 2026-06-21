@@ -593,88 +593,164 @@ function defaultBody(name: string) {
 }
 
 function rtgsBody() {
+  const cell = `border:1px solid #000; padding:5px 6px; vertical-align:top;`;
+  const lbl = `${cell} font-weight:600; width:18%;`;
+  const val = `${cell} width:32%;`;
+  const digit = `border:1px solid #000; width:22px; height:22px; text-align:center; font-family:monospace; padding:0;`;
   return `
-<div style="font-family: Arial, 'Times New Roman', serif; font-size:13px; color:#000;">
-  <div style="text-align:center; font-weight:700; font-size:16px;">Islami Bank Bangladesh Limited</div>
-  <div style="text-align:center; border-bottom:1px dotted #000; padding-bottom:2px; margin-bottom:4px;">FAKIR BAZAR OUTLET 121/11 Branch</div>
-  <div style="text-align:center; text-decoration:underline; font-weight:700; margin-bottom:10px;">Application Form for RTGS Transaction</div>
+<div style="font-family: 'Times New Roman', Arial, serif; font-size:13px; color:#000; line-height:1.35;">
+  <div style="text-align:center; font-weight:700; font-style:italic; font-size:18px;">Islami Bank Bangladesh Limited</div>
+  <div style="text-align:center; font-size:13px;">
+    .......<span contenteditable="true">{{branch_name}}</span>....... Branch
+  </div>
+  <div style="text-align:center; text-decoration:underline; font-weight:700; font-style:italic; font-size:15px; margin:4px 0 10px;">Application Form for RTGS Transaction</div>
 
-  <table style="width:100%; border-collapse:collapse; margin-bottom:8px;">
+  <table style="width:100%; border-collapse:collapse; margin-bottom:6px;">
     <tr>
-      <td style="vertical-align:top; padding:2px 6px;">
+      <td style="vertical-align:top; padding:0;">
         <div><b>The Head of Branch / Manager</b></div>
         <div>Islami Bank Bangladesh Limited</div>
-        <div>FAKIR BAZAR OUTLET 121/11 Branch</div>
+        <div>.{{outlet_name}} Branch</div>
         <div>Muhtaram</div>
         <div>Asslamu Alaikum.</div>
       </td>
-      <td style="vertical-align:top; padding:2px 6px; text-align:right; white-space:nowrap;">
-        <b>Date:</b> {{day}} / {{month}} / {{year}}
+      <td style="vertical-align:top; width:230px; padding:0;">
+        <table style="border-collapse:collapse;">
+          <tr>
+            <td style="border:1px solid #000; padding:4px 8px;"><b>Date:</b></td>
+            <td style="${digit} width:40px;">{{day}}</td>
+            <td style="${digit} width:40px;">{{month}}</td>
+            <td style="${digit} width:60px;">{{year}}</td>
+          </tr>
+        </table>
       </td>
     </tr>
   </table>
 
-  <div style="margin:6px 0;">Please remit the amount as per following particulars by debiting My/Our Account mentioned below including your service charge and government taxes if any, as applicable for such remittance.</div>
+  <div style="margin:8px 0;">Please remit the amount as per following particulars by debiting My/Our Account mentioned below including your service charge and government taxes if any, as applicable for such remittance.</div>
 
-  <div style="font-weight:700; margin-top:8px;">Sender's / Originator's Details:</div>
+  <div style="font-weight:700; margin-top:6px;">Sender's / Originator's Details:</div>
   <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
-    <tr><td style="border:1px solid #000; padding:4px; width:32%;">Name / A/C Title</td><td style="border:1px solid #000; padding:4px;">{{sender_name}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Account No.</td><td style="border:1px solid #000; padding:4px;">{{sender_account}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Contact Number</td><td style="border:1px solid #000; padding:4px;">{{sender_mobile}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Address</td><td style="border:1px solid #000; padding:4px;">{{sender_address}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Purpose of Remittance</td><td style="border:1px solid #000; padding:4px;">{{purpose}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Cheque No. & Date</td><td style="border:1px solid #000; padding:4px;">{{cheque_no_date}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">NID / Passport / Driv. License No.</td><td style="border:1px solid #000; padding:4px;">{{sender_nid}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Source of Fund</td><td style="border:1px solid #000; padding:4px;">{{source_of_fund}}</td></tr>
+    <tr>
+      <td style="${lbl}">Name / A/C Title</td>
+      <td style="${cell}" colspan="3">{{sender_name}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}">Account No.</td>
+      <td style="${val}">,{{sender_account}}</td>
+      <td style="${lbl}">Cheque No. &amp; Date</td>
+      <td style="${val}">{{cheque_no_date}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}">Contact Number</td>
+      <td style="${val}">'{{sender_mobile}}</td>
+      <td style="${lbl}">NID/Passport/Driv. License No.</td>
+      <td style="${val}">{{sender_nid}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}">Address</td>
+      <td style="${cell}" colspan="3">{{sender_address}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}">Purpose of Remittance</td>
+      <td style="${val}">{{purpose}}</td>
+      <td style="${lbl}">Source of Fund</td>
+      <td style="${val}">{{source_of_fund}}</td>
+    </tr>
   </table>
 
-  <div style="font-weight:700; margin-top:10px;">Receiver's / Beneficiary's Details:</div>
+  <div style="font-weight:700; margin-top:8px;">Recever's / Beneficiary's Details:</div>
   <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
-    <tr><td style="border:1px solid #000; padding:4px; width:32%;">Name / A/C Title</td><td style="border:1px solid #000; padding:4px;">{{receiver_name}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Account No.</td><td style="border:1px solid #000; padding:4px;">{{receiver_account}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Contact Number</td><td style="border:1px solid #000; padding:4px;">{{receiver_mobile}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Bank Name</td><td style="border:1px solid #000; padding:4px;">{{receiver_bank}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Branch Name</td><td style="border:1px solid #000; padding:4px;">{{receiver_branch}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Routing No.</td><td style="border:1px solid #000; padding:4px; letter-spacing:4px; font-family:monospace;">{{routing_no}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Amount</td><td style="border:1px solid #000; padding:4px;">TK. {{amount}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">Commission</td><td style="border:1px solid #000; padding:4px;">{{commission}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;">VAT</td><td style="border:1px solid #000; padding:4px;">{{vat}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;"><b>Total Amount</b> (In words)</td><td style="border:1px solid #000; padding:4px;">{{total_in_words}}</td></tr>
-    <tr><td style="border:1px solid #000; padding:4px;"><b>Total Tk.</b></td><td style="border:1px solid #000; padding:4px;"><b>{{total_amount}}</b></td></tr>
+    <tr>
+      <td style="${lbl}">Name / A/C Title</td>
+      <td style="${cell}" colspan="3">{{receiver_name}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}">Account No.</td>
+      <td style="${cell}" colspan="2">,{{receiver_account}}</td>
+      <td style="${cell} text-align:center; width:18%;" rowspan="2"><b>Amount</b><br/>TK.{{amount}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}">Contact Number</td>
+      <td style="${cell}" colspan="2">'{{receiver_mobile}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}">Bank Name</td>
+      <td style="${cell}" colspan="3">{{receiver_bank}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}">Branch Name</td>
+      <td style="${cell}">{{receiver_branch}}</td>
+      <td style="${cell}">
+        <table style="border-collapse:collapse; margin:0 auto;">
+          <tr>
+            <td style="border:none; padding:0 6px 0 0;"><b>Routing</b><br/><b>No.</b></td>
+            <td style="${digit}">{{r1}}</td>
+            <td style="${digit}">{{r2}}</td>
+            <td style="${digit}">{{r3}}</td>
+            <td style="${digit}">{{r4}}</td>
+            <td style="${digit}">{{r5}}</td>
+            <td style="${digit}">{{r6}}</td>
+            <td style="${digit}">{{r7}}</td>
+            <td style="${digit}">{{r8}}</td>
+            <td style="${digit}">{{r9}}</td>
+          </tr>
+        </table>
+      </td>
+      <td style="${cell} text-align:center;"><b>Commission</b><br/>{{commission}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}"><b>Total Amount</b><br/>(In words)</td>
+      <td style="${cell}" colspan="2">{{total_in_words}}</td>
+      <td style="${cell} text-align:center;"><b>VAT</b><br/>{{vat}}</td>
+    </tr>
+    <tr>
+      <td style="${lbl}"></td>
+      <td style="${cell}" colspan="2"></td>
+      <td style="${cell} text-align:center;"><b>Total Tk.</b><br/>{{total_amount}}</td>
+    </tr>
   </table>
 
   <div style="margin-top:10px;">I/we hereby declare that I/we have read and understood all the terms and conditions mentioned in overleaf and do hereby accept and agreed to all such terms and conditions in relation to the above transactions.</div>
   <div>Ma-assalam.</div>
+  <div style="margin-top:14px;">Yours Faithfully,</div>
 
-  <table style="width:100%; margin-top:50px; border-collapse:collapse;">
+  <table style="width:100%; margin-top:40px; border-collapse:collapse;">
     <tr>
-      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Applicant / Customer's<br/>Signature & seal</td>
-      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">2nd Applicant / Customer's<br/>Signature & seal (if joint)</td>
-      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Signature verified by<br/>(Use Seal with AS No.)</td>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Applican/Customer's<br/><span style="font-size:11px;">Signature &amp; seal</span></td>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;"><sup>2nd</sup> applicant/Customer's<br/><span style="font-size:11px;">Signature &amp; seal (if joint)</span></td>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Signature verified by<br/><span style="font-size:11px;">(Use Seal with AS No.)<br/>Communicate with A/c Holder before Verification</span></td>
     </tr>
   </table>
 
-  <div style="text-align:center; font-weight:700; margin-top:18px;">For Bank use only</div>
+  <div style="text-align:center; font-weight:700; text-decoration:underline; margin-top:16px;">For Bank use only</div>
   <table style="width:100%; margin-top:30px; border-collapse:collapse;">
     <tr>
-      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Authorized Officer (Maker)<br/>Signature & AS No.</td>
-      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Authorized Officer (Checker)<br/>Signature & AS No.</td>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Authorized Officer (Maker)<br/><span style="font-size:11px;">Signature &amp; AS No.</span></td>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Authorized Officer (Checker)<br/><span style="font-size:11px;">Signature &amp; AS No.</span></td>
       <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Head Of Branch / Manager Operations</td>
     </tr>
   </table>
 
-  <hr style="border:none; border-top:1px dashed #000; margin:20px 0;" />
+  <hr style="border:none; border-top:1px dashed #000; margin:18px 0;" />
 
-  <div style="text-align:center; font-weight:700; text-decoration:underline;">Banker's Acknowledgment for RTGS Transaction</div>
-  <div style="text-align:right; margin-top:4px;">Date: {{ack_date}}</div>
-  <div style="margin-top:6px; line-height:2;">
-    TK. {{total_amount}} (In words: {{total_in_words}}) on from Mr./Mrs./Ms. {{sender_name}} for transferring through RTGS System to {{receiver_name}}, A/C No. {{receiver_account}}, {{receiver_bank}} — {{receiver_branch}} Branch favoring Account Name {{receiver_name}}.
+  <div style="position:relative;">
+    <div style="text-align:center; font-weight:700; text-decoration:underline;">Banker's Acknowledgment for RTGS Transaction</div>
+    <div style="position:absolute; right:0; top:0;">Date {{ack_date}}.......</div>
+  </div>
+  <div style="margin-top:10px; line-height:2;">
+    TK.{{total_amount}}.(In words: {{total_in_words}} ) on<br/>
+    from Mr./Mrs./Ms..{{sender_initial}} .for transferring through RTGS System<br/>
+    to.{{sender_name}}<br/>
+    ,{{sender_account}}<br/>
+    .Branch favoring Account Nam<br/>
+    ,{{receiver_account}},{{receiver_name}}
   </div>
 
-  <table style="width:100%; margin-top:50px; border-collapse:collapse;">
+  <table style="width:100%; margin-top:40px; border-collapse:collapse;">
     <tr>
       <td style="width:50%; border-top:1px solid #000; text-align:center; padding-top:4px;">Signature of Customer</td>
-      <td style="width:50%; border-top:1px solid #000; text-align:center; padding-top:4px;">Signature & AS No. Of Authorized Officer</td>
+      <td style="width:50%; border-top:1px solid #000; text-align:center; padding-top:4px;">Signature &amp; AS No. Of Authorized Officer</td>
     </tr>
   </table>
 </div>`;
