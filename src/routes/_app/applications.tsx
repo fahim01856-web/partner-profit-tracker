@@ -143,6 +143,68 @@ function extractPlaceholders(html: string): string[] {
   return Array.from(set);
 }
 
+function sanitizePlaceholderKey(value: string) {
+  return value.trim().replace(/[^a-zA-Z0-9_]/g, "_").replace(/^_+|_+$/g, "").replace(/^([0-9])/, "_$1");
+}
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function isImageBodyTemplate(html: string) {
+  return /data-image-template=["']true["']/i.test(html || "");
+}
+
+function createImageBodyHtml(imgSrc: string) {
+  return `<div data-image-template="true" style="position:relative;width:100%;max-width:760px;margin:0 auto;padding:0;line-height:1;"><img src="${escapeHtml(imgSrc)}" alt="application" style="width:100%;height:auto;display:block;margin:0 auto;" /></div>`;
+}
+
+function createOverlayFieldHtml(key: string, index = 0) {
+  const left = 8 + (index % 2) * 42;
+  const top = 10 + Math.floor(index / 2) * 7;
+  return `<span data-template-field="${key}" style="position:absolute;left:${left}%;top:${top}%;width:30%;min-height:18px;font-size:14px;line-height:1.35;color:#111827;white-space:pre-wrap;font-weight:600;">{{${key}}}</span>`;
+}
+
+function addOverlayFieldToImageTemplate(html: string, key: string) {
+  if (!isImageBodyTemplate(html)) return `${html || ""}\n{{${key}}}`;
+  if (extractPlaceholders(html).includes(key)) return html;
+  const insertAt = html.lastIndexOf("</div>");
+  const fieldHtml = createOverlayFieldHtml(key, extractPlaceholders(html).length);
+  return insertAt >= 0 ? `${html.slice(0, insertAt)}${fieldHtml}${html.slice(insertAt)}` : `${html}${fieldHtml}`;
+}
+
+function mergeInlineStyle(style: string, patch: Record<string, string>) {
+  const map: Record<string, string> = {};
+  style.split(";").forEach((part) => {
+    const [rawKey, ...rest] = part.split(":");
+    const key = rawKey?.trim();
+    if (key && rest.length) map[key] = rest.join(":").trim();
+  });
+  Object.assign(map, patch);
+  return Object.entries(map).map(([k, val]) => `${k}:${val}`).join(";");
+}
+
+function getOverlayFieldStyle(html: string, key: string) {
+  const re = new RegExp(`<span\\b(?=[^>]*data-template-field=["']${escapeRegExp(key)}["'])[^>]*style=["']([^"']*)["'][^>]*>`, "i");
+  const style = re.exec(html || "")?.[1] || "";
+  const read = (name: string, fallback: number) => {
+    const m = new RegExp(`${name}\\s*:\\s*([0-9.]+)`, "i").exec(style);
+    return m ? Number(m[1]) : fallback;
+  };
+  return { left: read("left", 8), top: read("top", 10), width: read("width", 30), fontSize: read("font-size", 14) };
+}
+
+function updateOverlayFieldStyle(html: string, key: string, patch: Record<string, string>) {
+  const re = new RegExp(`(<span\\b(?=[^>]*data-template-field=["']${escapeRegExp(key)}["'])[^>]*style=["'])([^"']*)(["'][^>]*>)`, "i");
+  return (html || "").replace(re, (_, start, style, end) => `${start}${mergeInlineStyle(style, patch)}${end}`);
+}
+
+function removePlaceholderFromHtml(html: string, key: string) {
+  const overlayRe = new RegExp(`<span\\b(?=[^>]*data-template-field=["']${escapeRegExp(key)}["'])[^>]*>[\\s\\S]*?<\\/span>`, "gi");
+  const phRe = new RegExp(`\\{\\{\\s*${escapeRegExp(key)}\\s*\\}\\}`, "g");
+  return (html || "").replace(overlayRe, "").replace(phRe, "");
+}
+
 async function copyHtmlAsText(html: string) {
   const tmp = document.createElement("div");
   tmp.innerHTML = html;
