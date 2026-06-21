@@ -1052,8 +1052,15 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
   const pickTemplate = (id: string) => {
     const t = templates.find((x: any) => x.id === id);
     if (!t) return;
-    setV({ ...v, template_id: id, application_type: t.name, body_html: t.body_html });
+    const phs = extractPlaceholders(t.body_html || "");
+    const seeded: Record<string, string> = { ...(v.fields || {}) };
+    phs.forEach((p) => { if (!(p in seeded)) seeded[p] = ""; });
+    setV({ ...v, template_id: id, application_type: t.name, body_html: t.body_html, fields: seeded });
+    toast.success(`টেমপ্লেট লোড — ${phs.length} টি ফিল্ড এডিট করুন`);
   };
+
+  const templatePlaceholders = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
+
 
   const mergedFields = useMemo(() => ({
     ...v.fields,
@@ -1169,11 +1176,47 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
             </div>
           </TabsContent>
 
-          <TabsContent value="body" className="space-y-2 max-h-[60vh] overflow-y-auto">
-            <Label>ডকুমেন্ট বডি (প্লেসহোল্ডার সাপোর্ট করে)</Label>
-            <Textarea rows={16} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-sm" />
-            <div className="text-[11px] text-muted-foreground">Live preview: তথ্য পরিবর্তন করলে ডকুমেন্ট স্বয়ংক্রিয়ভাবে আপডেট হবে।</div>
+          <TabsContent value="body" className="space-y-2 max-h-[65vh] overflow-y-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {/* Left: placeholder field editors */}
+              <div className="space-y-2">
+                <Label className="text-xs font-semibold">টেমপ্লেট ফিল্ড ({templatePlaceholders.length}) — এডিট করলে ডানদিকে সাথে সাথে আপডেট হবে</Label>
+                {templatePlaceholders.length === 0 ? (
+                  <div className="text-xs text-muted-foreground py-2 border rounded p-3 bg-muted/30">
+                    এই টেমপ্লেটে কোনো {`{{variable}}`} নেই। নিচে raw HTML এডিট করুন অথবা উপরের "তথ্য" ট্যাব থেকে টেমপ্লেট বাছুন।
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-2 border rounded p-2 bg-muted/20">
+                    {templatePlaceholders.map((p) => (
+                      <div key={p}>
+                        <Label className="text-[10px] text-muted-foreground">{`{{${p}}}`}</Label>
+                        {["reason", "remarks", "address"].includes(p) ? (
+                          <Textarea rows={2} value={v.fields?.[p] ?? mergedFields[p] ?? ""} onChange={(e) => setV({ ...v, fields: { ...v.fields, [p]: e.target.value } })} className="text-sm" />
+                        ) : (
+                          <Input value={v.fields?.[p] ?? mergedFields[p] ?? ""} onChange={(e) => setV({ ...v, fields: { ...v.fields, [p]: e.target.value } })} className="h-8 text-sm" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <details className="text-xs">
+                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">⚙️ Raw HTML এডিট করুন (অ্যাডভান্সড)</summary>
+                  <Textarea rows={10} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-xs mt-2" />
+                </details>
+              </div>
+              {/* Right: live preview */}
+              <div>
+                <Label className="text-xs font-semibold flex items-center gap-1"><Eye className="w-3 h-3" /> লাইভ প্রিভিউ</Label>
+                <iframe
+                  title="App live preview"
+                  srcDoc={documentPreviewSrcDoc(previewHtml)}
+                  sandbox=""
+                  className="bg-white border rounded mt-1 h-[60vh] w-full"
+                />
+              </div>
+            </div>
           </TabsContent>
+
 
           <TabsContent value="attachments" className="space-y-3 max-h-[60vh] overflow-y-auto">
             <div className="flex items-center gap-2">
