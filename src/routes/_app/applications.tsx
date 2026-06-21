@@ -854,7 +854,6 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const aiImgRef = useRef<HTMLInputElement>(null);
-  const genTpl = useServerFn(generateAppTemplate);
 
   const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
 
