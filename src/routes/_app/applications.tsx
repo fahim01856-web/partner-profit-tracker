@@ -994,6 +994,7 @@ function ApplicationsTab() {
                   <td className="p-2"><Badge className={`${s.color} text-white text-[10px]`}>{s.label}</Badge></td>
                   <td className="p-2">
                     <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => setViewing(a)} title="View body"><Eye className="w-3.5 h-3.5" /></Button>
                       <Button size="sm" variant="ghost" onClick={() => setEditing(a)} title="Edit"><Edit3 className="w-3.5 h-3.5" /></Button>
                       <Select value={a.status} onValueChange={(v) => updateStatus.mutate({ id: a.id, status: v })}>
                         <SelectTrigger className="h-8 w-28 text-xs"><SelectValue /></SelectTrigger>
