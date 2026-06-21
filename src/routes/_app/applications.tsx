@@ -1430,6 +1430,25 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
                         ) : (
                           <Input value={v.fields?.[p] ?? mergedFields[p] ?? ""} onChange={(e) => setV({ ...v, fields: { ...v.fields, [p]: e.target.value } })} className="h-8 text-sm" />
                         )}
+                        {bodyIsImageTemplate && (
+                          <div className="grid grid-cols-4 gap-1 mt-1">
+                            {(["left", "top", "width", "fontSize"] as const).map((prop) => {
+                              const labels = { left: "বাম %", top: "উপর %", width: "চওড়া %", fontSize: "ফন্ট" };
+                              const units = { left: "%", top: "%", width: "%", fontSize: "px" };
+                              const style = getOverlayFieldStyle(v.body_html || "", p);
+                              return (
+                                <Input
+                                  key={prop}
+                                  type="number"
+                                  title={labels[prop]}
+                                  value={style[prop]}
+                                  onChange={(e) => setV((prev: any) => ({ ...prev, body_html: updateOverlayFieldStyle(prev.body_html || "", p, { [prop === "fontSize" ? "font-size" : prop]: `${e.target.value}${units[prop]}` }) }))}
+                                  className="h-7 text-xs px-1"
+                                />
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
