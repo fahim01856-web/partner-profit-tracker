@@ -216,11 +216,43 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2 italic" onClick={() => exec("italic")}>I</Button>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2 underline" onClick={() => exec("underline")}>U</Button>
             <span className="mx-1 w-px bg-border" />
-            <Button type="button" size="sm" variant="secondary" className="h-7 px-2" onClick={() => {
-              const r = parseInt(prompt("রো সংখ্যা?", "3") || "0", 10);
-              const c = parseInt(prompt("কলাম সংখ্যা?", "3") || "0", 10);
-              if (r > 0 && c > 0) insertTable(r, c);
-            }}>+ টেবিল</Button>
+            <div
+              className="relative"
+              onMouseLeave={() => { setPickerOpen(false); setPickR(0); setPickC(0); }}
+            >
+              <Button
+                type="button" size="sm" variant="secondary" className="h-7 px-2"
+                onMouseDown={(e) => { e.preventDefault(); saveSelection(); }}
+                onClick={() => setPickerOpen((o) => !o)}
+              >+ টেবিল ▾</Button>
+              {pickerOpen && (
+                <div
+                  className="absolute z-50 left-0 top-8 bg-popover border rounded shadow p-2"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
+                  <div className="text-[10px] mb-1 text-muted-foreground">{pickR || "—"} × {pickC || "—"} (ক্লিক করুন)</div>
+                  <div className="grid gap-[2px]" style={{ gridTemplateColumns: "repeat(10, 14px)" }}>
+                    {Array.from({ length: 100 }).map((_, i) => {
+                      const r = Math.floor(i / 10) + 1;
+                      const c = (i % 10) + 1;
+                      const active = r <= pickR && c <= pickC;
+                      return (
+                        <div
+                          key={i}
+                          onMouseEnter={() => { setPickR(r); setPickC(c); }}
+                          onClick={() => {
+                            restoreSelection();
+                            insertTable(r, c);
+                            setPickerOpen(false); setPickR(0); setPickC(0);
+                          }}
+                          className={`w-[14px] h-[14px] border cursor-pointer ${active ? "bg-primary border-primary" : "bg-background border-border"}`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={() => addRow("above")}>↑ রো</Button>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={() => addRow("below")}>↓ রো</Button>
             <Button type="button" size="sm" variant="ghost" className="h-7 px-2" onClick={() => addCol("left")}>← কলাম</Button>
