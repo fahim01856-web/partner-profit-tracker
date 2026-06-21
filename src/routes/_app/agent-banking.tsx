@@ -43,11 +43,20 @@ type Slab = { id: string; account_type: string; min_amount: number; max_amount: 
 type Income = { id: string; date: string; income_type: string; source: string | null; amount: number; note: string | null };
 
 function calcDailyProfit(balance: number, slabs: Slab[]): { profit: number; pct: number } {
-  const matched = slabs
-    .filter((s) => balance >= Number(s.min_amount) && (s.max_amount == null || balance <= Number(s.max_amount)))
-    .sort((a, b) => b.min_amount - a.min_amount)[0];
-  const pct = matched ? Number(matched.yearly_percent) : 0;
-  return { profit: (balance * (pct / 100)) / 365, pct };
+  // Tiered (bracket) calculation: each slice of balance within a slab's
+  // [min, max] range is charged that slab's yearly_percent — like income tax brackets.
+  if (!balance || balance <= 0 || slabs.length === 0) return { profit: 0, pct: 0 };
+  const sorted = [...slabs].sort((a, b) => Number(a.min_amount) - Number(b.min_amount));
+  let yearly = 0;
+  for (const s of sorted) {
+    const lo = Number(s.min_amount);
+    const hi = s.max_amount == null ? Infinity : Number(s.max_amount);
+    if (balance <= lo) break;
+    const slice = Math.min(balance, hi) - lo;
+    if (slice > 0) yearly += slice * (Number(s.yearly_percent) / 100);
+  }
+  const pct = (yearly / balance) * 100; // effective weighted percentage
+  return { profit: yearly / 365, pct };
 }
 
 function AgentBankingPage() {
