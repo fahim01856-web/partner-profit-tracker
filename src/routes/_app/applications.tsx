@@ -1418,7 +1418,7 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
                 <Label className="text-xs font-semibold">টেমপ্লেট ফিল্ড ({templatePlaceholders.length}) — এডিট করলে ডানদিকে সাথে সাথে আপডেট হবে</Label>
                 {templatePlaceholders.length === 0 ? (
                   <div className="text-xs text-muted-foreground py-2 border rounded p-3 bg-muted/30">
-                    এই টেমপ্লেটে কোনো {`{{variable}}`} নেই। নিচে raw HTML এডিট করুন অথবা উপরের "তথ্য" ট্যাব থেকে টেমপ্লেট বাছুন।
+                    এই টেমপ্লেটে কোনো {`{{variable}}`} নেই। নিচে নতুন ফিল্ড যোগ করলে ছবির উপর এডিটযোগ্য লেখা বসবে।
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 gap-2 border rounded p-2 bg-muted/20">
@@ -1432,6 +1432,12 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
                         )}
                       </div>
                     ))}
+                  </div>
+                )}
+                {bodyIsImageTemplate && (
+                  <div className="flex items-center gap-1.5 rounded border bg-muted/20 p-2">
+                    <Input value={newDocPh} onChange={(e) => setNewDocPh(e.target.value)} placeholder="নতুন ফিল্ড (যেমন: new_mobile)" className="h-8 text-xs" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDocPlaceholder(); } }} />
+                    <Button type="button" size="sm" variant="secondary" onClick={addDocPlaceholder}>+ ফিল্ড</Button>
                   </div>
                 )}
                 <details className="text-xs">
