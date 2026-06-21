@@ -585,11 +585,101 @@ function AiTemplateDialog({ onClose, onGenerated }: { onClose: () => void; onGen
 }
 
 function defaultBody(name: string) {
+  if (name === "RTGS Application") return rtgsBody();
   const date = `{{date}}`;
   const header = `তারিখ: ${date}\n\nবরাবর,\nব্যবস্থাপক\nইসলামী ব্যাংক বাংলাদেশ পিএলসি\nএজেন্ট আউটলেট, ফকির বাজার, বুড়িচং\n\nবিষয়: ${name}\n\nজনাব,\n\n`;
   const footer = `\n\nঅতএব মহোদয়ের নিকট আমার বিনীত নিবেদন এই যে, উপরোক্ত বিষয়টি বিবেচনা করে প্রয়োজনীয় ব্যবস্থা গ্রহণে আপনার মর্জি হয়।\n\nনিবেদক,\n{{customer_name}}\nহিসাব নং: {{account_number}}\nএনআইডি: {{nid}}\nমোবাইল: {{mobile}}`;
   return header + `আমি {{customer_name}}, পিতা: {{father_name}}, ঠিকানা: {{address}}, আপনার ব্যাংকের একজন গ্রাহক। আমার হিসাব নম্বর {{account_number}} ({{account_type}})।\n\nকারণ: {{reason}}\n` + footer;
 }
+
+function rtgsBody() {
+  return `
+<div style="font-family: Arial, 'Times New Roman', serif; font-size:13px; color:#000;">
+  <div style="text-align:center; font-weight:700; font-size:16px;">Islami Bank Bangladesh Limited</div>
+  <div style="text-align:center; border-bottom:1px dotted #000; padding-bottom:2px; margin-bottom:4px;">FAKIR BAZAR OUTLET 121/11 Branch</div>
+  <div style="text-align:center; text-decoration:underline; font-weight:700; margin-bottom:10px;">Application Form for RTGS Transaction</div>
+
+  <table style="width:100%; border-collapse:collapse; margin-bottom:8px;">
+    <tr>
+      <td style="vertical-align:top; padding:2px 6px;">
+        <div><b>The Head of Branch / Manager</b></div>
+        <div>Islami Bank Bangladesh Limited</div>
+        <div>FAKIR BAZAR OUTLET 121/11 Branch</div>
+        <div>Muhtaram</div>
+        <div>Asslamu Alaikum.</div>
+      </td>
+      <td style="vertical-align:top; padding:2px 6px; text-align:right; white-space:nowrap;">
+        <b>Date:</b> {{day}} / {{month}} / {{year}}
+      </td>
+    </tr>
+  </table>
+
+  <div style="margin:6px 0;">Please remit the amount as per following particulars by debiting My/Our Account mentioned below including your service charge and government taxes if any, as applicable for such remittance.</div>
+
+  <div style="font-weight:700; margin-top:8px;">Sender's / Originator's Details:</div>
+  <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
+    <tr><td style="border:1px solid #000; padding:4px; width:32%;">Name / A/C Title</td><td style="border:1px solid #000; padding:4px;">{{sender_name}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Account No.</td><td style="border:1px solid #000; padding:4px;">{{sender_account}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Contact Number</td><td style="border:1px solid #000; padding:4px;">{{sender_mobile}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Address</td><td style="border:1px solid #000; padding:4px;">{{sender_address}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Purpose of Remittance</td><td style="border:1px solid #000; padding:4px;">{{purpose}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Cheque No. & Date</td><td style="border:1px solid #000; padding:4px;">{{cheque_no_date}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">NID / Passport / Driv. License No.</td><td style="border:1px solid #000; padding:4px;">{{sender_nid}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Source of Fund</td><td style="border:1px solid #000; padding:4px;">{{source_of_fund}}</td></tr>
+  </table>
+
+  <div style="font-weight:700; margin-top:10px;">Receiver's / Beneficiary's Details:</div>
+  <table style="width:100%; border-collapse:collapse; border:1px solid #000;">
+    <tr><td style="border:1px solid #000; padding:4px; width:32%;">Name / A/C Title</td><td style="border:1px solid #000; padding:4px;">{{receiver_name}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Account No.</td><td style="border:1px solid #000; padding:4px;">{{receiver_account}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Contact Number</td><td style="border:1px solid #000; padding:4px;">{{receiver_mobile}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Bank Name</td><td style="border:1px solid #000; padding:4px;">{{receiver_bank}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Branch Name</td><td style="border:1px solid #000; padding:4px;">{{receiver_branch}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Routing No.</td><td style="border:1px solid #000; padding:4px; letter-spacing:4px; font-family:monospace;">{{routing_no}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Amount</td><td style="border:1px solid #000; padding:4px;">TK. {{amount}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">Commission</td><td style="border:1px solid #000; padding:4px;">{{commission}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;">VAT</td><td style="border:1px solid #000; padding:4px;">{{vat}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;"><b>Total Amount</b> (In words)</td><td style="border:1px solid #000; padding:4px;">{{total_in_words}}</td></tr>
+    <tr><td style="border:1px solid #000; padding:4px;"><b>Total Tk.</b></td><td style="border:1px solid #000; padding:4px;"><b>{{total_amount}}</b></td></tr>
+  </table>
+
+  <div style="margin-top:10px;">I/we hereby declare that I/we have read and understood all the terms and conditions mentioned in overleaf and do hereby accept and agreed to all such terms and conditions in relation to the above transactions.</div>
+  <div>Ma-assalam.</div>
+
+  <table style="width:100%; margin-top:50px; border-collapse:collapse;">
+    <tr>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Applicant / Customer's<br/>Signature & seal</td>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">2nd Applicant / Customer's<br/>Signature & seal (if joint)</td>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Signature verified by<br/>(Use Seal with AS No.)</td>
+    </tr>
+  </table>
+
+  <div style="text-align:center; font-weight:700; margin-top:18px;">For Bank use only</div>
+  <table style="width:100%; margin-top:30px; border-collapse:collapse;">
+    <tr>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Authorized Officer (Maker)<br/>Signature & AS No.</td>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Authorized Officer (Checker)<br/>Signature & AS No.</td>
+      <td style="width:33%; border-top:1px solid #000; text-align:center; padding-top:4px;">Head Of Branch / Manager Operations</td>
+    </tr>
+  </table>
+
+  <hr style="border:none; border-top:1px dashed #000; margin:20px 0;" />
+
+  <div style="text-align:center; font-weight:700; text-decoration:underline;">Banker's Acknowledgment for RTGS Transaction</div>
+  <div style="text-align:right; margin-top:4px;">Date: {{ack_date}}</div>
+  <div style="margin-top:6px; line-height:2;">
+    TK. {{total_amount}} (In words: {{total_in_words}}) on from Mr./Mrs./Ms. {{sender_name}} for transferring through RTGS System to {{receiver_name}}, A/C No. {{receiver_account}}, {{receiver_bank}} — {{receiver_branch}} Branch favoring Account Name {{receiver_name}}.
+  </div>
+
+  <table style="width:100%; margin-top:50px; border-collapse:collapse;">
+    <tr>
+      <td style="width:50%; border-top:1px solid #000; text-align:center; padding-top:4px;">Signature of Customer</td>
+      <td style="width:50%; border-top:1px solid #000; text-align:center; padding-top:4px;">Signature & AS No. Of Authorized Officer</td>
+    </tr>
+  </table>
+</div>`;
+}
+
 
 function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () => void; onSave: (v: any) => void }) {
   const [v, setV] = useState<any>(value);
