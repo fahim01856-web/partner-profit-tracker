@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Trash2, Printer, ClipboardList } from "lucide-react";
+import { Plus, Trash2, Printer, ClipboardList, Cloud, CloudOff } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type Item = {
   id: string;
@@ -11,10 +13,8 @@ type Item = {
   date: string;
   work: string;
   done: boolean;
+  sort_order: number;
 };
-
-const STORAGE_KEY = "branch_pending_list_v1";
-const TITLE_KEY = "branch_pending_title_v1";
 
 function todayISO() {
   return new Date().toISOString().slice(0, 10);
@@ -22,41 +22,133 @@ function todayISO() {
 
 export function BranchPendingList() {
   const { lang } = useI18n();
-  const [title, setTitle] = useState<string>(
-    () => (typeof window !== "undefined" && localStorage.getItem(TITLE_KEY)) || "কুমিল্লা ব্রাঞ্চ ওয়ার্ক পেন্ডিং",
-  );
-  const [items, setItems] = useState<Item[]>(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as Item[]) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [title, setTitle] = useState<string>("কুমিল্লা ব্রাঞ্চ ওয়ার্ক পেন্ডিং");
+  const [items, setItems] = useState<Item[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const titleSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // load user + data
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  }, [items]);
+    let cancelled = false;
+    (async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      const uid = userData.user?.id ?? null;
+      if (cancelled) return;
+      setUserId(uid);
+      if (!uid) {
+        setLoaded(true);
+        return;
+      }
+      const [{ data: rows }, { data: settings }] = await Promise.all([
+        supabase
+          .from("branch_pending_list")
+          .select("id, sl, work_date, work, done, sort_order")
+          .order("sort_order", { ascending: true })
+          .order("created_at", { ascending: true }),
+        supabase.from("branch_pending_settings").select("title").eq("user_id", uid).maybeSingle(),
+      ]);
+      if (cancelled) return;
+      if (rows) {
+        setItems(
+          rows.map((r) => ({
+            id: r.id,
+            sl: r.sl ?? "",
+            date: r.work_date ?? "",
+            work: r.work ?? "",
+            done: !!r.done,
+            sort_order: r.sort_order ?? 0,
+          })),
+        );
+      }
+      if (settings?.title) setTitle(settings.title);
+      setLoaded(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // debounced title save
   useEffect(() => {
-    localStorage.setItem(TITLE_KEY, title);
-  }, [title]);
+    if (!loaded || !userId) return;
+    if (titleSaveTimer.current) clearTimeout(titleSaveTimer.current);
+    titleSaveTimer.current = setTimeout(async () => {
+      await supabase
+        .from("branch_pending_settings")
+        .upsert({ user_id: userId, title }, { onConflict: "user_id" });
+    }, 500);
+    return () => {
+      if (titleSaveTimer.current) clearTimeout(titleSaveTimer.current);
+    };
+  }, [title, loaded, userId]);
 
   const nextSL = useMemo(() => String(items.length + 1), [items.length]);
 
-  const addRow = () => {
+  const addRow = async () => {
+    if (!userId) {
+      toast.error("সেভ করতে লগইন করুন");
+      return;
+    }
+    setSaving(true);
+    const sort_order = items.length;
+    const { data, error } = await supabase
+      .from("branch_pending_list")
+      .insert({
+        user_id: userId,
+        sl: nextSL,
+        work_date: todayISO(),
+        work: "",
+        done: false,
+        sort_order,
+      })
+      .select("id")
+      .single();
+    setSaving(false);
+    if (error || !data) {
+      toast.error("সেভ করা যায়নি");
+      return;
+    }
     setItems((s) => [
       ...s,
-      { id: crypto.randomUUID(), sl: String(s.length + 1), date: todayISO(), work: "", done: false },
+      { id: data.id, sl: nextSL, date: todayISO(), work: "", done: false, sort_order },
     ]);
   };
 
   const update = (id: string, patch: Partial<Item>) => {
     setItems((s) => s.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+    if (!userId) return;
+    const dbPatch: {
+      sl?: string;
+      work_date?: string | null;
+      work?: string;
+      done?: boolean;
+    } = {};
+    if ("sl" in patch) dbPatch.sl = patch.sl;
+    if ("date" in patch) dbPatch.work_date = patch.date || null;
+    if ("work" in patch) dbPatch.work = patch.work;
+    if ("done" in patch) dbPatch.done = patch.done;
+    setSaving(true);
+    supabase
+      .from("branch_pending_list")
+      .update(dbPatch)
+      .eq("id", id)
+      .then(({ error }) => {
+        setSaving(false);
+        if (error) toast.error("সেভ ব্যর্থ");
+      });
   };
 
-  const remove = (id: string) => {
+  const remove = async (id: string) => {
+    const prev = items;
     setItems((s) => s.filter((r) => r.id !== id));
+    if (!userId) return;
+    const { error } = await supabase.from("branch_pending_list").delete().eq("id", id);
+    if (error) {
+      setItems(prev);
+      toast.error("মুছতে ব্যর্থ");
+    }
   };
 
   const stats = useMemo(() => {
@@ -116,6 +208,15 @@ export function BranchPendingList() {
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
             <ClipboardList className="w-4 h-4 text-primary" />
             {lang === "bn" ? "ব্রাঞ্চ পেন্ডিং চেকলিস্ট" : "Branch Pending Checklist"}
+            {userId ? (
+              <span className="ml-1 inline-flex items-center gap-1 text-green-600">
+                <Cloud className="w-3 h-3" /> {saving ? "সেভ হচ্ছে…" : "ক্লাউড সেভ"}
+              </span>
+            ) : (
+              <span className="ml-1 inline-flex items-center gap-1 text-amber-600">
+                <CloudOff className="w-3 h-3" /> লগইন প্রয়োজন
+              </span>
+            )}
           </div>
           <Input
             value={title}
@@ -131,7 +232,7 @@ export function BranchPendingList() {
           <Button variant="outline" size="sm" onClick={printPad}>
             <Printer className="w-4 h-4 mr-1" />প্রিন্ট কপি
           </Button>
-          <Button size="sm" onClick={addRow}>
+          <Button size="sm" onClick={addRow} disabled={!userId}>
             <Plus className="w-4 h-4 mr-1" />নতুন সারি
           </Button>
         </div>
@@ -149,7 +250,7 @@ export function BranchPendingList() {
             </tr>
           </thead>
           <tbody>
-            {items.length === 0 && (
+            {loaded && items.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-6 text-center text-muted-foreground text-sm">
                   "নতুন সারি" বাটনে ক্লিক করে সিরিয়াল বাই সিরিয়াল কাজ যোগ করুন
@@ -183,7 +284,7 @@ export function BranchPendingList() {
           </tbody>
         </table>
       </div>
-      <p className="text-[11px] text-muted-foreground mt-2">টিপ: SL ম্যানুয়ালি এডিট করতে পারবেন। ডেটা ব্রাউজারে লোকালি সেভ হয়।</p>
+      <p className="text-[11px] text-muted-foreground mt-2">টিপ: ডেটা ক্লাউডে সেভ হয় — যেকোনো ডিভাইস থেকে এডিট করতে পারবেন।</p>
     </Card>
   );
 }

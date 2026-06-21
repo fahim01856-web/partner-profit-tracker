@@ -932,6 +932,60 @@ export type Database = {
           },
         ]
       }
+      branch_pending_list: {
+        Row: {
+          created_at: string
+          done: boolean
+          id: string
+          sl: string
+          sort_order: number
+          updated_at: string
+          user_id: string
+          work: string
+          work_date: string | null
+        }
+        Insert: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          sl?: string
+          sort_order?: number
+          updated_at?: string
+          user_id: string
+          work?: string
+          work_date?: string | null
+        }
+        Update: {
+          created_at?: string
+          done?: boolean
+          id?: string
+          sl?: string
+          sort_order?: number
+          updated_at?: string
+          user_id?: string
+          work?: string
+          work_date?: string | null
+        }
+        Relationships: []
+      }
+      branch_pending_settings: {
+        Row: {
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cash_book_entries: {
         Row: {
           amount: number
