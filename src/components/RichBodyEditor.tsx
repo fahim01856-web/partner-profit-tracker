@@ -57,11 +57,11 @@ export function RichBodyEditor({ value, onChange, rows = 14 }: Props) {
     const el = ref.current;
     if (!el) return;
     el.focus();
-    let html = `<table style="border-collapse:collapse;width:100%;margin:8px 0;" border="1"><tbody>`;
+    let html = `<table style="border-collapse:collapse;width:auto;margin:8px 0;resize:both;overflow:auto;display:inline-table;" border="1"><tbody>`;
     for (let r = 0; r < rows; r++) {
       html += "<tr>";
       for (let c = 0; c < cols; c++) {
-        html += `<td style="border:1px solid #999;padding:6px;min-width:40px;">&nbsp;</td>`;
+        html += `<td style="border:1px solid #999;padding:6px;min-width:40px;resize:both;overflow:auto;">&nbsp;</td>`;
       }
       html += "</tr>";
     }
