@@ -223,12 +223,22 @@ function ExpensePage() {
     // All-time biggest single voucher
     const biggestVoucher = vouchers.length ? vouchers.reduce((a, b) => b.total > a.total ? b : a) : null;
 
+    // All-time category totals (highest cost center across all time)
+    const allCatMap = new Map<string, number>();
+    allRows.forEach(r => allCatMap.set(r.category, (allCatMap.get(r.category) ?? 0) + Number(r.amount)));
+    const allTopCats = Array.from(allCatMap.entries())
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+    const allTimeTopCat = allTopCats[0] ?? null;
+    const grandTotalAll = allRows.reduce((s, r) => s + Number(r.amount), 0);
+
     const daysWithExpense = dayList.length;
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const avgPerActiveDay = daysWithExpense ? monthTotal / daysWithExpense : 0;
     const projected = daysWithExpense ? (monthTotal / Math.max(1, now.getDate())) * daysInMonth : 0;
 
-    return { ym, monthTotal, lastMonthTotal, momPct, topCats, maxCat, topDay, lowDay, topDays, biggestVoucher, daysWithExpense, avgPerActiveDay, projected };
+    return { ym, monthTotal, lastMonthTotal, momPct, topCats, maxCat, topDay, lowDay, topDays, biggestVoucher, daysWithExpense, avgPerActiveDay, projected, allTimeTopCat, grandTotalAll, allTopCats };
   }, [allRows, vouchers]);
 
   const maxCatAmount = insights.topCats[0]?.amount ?? 0;
@@ -281,6 +291,28 @@ function ExpensePage() {
               <div className="text-xs uppercase tracking-wide opacity-90">Projected Month-End</div>
               <div className="text-xl font-extrabold mt-1">{fmt.bdt(insights.projected)}</div>
               <div className="text-xs mt-1 opacity-90">{fmt.num(insights.daysWithExpense)} active days · avg {fmt.bdt(insights.avgPerActiveDay)}</div>
+            </Card>
+          </div>
+
+          {/* All-time highest cost center + grand total */}
+          <div className="grid gap-3 md:grid-cols-2">
+            <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(280 70% 45%) 0%, hsl(260 75% 50%) 100%)" }}>
+              <div className="absolute -right-4 -top-4 opacity-20"><Crown className="w-24 h-24" /></div>
+              <div className="text-xs uppercase tracking-wide opacity-90">সর্বকালের সর্বোচ্চ খরচের খাত (All-time Top Cost Center)</div>
+              <div className="text-lg font-bold mt-1 truncate">{insights.allTimeTopCat?.name ?? "—"}</div>
+              <div className="text-2xl font-extrabold">{fmt.bdt(insights.allTimeTopCat?.amount ?? 0)}</div>
+              {insights.allTopCats.length > 1 && (
+                <div className="text-xs mt-2 opacity-90 truncate">
+                  পরবর্তী: {insights.allTopCats.slice(1, 3).map(c => `${c.name} (${fmt.bdt(c.amount)})`).join(" · ")}
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(215 80% 45%) 0%, hsl(200 85% 40%) 100%)" }}>
+              <div className="absolute -right-4 -top-4 opacity-20"><Wallet className="w-24 h-24" /></div>
+              <div className="text-xs uppercase tracking-wide opacity-90">মোট খরচ (Grand Total — All Vouchers)</div>
+              <div className="text-2xl font-extrabold mt-1">{fmt.bdt(insights.grandTotalAll)}</div>
+              <div className="text-xs mt-2 opacity-90">{fmt.num(vouchers.length)} টি ভাউচার · {fmt.num(allRows.length)} টি এন্ট্রি</div>
             </Card>
           </div>
 
