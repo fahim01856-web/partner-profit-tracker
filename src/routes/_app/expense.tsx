@@ -294,6 +294,28 @@ function ExpensePage() {
             </Card>
           </div>
 
+          {/* All-time highest cost center + grand total */}
+          <div className="grid gap-3 md:grid-cols-2">
+            <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(280 70% 45%) 0%, hsl(260 75% 50%) 100%)" }}>
+              <div className="absolute -right-4 -top-4 opacity-20"><Crown className="w-24 h-24" /></div>
+              <div className="text-xs uppercase tracking-wide opacity-90">সর্বকালের সর্বোচ্চ খরচের খাত (All-time Top Cost Center)</div>
+              <div className="text-lg font-bold mt-1 truncate">{insights.allTimeTopCat?.name ?? "—"}</div>
+              <div className="text-2xl font-extrabold">{fmt.bdt(insights.allTimeTopCat?.amount ?? 0)}</div>
+              {insights.allTopCats.length > 1 && (
+                <div className="text-xs mt-2 opacity-90 truncate">
+                  পরবর্তী: {insights.allTopCats.slice(1, 3).map(c => `${c.name} (${fmt.bdt(c.amount)})`).join(" · ")}
+                </div>
+              )}
+            </Card>
+
+            <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(215 80% 45%) 0%, hsl(200 85% 40%) 100%)" }}>
+              <div className="absolute -right-4 -top-4 opacity-20"><Wallet className="w-24 h-24" /></div>
+              <div className="text-xs uppercase tracking-wide opacity-90">মোট খরচ (Grand Total — All Vouchers)</div>
+              <div className="text-2xl font-extrabold mt-1">{fmt.bdt(insights.grandTotalAll)}</div>
+              <div className="text-xs mt-2 opacity-90">{fmt.num(vouchers.length)} টি ভাউচার · {fmt.num(allRows.length)} টি এন্ট্রি</div>
+            </Card>
+          </div>
+
           {/* Top categories + top days */}
           <div className="grid gap-3 lg:grid-cols-2">
             <Card className="p-4">
