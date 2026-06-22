@@ -13,6 +13,7 @@ function provider() {
 }
 
 export const analyzeBusiness = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
