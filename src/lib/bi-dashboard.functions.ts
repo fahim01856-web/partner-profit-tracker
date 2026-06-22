@@ -57,6 +57,7 @@ export const analyzeBusiness = createServerFn({ method: "POST" })
   });
 
 export const askBusiness = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
     z
       .object({
