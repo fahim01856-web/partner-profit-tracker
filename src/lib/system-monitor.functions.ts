@@ -122,6 +122,9 @@ export const deleteStorageFile = createServerFn({ method: "POST" })
     });
     if (!isAdmin) throw new Error("Forbidden: admin only");
 
+    const ALLOWED_BUCKETS = ["documents", "signature-cards", "loan-ledger", "voucher-images", "application-attachments"];
+    if (!ALLOWED_BUCKETS.includes(data.bucket)) throw new Error("Forbidden: unknown bucket");
+
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { error } = await supabaseAdmin.storage.from(data.bucket).remove([data.path]);
     if (error) throw error;
