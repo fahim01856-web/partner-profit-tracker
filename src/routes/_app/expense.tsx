@@ -223,12 +223,22 @@ function ExpensePage() {
     // All-time biggest single voucher
     const biggestVoucher = vouchers.length ? vouchers.reduce((a, b) => b.total > a.total ? b : a) : null;
 
+    // All-time category totals (highest cost center across all time)
+    const allCatMap = new Map<string, number>();
+    allRows.forEach(r => allCatMap.set(r.category, (allCatMap.get(r.category) ?? 0) + Number(r.amount)));
+    const allTopCats = Array.from(allCatMap.entries())
+      .map(([name, amount]) => ({ name, amount }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, 5);
+    const allTimeTopCat = allTopCats[0] ?? null;
+    const grandTotalAll = allRows.reduce((s, r) => s + Number(r.amount), 0);
+
     const daysWithExpense = dayList.length;
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const avgPerActiveDay = daysWithExpense ? monthTotal / daysWithExpense : 0;
     const projected = daysWithExpense ? (monthTotal / Math.max(1, now.getDate())) * daysInMonth : 0;
 
-    return { ym, monthTotal, lastMonthTotal, momPct, topCats, maxCat, topDay, lowDay, topDays, biggestVoucher, daysWithExpense, avgPerActiveDay, projected };
+    return { ym, monthTotal, lastMonthTotal, momPct, topCats, maxCat, topDay, lowDay, topDays, biggestVoucher, daysWithExpense, avgPerActiveDay, projected, allTimeTopCat, grandTotalAll, allTopCats };
   }, [allRows, vouchers]);
 
   const maxCatAmount = insights.topCats[0]?.amount ?? 0;
