@@ -259,7 +259,7 @@ function ExpensePage() {
       {allRows.length > 0 && (
         <div className="no-print space-y-4">
           {/* Hero KPI row */}
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-3">
             <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.75) 100%)" }}>
               <div className="absolute -right-4 -top-4 opacity-20"><Wallet className="w-24 h-24" /></div>
               <div className="text-xs uppercase tracking-wide opacity-90">{monthLabel}</div>
@@ -272,12 +272,6 @@ function ExpensePage() {
               </div>
             </Card>
 
-            <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(25 95% 53%) 0%, hsl(15 90% 50%) 100%)" }}>
-              <div className="absolute -right-4 -top-4 opacity-20"><Crown className="w-24 h-24" /></div>
-              <div className="text-xs uppercase tracking-wide opacity-90">Top Category</div>
-              <div className="text-lg font-bold mt-1 truncate">{insights.maxCat?.name ?? "—"}</div>
-              <div className="text-xl font-extrabold">{fmt.bdt(insights.maxCat?.amount ?? 0)}</div>
-            </Card>
 
             <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(340 82% 52%) 0%, hsl(0 84% 55%) 100%)" }}>
               <div className="absolute -right-4 -top-4 opacity-20"><Flame className="w-24 h-24" /></div>
