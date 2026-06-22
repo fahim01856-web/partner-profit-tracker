@@ -259,7 +259,7 @@ function ExpensePage() {
       {allRows.length > 0 && (
         <div className="no-print space-y-4">
           {/* Hero KPI row */}
-          <div className="grid gap-3 md:grid-cols-4">
+          <div className="grid gap-3 md:grid-cols-3">
             <Card className="p-4 relative overflow-hidden border-0 text-white" style={{ background: "linear-gradient(135deg, hsl(var(--primary)) 0%, hsl(var(--primary)/0.75) 100%)" }}>
               <div className="absolute -right-4 -top-4 opacity-20"><Wallet className="w-24 h-24" /></div>
               <div className="text-xs uppercase tracking-wide opacity-90">{monthLabel}</div>
