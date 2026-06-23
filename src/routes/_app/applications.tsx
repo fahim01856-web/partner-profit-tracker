@@ -920,13 +920,22 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
 
   useEffect(() => {
     const editor = editorRef.current;
+    if (!editor) return;
     if (editorLocalChangeRef.current) {
       editorLocalChangeRef.current = false;
       return;
     }
-    if (!editor || editor.innerHTML === normalizeBodyForEditor(v.body_html || "")) return;
-    editor.innerHTML = normalizeBodyForEditor(v.body_html || "");
+    const next = normalizeBodyForEditor(v.body_html || "");
+    if (editor.innerHTML !== next) editor.innerHTML = next;
   }, [v.body_html]);
+
+  const attachEditor = (el: HTMLDivElement | null) => {
+    editorRef.current = el;
+    if (el && !el.dataset.initialized) {
+      el.innerHTML = normalizeBodyForEditor(v.body_html || "");
+      el.dataset.initialized = "1";
+    }
+  };
 
   const insertPh = (ph: string) => {
     if (isImageBodyTemplate(v.body_html || "")) {
@@ -1009,7 +1018,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
               <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
             <div
-              ref={editorRef}
+              ref={attachEditor}
               contentEditable
               suppressContentEditableWarning
               role="textbox"
