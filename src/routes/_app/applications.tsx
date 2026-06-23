@@ -1018,7 +1018,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
               <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
             <div
-              ref={editorRef}
+              ref={attachEditor}
               contentEditable
               suppressContentEditableWarning
               role="textbox"
