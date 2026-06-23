@@ -160,7 +160,7 @@ function buildDocumentHtml(opts: {
       <div style="font-size:22px; font-weight:800; color:#064e3b;">${opts.bankName}</div>
       <div style="font-size:13px; color:#334155; margin-top:2px;">${opts.outlet}</div>
     </div>
-    <div style="font-size:14px; line-height:1.9; white-space:pre-wrap;">${rendered}</div>
+    <div style="font-size:14px; line-height:32px;">${rendered}</div>
     <div style="margin-top:80px; display:flex; justify-content:flex-end; font-size:13px;">
       <div style="text-align:center;">
         <div style="border-top:1px solid #334155; padding-top:4px; min-width:200px;">অনুমোদনকারী</div>
