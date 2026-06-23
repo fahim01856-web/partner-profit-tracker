@@ -854,12 +854,10 @@ function rtgsBody() {
 function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () => void; onSave: (v: any) => void }) {
   const [v, setV] = useState<any>(value);
   const [uploading, setUploading] = useState(false);
-  const [aiBusy, setAiBusy] = useState(false);
   const [newPh, setNewPh] = useState("");
   const [renameDraft, setRenameDraft] = useState<Record<string, string>>({});
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const aiImgRef = useRef<HTMLInputElement>(null);
 
   const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
   const imageTemplate = isImageBodyTemplate(v.body_html || "");
