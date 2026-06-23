@@ -130,11 +130,71 @@ function matchCommand(transcript: string, commands: VoiceCommand[]): VoiceComman
 export function VoiceCommand() {
   const router = useRouter();
   const commands = useMemo(() => buildCommands(), []);
+  const commandsRef = useRef(commands);
+  commandsRef.current = commands;
+  const resolveIntent = useServerFn(resolveVoiceIntent);
+  const resolveIntentRef = useRef(resolveIntent);
+  resolveIntentRef.current = resolveIntent;
+
   const [supported, setSupported] = useState(true);
   const [listening, setListening] = useState(false);
+  const [thinking, setThinking] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [showHelp, setShowHelp] = useState(false);
   const recogRef = useRef<any>(null);
+
+  function runActionRef(action: CommandAction) {
+    if (action.type === "navigate") {
+      router.navigate({ to: action.to });
+    } else if (action.type === "scroll") {
+      document.querySelector(action.selector)?.scrollIntoView({ behavior: "smooth" });
+    } else if (action.type === "callback") {
+      action.run();
+    }
+  }
+  const runActionRefStable = useRef(runActionRef);
+  runActionRefStable.current = runActionRef;
+
+  async function handleFinal(finalText: string, alternatives: string[]) {
+    const cmds = commandsRef.current;
+    // 1) Fast local keyword match across alternatives
+    let matched: VoiceCommand | null = null;
+    for (const a of alternatives) {
+      matched = matchCommand(a, cmds);
+      if (matched) break;
+    }
+    if (matched) {
+      toast.success(`✅ ${matched.label}`, { description: finalText });
+      runActionRefStable.current(matched.action);
+      return;
+    }
+
+    // 2) AI fallback — let Lovable AI pick the best command id
+    setThinking(true);
+    try {
+      const result = await resolveIntentRef.current({
+        data: {
+          transcript: finalText,
+          options: cmds.map((c) => ({ id: c.id, label: c.label, group: c.group })),
+        },
+      });
+      const picked = result?.id ? cmds.find((c) => c.id === result.id) : null;
+      if (picked) {
+        toast.success(`🤖 ${picked.label}`, { description: finalText });
+        runActionRefStable.current(picked.action);
+      } else {
+        toast.error("কমান্ড বুঝতে পারিনি", {
+          description: `"${finalText}" — অন্যভাবে বলুন বা ❓ আইকনে ক্লিক করুন`,
+        });
+      }
+    } catch (err: any) {
+      toast.error("AI বুঝতে পারল না", {
+        description: err?.message ?? "আবার চেষ্টা করুন",
+      });
+    } finally {
+      setThinking(false);
+    }
+  }
 
   useEffect(() => {
     const SR: any =
@@ -160,7 +220,6 @@ export function VoiceCommand() {
       setTranscript(finalText || interim);
 
       if (finalText) {
-        // try all alternatives across all results
         const alternatives: string[] = [];
         for (let i = 0; i < e.results.length; i++) {
           if (e.results[i].isFinal) {
@@ -169,19 +228,7 @@ export function VoiceCommand() {
             }
           }
         }
-        let matched: VoiceCommand | null = null;
-        for (const a of alternatives) {
-          matched = matchCommand(a, commands);
-          if (matched) break;
-        }
-        if (matched) {
-          toast.success(`✅ ${matched.label}`, { description: finalText });
-          runAction(matched.action);
-        } else {
-          toast.error("কমান্ড বুঝতে পারিনি", {
-            description: `"${finalText}" — সাহায্যের জন্য ❓ আইকনে ক্লিক করুন`,
-          });
-        }
+        void handleFinal(finalText.trim(), alternatives);
       }
     };
 
@@ -198,6 +245,7 @@ export function VoiceCommand() {
     };
 
     recogRef.current = r;
+
     return () => {
       try { r.abort(); } catch { /* noop */ }
     };
