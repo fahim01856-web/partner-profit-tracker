@@ -62,7 +62,8 @@ function buildCommands(): VoiceCommand[] {
 
     // 👨‍💼 Staff / HR
     { group: "👨‍💼 স্টাফ / HR", label: "স্টাফ তালিকা", patterns: ["স্টাফ", "staff", "সব স্টাফ", "কর্মচারী", "employee", "স্টাফ র‍্যাংকিং", "সেরা কর্মচারী", "স্টাফ পারফরম্যান্স", "top performer"], action: { type: "navigate", to: "/staff" } },
-    { group: "👨‍💼 স্টাফ / HR", label: "উপস্থিতি", patterns: ["উপস্থিতি", "attendance", "হাজিরা", "employee attendance", "উপস্থিতি রিপোর্ট"], action: { type: "navigate", to: "/employee-attendance" } },
+    { group: "👨‍💼 স্টাফ / HR", label: "অ্যাটেনডেন্স (সাধারণ)", patterns: ["এটেনডেন্স", "attendance page", "সাধারণ উপস্থিতি"], action: { type: "navigate", to: "/attendance" } },
+    { group: "👨‍💼 স্টাফ / HR", label: "কর্মচারী উপস্থিতি", patterns: ["উপস্থিতি", "attendance", "হাজিরা", "employee attendance", "উপস্থিতি রিপোর্ট"], action: { type: "navigate", to: "/employee-attendance" } },
     { group: "👨‍💼 স্টাফ / HR", label: "বেতন", patterns: ["বেতন", "salary", "মাইনে"], action: { type: "navigate", to: "/salary" } },
     { group: "👨‍💼 স্টাফ / HR", label: "বেতন শীট", patterns: ["বেতন শীট", "salary sheet", "পে শীট", "pay sheet"], action: { type: "navigate", to: "/salary-sheet" } },
 
@@ -175,7 +176,12 @@ export function VoiceCommand() {
       const result = await resolveIntentRef.current({
         data: {
           transcript: finalText,
-          options: cmds.map((c) => ({ id: c.id, label: c.label, group: c.group })),
+          options: cmds.map((c) => ({
+            id: c.id,
+            label: c.label,
+            group: c.group,
+            hint: c.action.type === "navigate" ? c.action.to : c.action.type,
+          })),
         },
       });
       const picked = result?.id ? cmds.find((c) => c.id === result.id) : null;
