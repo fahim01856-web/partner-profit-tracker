@@ -176,7 +176,12 @@ export function VoiceCommand() {
       const result = await resolveIntentRef.current({
         data: {
           transcript: finalText,
-          options: cmds.map((c) => ({ id: c.id, label: c.label, group: c.group })),
+          options: cmds.map((c) => ({
+            id: c.id,
+            label: c.label,
+            group: c.group,
+            hint: c.action.type === "navigate" ? c.action.to : c.action.type,
+          })),
         },
       });
       const picked = result?.id ? cmds.find((c) => c.id === result.id) : null;
