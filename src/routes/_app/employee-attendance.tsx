@@ -172,17 +172,17 @@ function DailyTab() {
                     <td className="p-2.5 text-xs">{s.position}</td>
                     <td className="p-2.5">
                       <span className="hidden print:inline">{cur?.in_time ?? '-'}</span>
-                      <Input type="time" defaultValue={cur?.in_time ?? ''} className="h-8 w-28 print:hidden"
+                      <Input key={`in-${s.id}-${date}-${cur?.in_time ?? ''}`} type="time" defaultValue={cur?.in_time ?? ''} className="h-8 w-28 print:hidden"
                         onBlur={(e) => upsert.mutate({ staff_id: s.id, in_time: e.target.value || null })} />
                     </td>
                     <td className="p-2.5">
                       <span className="hidden print:inline">{cur?.out_time ?? '-'}</span>
-                      <Input type="time" defaultValue={cur?.out_time ?? ''} className="h-8 w-28 print:hidden"
+                      <Input key={`out-${s.id}-${date}-${cur?.out_time ?? ''}`} type="time" defaultValue={cur?.out_time ?? ''} className="h-8 w-28 print:hidden"
                         onBlur={(e) => upsert.mutate({ staff_id: s.id, out_time: e.target.value || null })} />
                     </td>
                     <td className="p-2.5">
                       <span className="hidden print:inline">{stKey ? t(stKey as never) : '-'}</span>
-                      <Select value={cur?.status ?? ''} onValueChange={(v) => upsert.mutate({ staff_id: s.id, status: v })}>
+                      <Select key={`st-${s.id}-${date}-${cur?.status ?? ''}`} value={cur?.status ?? ''} onValueChange={(v) => upsert.mutate({ staff_id: s.id, status: v })}>
                         <SelectTrigger className={`h-8 w-36 print:hidden ${cur?.status ? meta.color : ''}`}>
                           <SelectValue placeholder={t("eatt_pick_status")} />
                         </SelectTrigger>
@@ -195,7 +195,7 @@ function DailyTab() {
                     </td>
                     <td className="p-2.5">
                       <span className="hidden print:inline">{cur?.note ?? ''}</span>
-                      <Input defaultValue={cur?.note ?? ''} placeholder="-" className="h-8 w-40 print:hidden"
+                      <Input key={`note-${s.id}-${date}-${cur?.note ?? ''}`} defaultValue={cur?.note ?? ''} placeholder="-" className="h-8 w-40 print:hidden"
                         onBlur={(e) => upsert.mutate({ staff_id: s.id, note: e.target.value || null })} />
                     </td>
                   </tr>
