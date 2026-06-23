@@ -948,20 +948,20 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
               value={v.body_html || ""}
               onChange={(e) => setV({ ...v, body_html: e.target.value })}
               onPaste={(e) => {
-                const html = e.clipboardData.getData("text/html");
-                const text = e.clipboardData.getData("text/plain");
-                if (!html && text) {
-                  e.preventDefault();
-                  const wrapped = `<div style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.8">${escapeHtml(text)}</div>`;
-                  const ta = taRef.current;
-                  if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + wrapped })); return; }
-                  const start = ta.selectionStart, end = ta.selectionEnd;
-                  const cur = v.body_html || "";
-                  const next = cur.slice(0, start) + wrapped + cur.slice(end);
-                  setV({ ...v, body_html: next });
-                  setTimeout(() => { ta.focus(); ta.setSelectionRange(start + wrapped.length, start + wrapped.length); }, 0);
-                }
-              }}
+                 // সর্বদা plain text হিসেবে পেস্ট করি — যেকোনো সোর্স (Word/PDF/Web/বাংলা/ইংরেজি) থেকে কপি করলেও
+                 // হুবহু একই ফরম্যাটে (লাইন/স্পেস অক্ষুণ্ণ) থাকবে এবং প্রিন্টেও সেভাবেই দেখাবে।
+                 const text = e.clipboardData.getData("text/plain");
+                 if (!text) return;
+                 e.preventDefault();
+                 const wrapped = `<div style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.8">${escapeHtml(text)}</div>`;
+                 const ta = taRef.current;
+                 if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + wrapped })); return; }
+                 const start = ta.selectionStart, end = ta.selectionEnd;
+                 const cur = v.body_html || "";
+                 const next = cur.slice(0, start) + wrapped + cur.slice(end);
+                 setV({ ...v, body_html: next });
+                 setTimeout(() => { ta.focus(); ta.setSelectionRange(start + wrapped.length, start + wrapped.length); }, 0);
+               }}
               placeholder="এখানে আপনার আবেদনপত্র কপি-পেস্ট করুন। লাইন/স্পেস যেমন দিবেন তেমনই প্রিন্টে দেখাবে। পরিবর্তনীয় তথ্যের জায়গায় নিচ থেকে {{field}} বসান।"
               className="font-mono text-sm leading-relaxed"
             />
