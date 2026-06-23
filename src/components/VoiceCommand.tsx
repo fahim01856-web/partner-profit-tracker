@@ -38,7 +38,8 @@ interface VoiceCommand {
 // Command catalogue — tailored to ACTUAL routes in this app
 // ───────────────────────────────────────────────────────────
 function buildCommands(): VoiceCommand[] {
-  return [
+  const list: Omit<VoiceCommand, "id">[] = [
+
     // 📊 Dashboard
     { group: "📊 ড্যাশবোর্ড", label: "ড্যাশবোর্ড দেখাও", patterns: ["ড্যাশবোর্ড", "ড্যাসবোর্ড", "dashboard", "হোম", "home", "মূল পাতা"], action: { type: "navigate", to: "/dashboard" } },
     { group: "📊 ড্যাশবোর্ড", label: "BI ড্যাশবোর্ড / আজকের সারাংশ", patterns: ["bi ড্যাশবোর্ড", "বি আই", "bi dashboard", "আজকের সারাংশ", "আজকের ব্যবসা", "summary", "business intelligence", "এআই বিশ্লেষণ"], action: { type: "navigate", to: "/bi-dashboard" } },
