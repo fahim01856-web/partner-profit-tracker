@@ -220,8 +220,6 @@ export function VoiceCommand() {
     setListening(false);
   }
 
-  if (!supported) return null;
-
   const grouped = useMemo(() => {
     const m = new Map<string, VoiceCommand[]>();
     for (const c of commands) {
@@ -230,6 +228,16 @@ export function VoiceCommand() {
     }
     return Array.from(m.entries());
   }, [commands]);
+
+  const handleMicClick = () => {
+    if (!supported) {
+      toast.error("এই ব্রাউজারে Voice সাপোর্ট নেই", {
+        description: "Chrome / Edge ব্যবহার করুন",
+      });
+      return;
+    }
+    listening ? stop() : start();
+  };
 
   return (
     <>
