@@ -291,12 +291,21 @@ export function VoiceCommand() {
     <>
       {/* Floating control */}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 no-print">
-        {listening && transcript && (
+        {(listening || thinking) && (transcript || thinking) && (
           <div className="max-w-[260px] bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
-            <div className="opacity-60 mb-1">🎙️ শুনছি…</div>
-            <div className="font-medium truncate">{transcript}</div>
+            <div className="opacity-60 mb-1 flex items-center gap-1">
+              {thinking ? (
+                <>
+                  <Sparkles className="w-3 h-3" /> AI বুঝছে…
+                </>
+              ) : (
+                <>🎙️ শুনছি…</>
+              )}
+            </div>
+            {transcript && <div className="font-medium truncate">{transcript}</div>}
           </div>
         )}
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowHelp(true)}
