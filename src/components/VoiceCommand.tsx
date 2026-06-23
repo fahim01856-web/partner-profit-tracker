@@ -220,8 +220,6 @@ export function VoiceCommand() {
     setListening(false);
   }
 
-  if (!supported) return null;
-
   const grouped = useMemo(() => {
     const m = new Map<string, VoiceCommand[]>();
     for (const c of commands) {
@@ -230,6 +228,16 @@ export function VoiceCommand() {
     }
     return Array.from(m.entries());
   }, [commands]);
+
+  const handleMicClick = () => {
+    if (!supported) {
+      toast.error("এই ব্রাউজারে Voice সাপোর্ট নেই", {
+        description: "Chrome / Edge ব্যবহার করুন",
+      });
+      return;
+    }
+    listening ? stop() : start();
+  };
 
   return (
     <>
@@ -251,9 +259,9 @@ export function VoiceCommand() {
             <HelpCircle className="w-5 h-5" />
           </button>
           <button
-            onClick={listening ? stop : start}
+            onClick={handleMicClick}
             className={cn(
-              "w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all",
+              "w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-all ring-4 ring-primary/20",
               listening
                 ? "bg-red-500 text-white animate-pulse scale-110"
                 : "bg-primary text-primary-foreground hover:scale-105"
