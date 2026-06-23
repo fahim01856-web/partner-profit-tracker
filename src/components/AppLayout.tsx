@@ -142,7 +142,7 @@ export function AppLayout() {
         </div>
       </main>
       <Toaster position="top-right" />
-      <VoiceCommand />
+      
     </div>
   );
 }
