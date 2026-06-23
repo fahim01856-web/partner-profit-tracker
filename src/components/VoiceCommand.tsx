@@ -252,15 +252,6 @@ export function VoiceCommand() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function runAction(action: CommandAction) {
-    if (action.type === "navigate") {
-      router.navigate({ to: action.to });
-    } else if (action.type === "scroll") {
-      document.querySelector(action.selector)?.scrollIntoView({ behavior: "smooth" });
-    } else if (action.type === "callback") {
-      action.run();
-    }
-  }
 
   function start() {
     if (!recogRef.current || listening) return;
