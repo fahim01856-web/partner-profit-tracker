@@ -12,6 +12,7 @@ const InputSchema = z.object({
         id: z.string(),
         label: z.string(),
         group: z.string().optional(),
+        hint: z.string().optional(),
       })
     )
     .min(1)
