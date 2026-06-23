@@ -21,6 +21,8 @@ type CommandAction =
   | { type: "callback"; run: () => void };
 
 interface VoiceCommand {
+  /** Stable id used for AI fallback matching */
+  id: string;
   /** Bangla + English keyword patterns (lowercased, normalized) */
   patterns: string[];
   /** What to do when matched */
@@ -30,6 +32,7 @@ interface VoiceCommand {
   /** Group in help panel */
   group: string;
 }
+
 
 // ───────────────────────────────────────────────────────────
 // Command catalogue — tailored to ACTUAL routes in this app
