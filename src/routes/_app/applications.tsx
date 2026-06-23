@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { generateAppTemplate } from "@/lib/app-template-ai.functions";
@@ -71,13 +71,68 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#039;");
 }
 
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;|&apos;/gi, "'")
+    .replace(/&amp;/gi, "&");
+}
+
+function maybeDecodeEscapedHtml(value: string) {
+  return /&lt;\/?(div|p|span|table|tbody|thead|tr|td|th|br|b|strong|u|i|em|ol|ul|li|h[1-6])\b/i.test(value)
+    ? decodeHtmlEntities(value)
+    : value;
+}
+
+function plainTextToBodyHtml(text: string) {
+  return escapeHtml(text)
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => `<div>${line || "<br>"}</div>`)
+    .join("");
+}
+
 function sanitizeTemplateHtml(html: string) {
-  return String(html || "")
+  return maybeDecodeEscapedHtml(String(html || ""))
     .replace(/<\s*(script|iframe|object|embed|link|meta|base)[\s\S]*?<\/\s*\1\s*>/gi, "")
     .replace(/<\s*(script|iframe|object|embed|link|meta|base)[^>]*\/?\s*>/gi, "")
     .replace(/<\s*\/?\s*(html|head|body)[^>]*>/gi, "")
     .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
     .replace(/\s(href|src)\s*=\s*(['"]?)\s*javascript:[^\s>]*\2/gi, "");
+}
+
+function normalizeBodyForEditor(html: string) {
+  const cleaned = sanitizeTemplateHtml(html);
+  return /<[a-z][\s\S]*>/i.test(cleaned) ? cleaned : plainTextToBodyHtml(cleaned);
+}
+
+function insertHtmlIntoEditor(editor: HTMLDivElement, html: string) {
+  editor.focus();
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) {
+    editor.insertAdjacentHTML("beforeend", html);
+    return;
+  }
+  const range = selection.getRangeAt(0);
+  if (!editor.contains(range.commonAncestorContainer)) {
+    editor.insertAdjacentHTML("beforeend", html);
+    return;
+  }
+  range.deleteContents();
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const fragment = template.content;
+  const lastNode = fragment.lastChild;
+  range.insertNode(fragment);
+  if (lastNode) {
+    range.setStartAfter(lastNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
 }
 
 function renderTemplate(html: string, fields: Record<string, any>) {
