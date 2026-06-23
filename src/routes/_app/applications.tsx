@@ -1014,7 +1014,10 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
               suppressContentEditableWarning
               role="textbox"
               aria-multiline="true"
-              onInput={(e) => setV({ ...v, body_html: sanitizeTemplateHtml(e.currentTarget.innerHTML) })}
+              onInput={(e) => {
+                editorLocalChangeRef.current = true;
+                setV({ ...v, body_html: sanitizeTemplateHtml(e.currentTarget.innerHTML) });
+              }}
               onPaste={(e) => {
                 const editor = editorRef.current;
                 const html = e.clipboardData.getData("text/html");
@@ -1027,6 +1030,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
                     ? sanitizeTemplateHtml(text)
                     : plainTextToBodyHtml(text);
                 insertHtmlIntoEditor(editor, pastedHtml);
+                editorLocalChangeRef.current = true;
                 setV({ ...v, body_html: sanitizeTemplateHtml(editor.innerHTML) });
               }}
               data-placeholder="এখানে আপনার আবেদনপত্র কপি-পেস্ট করুন। বাংলা/ইংরেজি যেভাবে পেস্ট করবেন সেভাবেই দেখা যাবে।"
