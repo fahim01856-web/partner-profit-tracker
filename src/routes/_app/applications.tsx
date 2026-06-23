@@ -912,6 +912,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
   const [newPh, setNewPh] = useState("");
   const [renameDraft, setRenameDraft] = useState<Record<string, string>>({});
   const editorRef = useRef<HTMLDivElement>(null);
+  const editorLocalChangeRef = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
@@ -919,6 +920,10 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
 
   useEffect(() => {
     const editor = editorRef.current;
+    if (editorLocalChangeRef.current) {
+      editorLocalChangeRef.current = false;
+      return;
+    }
     if (!editor || editor.innerHTML === normalizeBodyForEditor(v.body_html || "")) return;
     editor.innerHTML = normalizeBodyForEditor(v.body_html || "");
   }, [v.body_html]);
@@ -932,6 +937,7 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
     const editor = editorRef.current;
     if (!editor) { setV((prev: any) => ({ ...prev, body_html: `${prev.body_html || ""}${txt}` })); return; }
     insertHtmlIntoEditor(editor, txt);
+    editorLocalChangeRef.current = true;
     setV({ ...v, body_html: sanitizeTemplateHtml(editor.innerHTML) });
   };
 
