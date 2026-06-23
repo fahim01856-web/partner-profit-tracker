@@ -19,7 +19,7 @@ import {
   CheckCircle2, Clock, XCircle, FileCheck2, Send, Files, LayoutGrid, FolderOpen,
   History as HistoryIcon, ShieldCheck, Sparkles,
 } from "lucide-react";
-import { RichBodyEditor } from "@/components/RichBodyEditor";
+
 
 const APPLICATION_TABS = ["dashboard", "applications", "templates", "customers"] as const;
 type ApplicationTab = (typeof APPLICATION_TABS)[number];
@@ -854,12 +854,10 @@ function rtgsBody() {
 function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () => void; onSave: (v: any) => void }) {
   const [v, setV] = useState<any>(value);
   const [uploading, setUploading] = useState(false);
-  const [aiBusy, setAiBusy] = useState(false);
   const [newPh, setNewPh] = useState("");
   const [renameDraft, setRenameDraft] = useState<Record<string, string>>({});
   const taRef = useRef<HTMLTextAreaElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
-  const aiImgRef = useRef<HTMLInputElement>(null);
 
   const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
   const imageTemplate = isImageBodyTemplate(v.body_html || "");
@@ -903,34 +901,6 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
     setNewPh("");
   };
 
-  const aiFromImage = async (file: File) => {
-    if (!file.type.startsWith("image/")) { toast.error("শুধু ছবি (JPG/PNG) দিন। PDF হলে স্ক্রিনশট নিয়ে আপলোড করুন।"); return; }
-    if (file.size > 8 * 1024 * 1024) { toast.error("ছবি ৮MB এর কম হতে হবে"); return; }
-    setAiBusy(true);
-    try {
-      // Upload to storage to get a stable URL (avoid huge data URLs in body_html)
-      let imgSrc = "";
-      try {
-        const ext = file.name.split(".").pop() || "png";
-        const path = `templates/img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        const { error } = await supabase.storage.from("application-attachments").upload(path, file, { contentType: file.type, upsert: false });
-        if (error) throw error;
-        const { data: signed } = await supabase.storage.from("application-attachments").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
-        imgSrc = signed?.signedUrl || "";
-      } catch {
-        // fallback: inline data URL
-        imgSrc = await new Promise<string>((res, rej) => {
-          const r = new FileReader(); r.onload = () => res(String(r.result || "")); r.onerror = rej; r.readAsDataURL(file);
-        });
-      }
-      // Keep the original image, but make it a positioned template surface so editable variables can be placed over it.
-      const html = createImageBodyHtml(imgSrc);
-      setV((prev: any) => ({ ...prev, body_html: html }));
-      toast.success("ছবি যোগ হয়েছে — এখন নিচে ফিল্ড যোগ করে ছবির উপর বসান");
-    } catch (e: any) {
-      toast.error(e?.message || "ছবি যোগ করা যায়নি");
-    } finally { setAiBusy(false); }
-  };
 
 
   const uploadFile = async (file: File) => {
@@ -967,34 +937,34 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
           <div><Label>নাম *</Label><Input value={v.name || ""} onChange={(e) => setV({ ...v, name: e.target.value })} /></div>
           <div><Label>ক্যাটাগরি</Label><Input value={v.category || ""} onChange={(e) => setV({ ...v, category: e.target.value })} placeholder="Account / Service / Loan ..." /></div>
           <div className="col-span-2"><Label>বিবরণ</Label><Input value={v.description || ""} onChange={(e) => setV({ ...v, description: e.target.value })} /></div>
-          <div className="col-span-2 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-3">
-            <Label className="text-sm font-semibold flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-primary" /> 📷 আবেদনের ছবি আপলোড করুন — হুবহু বডিতে বসবে</Label>
-            <div className="flex items-center gap-2 mt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => aiImgRef.current?.click()} disabled={aiBusy}>
-                {aiBusy ? "আপলোড হচ্ছে..." : <><Upload className="w-3.5 h-3.5 mr-1" /> ছবি দিন</>}
-              </Button>
-              <span className="text-[11px] text-muted-foreground">ছবিটি সরাসরি বডিতে দেখা যাবে — কোনো HTML কোড লিখতে হবে না।</span>
-
-            </div>
-            <input ref={aiImgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) aiFromImage(f); e.target.value = ""; }} />
-          </div>
-
           <div className="col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <Label>{imageTemplate ? "আবেদনের বডি (ছবি + এডিটযোগ্য ফিল্ড)" : "আবেদনের বডি"}</Label>
+              <Label>আবেদনের বডি</Label>
               <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
-            {imageTemplate ? (
-              <div className="space-y-2">
-                <iframe title="Template image preview" srcDoc={documentPreviewSrcDoc(v.body_html || "")} sandbox="" className="bg-white border rounded h-[420px] w-full" />
-                <details className="text-xs">
-                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">⚙️ Raw HTML এডিট করুন (অ্যাডভান্সড)</summary>
-                  <Textarea ref={taRef} rows={8} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-xs mt-2" />
-                </details>
-              </div>
-            ) : (
-              <RichBodyEditor value={v.body_html || ""} onChange={(html) => setV({ ...v, body_html: html })} rows={14} />
-            )}
+            <Textarea
+              ref={taRef}
+              rows={16}
+              value={v.body_html || ""}
+              onChange={(e) => setV({ ...v, body_html: e.target.value })}
+              onPaste={(e) => {
+                const html = e.clipboardData.getData("text/html");
+                const text = e.clipboardData.getData("text/plain");
+                if (!html && text) {
+                  e.preventDefault();
+                  const wrapped = `<div style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.8">${escapeHtml(text)}</div>`;
+                  const ta = taRef.current;
+                  if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + wrapped })); return; }
+                  const start = ta.selectionStart, end = ta.selectionEnd;
+                  const cur = v.body_html || "";
+                  const next = cur.slice(0, start) + wrapped + cur.slice(end);
+                  setV({ ...v, body_html: next });
+                  setTimeout(() => { ta.focus(); ta.setSelectionRange(start + wrapped.length, start + wrapped.length); }, 0);
+                }
+              }}
+              placeholder="এখানে আপনার আবেদনপত্র কপি-পেস্ট করুন। লাইন/স্পেস যেমন দিবেন তেমনই প্রিন্টে দেখাবে। পরিবর্তনীয় তথ্যের জায়গায় নিচ থেকে {{field}} বসান।"
+              className="font-mono text-sm leading-relaxed"
+            />
             <div className="flex flex-wrap gap-1 mt-2">
               {PLACEHOLDERS.map((p) => (
                 <button key={p} type="button" onClick={() => insertPh(p)} className="text-[10px] px-2 py-0.5 rounded border hover:bg-muted">
