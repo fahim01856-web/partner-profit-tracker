@@ -911,23 +911,28 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
   const [uploading, setUploading] = useState(false);
   const [newPh, setNewPh] = useState("");
   const [renameDraft, setRenameDraft] = useState<Record<string, string>>({});
-  const taRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
   const imageTemplate = isImageBodyTemplate(v.body_html || "");
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || editor.innerHTML === normalizeBodyForEditor(v.body_html || "")) return;
+    editor.innerHTML = normalizeBodyForEditor(v.body_html || "");
+  }, [v.body_html]);
 
   const insertPh = (ph: string) => {
     if (isImageBodyTemplate(v.body_html || "")) {
       setV((prev: any) => ({ ...prev, body_html: addOverlayFieldToImageTemplate(prev.body_html || "", ph) }));
       return;
     }
-    const ta = taRef.current;
     const txt = `{{${ph}}}`;
-    if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + txt })); return; }
-    const start = ta.selectionStart, end = ta.selectionEnd;
-    setV({ ...v, body_html: (v.body_html || "").slice(0, start) + txt + (v.body_html || "").slice(end) });
-    setTimeout(() => { ta.focus(); ta.setSelectionRange(start + txt.length, start + txt.length); }, 0);
+    const editor = editorRef.current;
+    if (!editor) { setV((prev: any) => ({ ...prev, body_html: `${prev.body_html || ""}${txt}` })); return; }
+    insertHtmlIntoEditor(editor, txt);
+    setV({ ...v, body_html: sanitizeTemplateHtml(editor.innerHTML) });
   };
 
   const applyRename = (oldKey: string) => {
