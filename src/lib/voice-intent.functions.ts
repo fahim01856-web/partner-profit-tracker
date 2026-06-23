@@ -29,16 +29,20 @@ export const resolveVoiceIntent = createServerFn({ method: "POST" })
     const model = gateway("google/gemini-3-flash-preview");
 
     const list = data.options
-      .map((o) => `- ${o.id} :: ${o.label}${o.group ? ` (${o.group})` : ""}`)
+      .map((o) => `- ${o.id} :: ${o.label}${o.group ? ` [${o.group}]` : ""}`)
       .join("\n");
 
-    const system = `You are a voice-command router for a Bengali/English banking admin app.
-The user spoke (possibly with typos, mispronunciation, or partial words) in Bangla or English.
-Pick the SINGLE best matching command id from the list, even if the wording is wrong or approximate.
-If absolutely nothing is even loosely related, reply with NONE.
-Reply with ONLY the id (one token) or NONE. No explanation, no punctuation.`;
+    const system = `You are a voice-command router for a Bengali/English banking admin web app.
+The user speaks Bangla or English (often with typos, mispronunciation, partial words, mixed languages, or just a feature/page name).
+Your job: ALWAYS pick the SINGLE best matching command id from the list — even if the match is loose, partial, semantic, or only thematically related.
 
-    const prompt = `Commands:\n${list}\n\nUser said: "${data.transcript}"\n\nBest id:`;
+Rules:
+- Use semantic understanding (synonyms, related concepts, Bangla↔English meaning) — not just exact keyword overlap.
+- If the user names ANY topic, page, feature, report, person-type, or action that ANY command in the list could plausibly serve, return that command's id.
+- Only reply NONE if the input is total gibberish, silence, or completely unrelated to a banking/admin app (e.g. weather, jokes).
+- Reply with ONLY the id token (e.g. cmd_12) or NONE. No explanation, no punctuation, no quotes.`;
+
+    const prompt = `Available commands:\n${list}\n\nUser said: "${data.transcript}"\n\nBest matching id:`;
 
     const { text } = await generateText({
       model,
