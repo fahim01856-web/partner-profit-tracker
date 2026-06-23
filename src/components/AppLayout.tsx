@@ -13,7 +13,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
 import { LiveClock } from "@/components/LiveClock";
-import { VoiceCommand } from "@/components/VoiceCommand";
+
 
 export function AppLayout() {
   const { user, signOut } = useAuth();
