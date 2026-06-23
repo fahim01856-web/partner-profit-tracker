@@ -967,34 +967,34 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
           <div><Label>নাম *</Label><Input value={v.name || ""} onChange={(e) => setV({ ...v, name: e.target.value })} /></div>
           <div><Label>ক্যাটাগরি</Label><Input value={v.category || ""} onChange={(e) => setV({ ...v, category: e.target.value })} placeholder="Account / Service / Loan ..." /></div>
           <div className="col-span-2"><Label>বিবরণ</Label><Input value={v.description || ""} onChange={(e) => setV({ ...v, description: e.target.value })} /></div>
-          <div className="col-span-2 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 p-3">
-            <Label className="text-sm font-semibold flex items-center gap-1.5"><Sparkles className="w-4 h-4 text-primary" /> 📷 আবেদনের ছবি আপলোড করুন — হুবহু বডিতে বসবে</Label>
-            <div className="flex items-center gap-2 mt-2">
-              <Button type="button" variant="outline" size="sm" onClick={() => aiImgRef.current?.click()} disabled={aiBusy}>
-                {aiBusy ? "আপলোড হচ্ছে..." : <><Upload className="w-3.5 h-3.5 mr-1" /> ছবি দিন</>}
-              </Button>
-              <span className="text-[11px] text-muted-foreground">ছবিটি সরাসরি বডিতে দেখা যাবে — কোনো HTML কোড লিখতে হবে না।</span>
-
-            </div>
-            <input ref={aiImgRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) aiFromImage(f); e.target.value = ""; }} />
-          </div>
-
           <div className="col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <Label>{imageTemplate ? "আবেদনের বডি (ছবি + এডিটযোগ্য ফিল্ড)" : "আবেদনের বডি"}</Label>
+              <Label>আবেদনের বডি</Label>
               <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
-            {imageTemplate ? (
-              <div className="space-y-2">
-                <iframe title="Template image preview" srcDoc={documentPreviewSrcDoc(v.body_html || "")} sandbox="" className="bg-white border rounded h-[420px] w-full" />
-                <details className="text-xs">
-                  <summary className="cursor-pointer text-muted-foreground hover:text-foreground">⚙️ Raw HTML এডিট করুন (অ্যাডভান্সড)</summary>
-                  <Textarea ref={taRef} rows={8} value={v.body_html || ""} onChange={(e) => setV({ ...v, body_html: e.target.value })} className="font-mono text-xs mt-2" />
-                </details>
-              </div>
-            ) : (
-              <RichBodyEditor value={v.body_html || ""} onChange={(html) => setV({ ...v, body_html: html })} rows={14} />
-            )}
+            <Textarea
+              ref={taRef}
+              rows={16}
+              value={v.body_html || ""}
+              onChange={(e) => setV({ ...v, body_html: e.target.value })}
+              onPaste={(e) => {
+                const html = e.clipboardData.getData("text/html");
+                const text = e.clipboardData.getData("text/plain");
+                if (!html && text) {
+                  e.preventDefault();
+                  const wrapped = `<div style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.8">${escapeHtml(text)}</div>`;
+                  const ta = taRef.current;
+                  if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + wrapped })); return; }
+                  const start = ta.selectionStart, end = ta.selectionEnd;
+                  const cur = v.body_html || "";
+                  const next = cur.slice(0, start) + wrapped + cur.slice(end);
+                  setV({ ...v, body_html: next });
+                  setTimeout(() => { ta.focus(); ta.setSelectionRange(start + wrapped.length, start + wrapped.length); }, 0);
+                }
+              }}
+              placeholder="এখানে আপনার আবেদনপত্র কপি-পেস্ট করুন। লাইন/স্পেস যেমন দিবেন তেমনই প্রিন্টে দেখাবে। পরিবর্তনীয় তথ্যের জায়গায় নিচ থেকে {{field}} বসান।"
+              className="font-mono text-sm leading-relaxed"
+            />
             <div className="flex flex-wrap gap-1 mt-2">
               {PLACEHOLDERS.map((p) => (
                 <button key={p} type="button" onClick={() => insertPh(p)} className="text-[10px] px-2 py-0.5 rounded border hover:bg-muted">
