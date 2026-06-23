@@ -30,7 +30,7 @@ export const resolveVoiceIntent = createServerFn({ method: "POST" })
     const model = gateway("google/gemini-3-flash-preview");
 
     const list = data.options
-      .map((o) => `- ${o.id} :: ${o.label}${o.group ? ` [${o.group}]` : ""}`)
+      .map((o) => `- ${o.id} :: ${o.label}${o.hint ? ` → ${o.hint}` : ""}${o.group ? ` [${o.group}]` : ""}`)
       .join("\n");
 
     const system = `You are a voice-command router for a Bengali/English banking admin web app.
