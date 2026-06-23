@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { generateAppTemplate } from "@/lib/app-template-ai.functions";
@@ -71,13 +71,68 @@ function escapeHtml(value: string) {
     .replace(/'/g, "&#039;");
 }
 
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#039;|&apos;/gi, "'")
+    .replace(/&amp;/gi, "&");
+}
+
+function maybeDecodeEscapedHtml(value: string) {
+  return /&lt;\/?(div|p|span|table|tbody|thead|tr|td|th|br|b|strong|u|i|em|ol|ul|li|h[1-6])\b/i.test(value)
+    ? decodeHtmlEntities(value)
+    : value;
+}
+
+function plainTextToBodyHtml(text: string) {
+  return escapeHtml(text)
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .split("\n")
+    .map((line) => `<div>${line || "<br>"}</div>`)
+    .join("");
+}
+
 function sanitizeTemplateHtml(html: string) {
-  return String(html || "")
+  return maybeDecodeEscapedHtml(String(html || ""))
     .replace(/<\s*(script|iframe|object|embed|link|meta|base)[\s\S]*?<\/\s*\1\s*>/gi, "")
     .replace(/<\s*(script|iframe|object|embed|link|meta|base)[^>]*\/?\s*>/gi, "")
     .replace(/<\s*\/?\s*(html|head|body)[^>]*>/gi, "")
     .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
     .replace(/\s(href|src)\s*=\s*(['"]?)\s*javascript:[^\s>]*\2/gi, "");
+}
+
+function normalizeBodyForEditor(html: string) {
+  const cleaned = sanitizeTemplateHtml(html);
+  return /<[a-z][\s\S]*>/i.test(cleaned) ? cleaned : plainTextToBodyHtml(cleaned);
+}
+
+function insertHtmlIntoEditor(editor: HTMLDivElement, html: string) {
+  editor.focus();
+  const selection = window.getSelection();
+  if (!selection?.rangeCount) {
+    editor.insertAdjacentHTML("beforeend", html);
+    return;
+  }
+  const range = selection.getRangeAt(0);
+  if (!editor.contains(range.commonAncestorContainer)) {
+    editor.insertAdjacentHTML("beforeend", html);
+    return;
+  }
+  range.deleteContents();
+  const template = document.createElement("template");
+  template.innerHTML = html;
+  const fragment = template.content;
+  const lastNode = fragment.lastChild;
+  range.insertNode(fragment);
+  if (lastNode) {
+    range.setStartAfter(lastNode);
+    range.collapse(true);
+    selection.removeAllRanges();
+    selection.addRange(range);
+  }
 }
 
 function renderTemplate(html: string, fields: Record<string, any>) {
@@ -856,23 +911,34 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
   const [uploading, setUploading] = useState(false);
   const [newPh, setNewPh] = useState("");
   const [renameDraft, setRenameDraft] = useState<Record<string, string>>({});
-  const taRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
+  const editorLocalChangeRef = useRef(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const currentPhs = useMemo(() => extractPlaceholders(v.body_html || ""), [v.body_html]);
   const imageTemplate = isImageBodyTemplate(v.body_html || "");
+
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (editorLocalChangeRef.current) {
+      editorLocalChangeRef.current = false;
+      return;
+    }
+    if (!editor || editor.innerHTML === normalizeBodyForEditor(v.body_html || "")) return;
+    editor.innerHTML = normalizeBodyForEditor(v.body_html || "");
+  }, [v.body_html]);
 
   const insertPh = (ph: string) => {
     if (isImageBodyTemplate(v.body_html || "")) {
       setV((prev: any) => ({ ...prev, body_html: addOverlayFieldToImageTemplate(prev.body_html || "", ph) }));
       return;
     }
-    const ta = taRef.current;
     const txt = `{{${ph}}}`;
-    if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + txt })); return; }
-    const start = ta.selectionStart, end = ta.selectionEnd;
-    setV({ ...v, body_html: (v.body_html || "").slice(0, start) + txt + (v.body_html || "").slice(end) });
-    setTimeout(() => { ta.focus(); ta.setSelectionRange(start + txt.length, start + txt.length); }, 0);
+    const editor = editorRef.current;
+    if (!editor) { setV((prev: any) => ({ ...prev, body_html: `${prev.body_html || ""}${txt}` })); return; }
+    insertHtmlIntoEditor(editor, txt);
+    editorLocalChangeRef.current = true;
+    setV({ ...v, body_html: sanitizeTemplateHtml(editor.innerHTML) });
   };
 
   const applyRename = (oldKey: string) => {
@@ -942,28 +1008,33 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
               <Label>আবেদনের বডি</Label>
               <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
-            <Textarea
-              ref={taRef}
-              rows={16}
-              value={v.body_html || ""}
-              onChange={(e) => setV({ ...v, body_html: e.target.value })}
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              role="textbox"
+              aria-multiline="true"
+              onInput={(e) => {
+                editorLocalChangeRef.current = true;
+                setV({ ...v, body_html: sanitizeTemplateHtml(e.currentTarget.innerHTML) });
+              }}
               onPaste={(e) => {
-                 // সর্বদা plain text হিসেবে পেস্ট করি — যেকোনো সোর্স (Word/PDF/Web/বাংলা/ইংরেজি) থেকে কপি করলেও
-                 // হুবহু একই ফরম্যাটে (লাইন/স্পেস অক্ষুণ্ণ) থাকবে এবং প্রিন্টেও সেভাবেই দেখাবে।
-                 const text = e.clipboardData.getData("text/plain");
-                 if (!text) return;
-                 e.preventDefault();
-                 const wrapped = `<div style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.8">${escapeHtml(text)}</div>`;
-                 const ta = taRef.current;
-                 if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + wrapped })); return; }
-                 const start = ta.selectionStart, end = ta.selectionEnd;
-                 const cur = v.body_html || "";
-                 const next = cur.slice(0, start) + wrapped + cur.slice(end);
-                 setV({ ...v, body_html: next });
-                 setTimeout(() => { ta.focus(); ta.setSelectionRange(start + wrapped.length, start + wrapped.length); }, 0);
-               }}
-              placeholder="এখানে আপনার আবেদনপত্র কপি-পেস্ট করুন। লাইন/স্পেস যেমন দিবেন তেমনই প্রিন্টে দেখাবে। পরিবর্তনীয় তথ্যের জায়গায় নিচ থেকে {{field}} বসান।"
-              className="font-mono text-sm leading-relaxed"
+                const editor = editorRef.current;
+                const html = e.clipboardData.getData("text/html");
+                const text = e.clipboardData.getData("text/plain");
+                if (!editor || (!html && !text)) return;
+                e.preventDefault();
+                const pastedHtml = html
+                  ? sanitizeTemplateHtml(html)
+                  : /(<[a-z][\s\S]*>)|(&lt;[a-z][\s\S]*&gt;)/i.test(text)
+                    ? sanitizeTemplateHtml(text)
+                    : plainTextToBodyHtml(text);
+                insertHtmlIntoEditor(editor, pastedHtml);
+                editorLocalChangeRef.current = true;
+                setV({ ...v, body_html: sanitizeTemplateHtml(editor.innerHTML) });
+              }}
+              data-placeholder="এখানে আপনার আবেদনপত্র কপি-পেস্ট করুন। বাংলা/ইংরেজি যেভাবে পেস্ট করবেন সেভাবেই দেখা যাবে।"
+              className="min-h-[360px] rounded-md border border-input bg-background px-3 py-2 text-sm leading-8 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&:empty:before]:content-[attr(data-placeholder)] [&:empty:before]:text-muted-foreground [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:p-1 [&_th]:border [&_th]:p-1"
             />
             <div className="flex flex-wrap gap-1 mt-2">
               {PLACEHOLDERS.map((p) => (
