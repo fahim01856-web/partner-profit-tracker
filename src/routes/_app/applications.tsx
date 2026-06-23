@@ -1002,28 +1002,29 @@ function TemplateEditor({ value, onClose, onSave }: { value: any; onClose: () =>
               <Label>আবেদনের বডি</Label>
               <div className="text-[10px] text-muted-foreground">প্লেসহোল্ডার: {`{{customer_name}}`} ...</div>
             </div>
-            <Textarea
-              ref={taRef}
-              rows={16}
-              value={v.body_html || ""}
-              onChange={(e) => setV({ ...v, body_html: e.target.value })}
+            <div
+              ref={editorRef}
+              contentEditable
+              suppressContentEditableWarning
+              role="textbox"
+              aria-multiline="true"
+              onInput={(e) => setV({ ...v, body_html: sanitizeTemplateHtml(e.currentTarget.innerHTML) })}
               onPaste={(e) => {
-                 // সর্বদা plain text হিসেবে পেস্ট করি — যেকোনো সোর্স (Word/PDF/Web/বাংলা/ইংরেজি) থেকে কপি করলেও
-                 // হুবহু একই ফরম্যাটে (লাইন/স্পেস অক্ষুণ্ণ) থাকবে এবং প্রিন্টেও সেভাবেই দেখাবে।
-                 const text = e.clipboardData.getData("text/plain");
-                 if (!text) return;
-                 e.preventDefault();
-                 const wrapped = `<div style="white-space:pre-wrap;font-family:inherit;font-size:14px;line-height:1.8">${escapeHtml(text)}</div>`;
-                 const ta = taRef.current;
-                 if (!ta) { setV((prev: any) => ({ ...prev, body_html: (prev.body_html || "") + wrapped })); return; }
-                 const start = ta.selectionStart, end = ta.selectionEnd;
-                 const cur = v.body_html || "";
-                 const next = cur.slice(0, start) + wrapped + cur.slice(end);
-                 setV({ ...v, body_html: next });
-                 setTimeout(() => { ta.focus(); ta.setSelectionRange(start + wrapped.length, start + wrapped.length); }, 0);
-               }}
-              placeholder="এখানে আপনার আবেদনপত্র কপি-পেস্ট করুন। লাইন/স্পেস যেমন দিবেন তেমনই প্রিন্টে দেখাবে। পরিবর্তনীয় তথ্যের জায়গায় নিচ থেকে {{field}} বসান।"
-              className="font-mono text-sm leading-relaxed"
+                const editor = editorRef.current;
+                const html = e.clipboardData.getData("text/html");
+                const text = e.clipboardData.getData("text/plain");
+                if (!editor || (!html && !text)) return;
+                e.preventDefault();
+                const pastedHtml = html
+                  ? sanitizeTemplateHtml(html)
+                  : /(<[a-z][\s\S]*>)|(&lt;[a-z][\s\S]*&gt;)/i.test(text)
+                    ? sanitizeTemplateHtml(text)
+                    : plainTextToBodyHtml(text);
+                insertHtmlIntoEditor(editor, pastedHtml);
+                setV({ ...v, body_html: sanitizeTemplateHtml(editor.innerHTML) });
+              }}
+              data-placeholder="এখানে আপনার আবেদনপত্র কপি-পেস্ট করুন। বাংলা/ইংরেজি যেভাবে পেস্ট করবেন সেভাবেই দেখা যাবে।"
+              className="min-h-[360px] rounded-md border border-input bg-background px-3 py-2 text-sm leading-8 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 [&:empty:before]:content-[attr(data-placeholder)] [&:empty:before]:text-muted-foreground [&_table]:w-full [&_table]:border-collapse [&_td]:border [&_td]:p-1 [&_th]:border [&_th]:p-1"
             />
             <div className="flex flex-wrap gap-1 mt-2">
               {PLACEHOLDERS.map((p) => (
