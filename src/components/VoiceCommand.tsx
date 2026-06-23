@@ -96,7 +96,9 @@ function buildCommands(): VoiceCommand[] {
     { group: "⚙️ নেভিগেশন", label: "উপরে যাও", patterns: ["উপরে", "scroll up", "top", "উপরে যাও"], action: { type: "callback", run: () => window.scrollTo({ top: 0, behavior: "smooth" }) } },
     { group: "⚙️ নেভিগেশন", label: "নিচে যাও", patterns: ["নিচে", "scroll down", "bottom", "নিচে যাও"], action: { type: "callback", run: () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }) } },
   ];
+  return list.map((c, i) => ({ ...c, id: `cmd_${i}` }));
 }
+
 
 // Normalize: lowercase, trim, remove punctuation, collapse spaces
 function normalize(s: string): string {
