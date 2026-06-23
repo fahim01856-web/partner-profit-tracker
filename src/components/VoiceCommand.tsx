@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useRouter } from "@tanstack/react-router";
-import { Mic, MicOff, X, HelpCircle, Loader2 } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { Mic, MicOff, X, HelpCircle, Loader2, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { resolveVoiceIntent } from "@/lib/voice-intent.functions";
+
 
 /**
  * Voice Command Dashboard
@@ -18,6 +21,8 @@ type CommandAction =
   | { type: "callback"; run: () => void };
 
 interface VoiceCommand {
+  /** Stable id used for AI fallback matching */
+  id: string;
   /** Bangla + English keyword patterns (lowercased, normalized) */
   patterns: string[];
   /** What to do when matched */
@@ -28,11 +33,13 @@ interface VoiceCommand {
   group: string;
 }
 
+
 // ───────────────────────────────────────────────────────────
 // Command catalogue — tailored to ACTUAL routes in this app
 // ───────────────────────────────────────────────────────────
 function buildCommands(): VoiceCommand[] {
-  return [
+  const list: Omit<VoiceCommand, "id">[] = [
+
     // 📊 Dashboard
     { group: "📊 ড্যাশবোর্ড", label: "ড্যাশবোর্ড দেখাও", patterns: ["ড্যাশবোর্ড", "ড্যাসবোর্ড", "dashboard", "হোম", "home", "মূল পাতা"], action: { type: "navigate", to: "/dashboard" } },
     { group: "📊 ড্যাশবোর্ড", label: "BI ড্যাশবোর্ড / আজকের সারাংশ", patterns: ["bi ড্যাশবোর্ড", "বি আই", "bi dashboard", "আজকের সারাংশ", "আজকের ব্যবসা", "summary", "business intelligence", "এআই বিশ্লেষণ"], action: { type: "navigate", to: "/bi-dashboard" } },
@@ -89,7 +96,9 @@ function buildCommands(): VoiceCommand[] {
     { group: "⚙️ নেভিগেশন", label: "উপরে যাও", patterns: ["উপরে", "scroll up", "top", "উপরে যাও"], action: { type: "callback", run: () => window.scrollTo({ top: 0, behavior: "smooth" }) } },
     { group: "⚙️ নেভিগেশন", label: "নিচে যাও", patterns: ["নিচে", "scroll down", "bottom", "নিচে যাও"], action: { type: "callback", run: () => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }) } },
   ];
+  return list.map((c, i) => ({ ...c, id: `cmd_${i}` }));
 }
+
 
 // Normalize: lowercase, trim, remove punctuation, collapse spaces
 function normalize(s: string): string {
@@ -121,11 +130,71 @@ function matchCommand(transcript: string, commands: VoiceCommand[]): VoiceComman
 export function VoiceCommand() {
   const router = useRouter();
   const commands = useMemo(() => buildCommands(), []);
+  const commandsRef = useRef(commands);
+  commandsRef.current = commands;
+  const resolveIntent = useServerFn(resolveVoiceIntent);
+  const resolveIntentRef = useRef(resolveIntent);
+  resolveIntentRef.current = resolveIntent;
+
   const [supported, setSupported] = useState(true);
   const [listening, setListening] = useState(false);
+  const [thinking, setThinking] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [showHelp, setShowHelp] = useState(false);
   const recogRef = useRef<any>(null);
+
+  function runActionRef(action: CommandAction) {
+    if (action.type === "navigate") {
+      router.navigate({ to: action.to });
+    } else if (action.type === "scroll") {
+      document.querySelector(action.selector)?.scrollIntoView({ behavior: "smooth" });
+    } else if (action.type === "callback") {
+      action.run();
+    }
+  }
+  const runActionRefStable = useRef(runActionRef);
+  runActionRefStable.current = runActionRef;
+
+  async function handleFinal(finalText: string, alternatives: string[]) {
+    const cmds = commandsRef.current;
+    // 1) Fast local keyword match across alternatives
+    let matched: VoiceCommand | null = null;
+    for (const a of alternatives) {
+      matched = matchCommand(a, cmds);
+      if (matched) break;
+    }
+    if (matched) {
+      toast.success(`✅ ${matched.label}`, { description: finalText });
+      runActionRefStable.current(matched.action);
+      return;
+    }
+
+    // 2) AI fallback — let Lovable AI pick the best command id
+    setThinking(true);
+    try {
+      const result = await resolveIntentRef.current({
+        data: {
+          transcript: finalText,
+          options: cmds.map((c) => ({ id: c.id, label: c.label, group: c.group })),
+        },
+      });
+      const picked = result?.id ? cmds.find((c) => c.id === result.id) : null;
+      if (picked) {
+        toast.success(`🤖 ${picked.label}`, { description: finalText });
+        runActionRefStable.current(picked.action);
+      } else {
+        toast.error("কমান্ড বুঝতে পারিনি", {
+          description: `"${finalText}" — অন্যভাবে বলুন বা ❓ আইকনে ক্লিক করুন`,
+        });
+      }
+    } catch (err: any) {
+      toast.error("AI বুঝতে পারল না", {
+        description: err?.message ?? "আবার চেষ্টা করুন",
+      });
+    } finally {
+      setThinking(false);
+    }
+  }
 
   useEffect(() => {
     const SR: any =
@@ -151,7 +220,6 @@ export function VoiceCommand() {
       setTranscript(finalText || interim);
 
       if (finalText) {
-        // try all alternatives across all results
         const alternatives: string[] = [];
         for (let i = 0; i < e.results.length; i++) {
           if (e.results[i].isFinal) {
@@ -160,19 +228,7 @@ export function VoiceCommand() {
             }
           }
         }
-        let matched: VoiceCommand | null = null;
-        for (const a of alternatives) {
-          matched = matchCommand(a, commands);
-          if (matched) break;
-        }
-        if (matched) {
-          toast.success(`✅ ${matched.label}`, { description: finalText });
-          runAction(matched.action);
-        } else {
-          toast.error("কমান্ড বুঝতে পারিনি", {
-            description: `"${finalText}" — সাহায্যের জন্য ❓ আইকনে ক্লিক করুন`,
-          });
-        }
+        void handleFinal(finalText.trim(), alternatives);
       }
     };
 
@@ -189,21 +245,13 @@ export function VoiceCommand() {
     };
 
     recogRef.current = r;
+
     return () => {
       try { r.abort(); } catch { /* noop */ }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function runAction(action: CommandAction) {
-    if (action.type === "navigate") {
-      router.navigate({ to: action.to });
-    } else if (action.type === "scroll") {
-      document.querySelector(action.selector)?.scrollIntoView({ behavior: "smooth" });
-    } else if (action.type === "callback") {
-      action.run();
-    }
-  }
 
   function start() {
     if (!recogRef.current || listening) return;
@@ -243,12 +291,21 @@ export function VoiceCommand() {
     <>
       {/* Floating control */}
       <div className="fixed bottom-4 right-4 z-50 flex flex-col items-end gap-2 no-print">
-        {listening && transcript && (
+        {(listening || thinking) && (transcript || thinking) && (
           <div className="max-w-[260px] bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
-            <div className="opacity-60 mb-1">🎙️ শুনছি…</div>
-            <div className="font-medium truncate">{transcript}</div>
+            <div className="opacity-60 mb-1 flex items-center gap-1">
+              {thinking ? (
+                <>
+                  <Sparkles className="w-3 h-3" /> AI বুঝছে…
+                </>
+              ) : (
+                <>🎙️ শুনছি…</>
+              )}
+            </div>
+            {transcript && <div className="font-medium truncate">{transcript}</div>}
           </div>
         )}
+
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowHelp(true)}
