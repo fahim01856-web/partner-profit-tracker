@@ -1427,16 +1427,37 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
               <div><Label>মোবাইল</Label><Input value={v.customer_mobile || ""} onChange={(e) => setV({ ...v, customer_mobile: e.target.value })} /></div>
               <div><Label>অ্যাকাউন্ট নম্বর</Label><Input value={v.account_number || ""} onChange={(e) => setV({ ...v, account_number: e.target.value })} /></div>
               <div><Label>অ্যাকাউন্ট টাইপ</Label>
-                <Select value={v.account_type || "savings"} onValueChange={(val) => setV({ ...v, account_type: val })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="savings">Savings</SelectItem>
-                    <SelectItem value="current">Current</SelectItem>
-                    <SelectItem value="dps">DPS</SelectItem>
-                    <SelectItem value="fdr">FDR</SelectItem>
-                    <SelectItem value="loan">Loan</SelectItem>
-                  </SelectContent>
-                </Select>
+                {(() => {
+                  const known = ["savings", "current", "dps", "fdr", "mtdr", "sndp", "rd", "loan"];
+                  const cur = (v.account_type || "").toString();
+                  const isCustom = cur && !known.includes(cur.toLowerCase());
+                  return (
+                    <Select
+                      value={isCustom ? "__custom__" : (cur.toLowerCase() || "savings")}
+                      onValueChange={(val) => {
+                        if (val === "__custom__") {
+                          const entered = window.prompt("অ্যাকাউন্ট টাইপ লিখুন", isCustom ? cur : "");
+                          if (entered !== null) setV({ ...v, account_type: entered });
+                        } else {
+                          setV({ ...v, account_type: val });
+                        }
+                      }}
+                    >
+                      <SelectTrigger><SelectValue>{isCustom ? cur.toUpperCase() : undefined}</SelectValue></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="savings">Savings</SelectItem>
+                        <SelectItem value="current">Current</SelectItem>
+                        <SelectItem value="dps">DPS</SelectItem>
+                        <SelectItem value="fdr">FDR</SelectItem>
+                        <SelectItem value="mtdr">MTDR</SelectItem>
+                        <SelectItem value="sndp">SNDP</SelectItem>
+                        <SelectItem value="rd">RD</SelectItem>
+                        <SelectItem value="loan">Loan</SelectItem>
+                        <SelectItem value="__custom__">অন্যান্য (টাইপ করুন)…</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  );
+                })()}
               </div>
               <div><Label>আবেদনের ধরন</Label><Input value={v.application_type || ""} onChange={(e) => setV({ ...v, application_type: e.target.value })} /></div>
               <div><Label>তারিখ</Label><Input type="date" value={v.application_date} onChange={(e) => setV({ ...v, application_date: e.target.value })} /></div>
