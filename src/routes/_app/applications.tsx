@@ -1617,12 +1617,20 @@ function ApplicationEditor({ value, templates, onClose, onSaved }: any) {
 
 // ---------------- Application Viewer (read-only body) ----------------
 function ApplicationViewer({ record, onClose }: any) {
-  const mergedFields = useMemo(() => ({
-    ...(record.fields || {}),
-    customer_name: record.customer_name, nid: record.customer_nid, mobile: record.customer_mobile,
-    account_number: record.account_number, account_type: record.account_type,
-    date: record.application_date, amount: record.amount, reason: record.reason, remarks: record.remarks,
-  }), [record]);
+  const mergedFields = useMemo(() => {
+    const defaults: Record<string, any> = {
+      customer_name: record.customer_name, nid: record.customer_nid, mobile: record.customer_mobile,
+      account_number: record.account_number, account_type: record.account_type,
+      date: record.application_date, amount: record.amount, reason: record.reason, remarks: record.remarks,
+    };
+    const out: Record<string, any> = { ...defaults };
+    // Saved template fields ALWAYS win over top-level columns (e.g. custom account_type like MTDR)
+    for (const [k, val] of Object.entries(record.fields || {})) {
+      if (val !== undefined && val !== null && val !== "") out[k] = val;
+      else if (!(k in out)) out[k] = val;
+    }
+    return out;
+  }, [record]);
   const html = buildDocumentHtml({
     bankName: "ইসলামী ব্যাংক বাংলাদেশ পিএলসি",
     outlet: "ফকিরবাজার এজেন্ট আউটলেট ১২১/১১, বুড়িচং, কুমিল্লা",
