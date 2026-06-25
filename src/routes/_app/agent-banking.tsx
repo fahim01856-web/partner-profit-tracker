@@ -55,7 +55,8 @@ function calcDailyProfit(balance: number, slabs: Slab[]): { profit: number; pct:
     const slice = Math.min(balance, hi) - lo;
     if (slice > 0) yearly += slice * (Number(s.yearly_percent) / 100);
   }
-  const pct = (yearly / balance) * 100; // effective weighted percentage
+  // Round to 2 decimals to avoid floating-point artefacts (e.g. 2.9999999 → 3.00)
+  const pct = Math.round(((yearly / balance) * 100) * 100) / 100;
   return { profit: yearly / 365, pct };
 }
 
@@ -375,7 +376,7 @@ function Dashboard({
               <TableRow key={r.account}>
                 <TableCell className="font-medium">{r.account}</TableCell>
                 <TableCell className="text-right">{fmtBDT(r.balance)}</TableCell>
-                <TableCell className="text-right">{r.pct}%</TableCell>
+                <TableCell className="text-right">{r.pct.toFixed(2)}%</TableCell>
                 <TableCell className="text-right text-emerald-600">{fmtBDT(r.dailyProfit)}</TableCell>
                 <TableCell className="text-right text-emerald-700 font-semibold">{fmtBDT(r.dailyProfit * 365)}</TableCell>
               </TableRow>
