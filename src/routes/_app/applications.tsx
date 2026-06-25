@@ -17,8 +17,9 @@ import { toast } from "sonner";
 import {
   Plus, Search, FileText, Printer, Download, Trash2, Edit3, Eye, Copy, Upload,
   CheckCircle2, Clock, XCircle, FileCheck2, Send, Files, LayoutGrid, FolderOpen,
-  History as HistoryIcon, ShieldCheck, Sparkles,
+  History as HistoryIcon, ShieldCheck, Sparkles, User2,
 } from "lucide-react";
+import CustomerProfiles from "@/components/CustomerProfiles";
 
 
 const APPLICATION_TABS = ["dashboard", "applications", "templates", "customers"] as const;
@@ -311,18 +312,21 @@ function ApplicationsPage() {
       </div>
 
       <Tabs value={tab} onValueChange={setTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        <TabsList className="grid w-full grid-cols-5 max-w-3xl">
           <TabsTrigger value="dashboard"><LayoutGrid className="w-4 h-4 mr-1" /> Dashboard</TabsTrigger>
           <TabsTrigger value="applications"><Files className="w-4 h-4 mr-1" /> Applications</TabsTrigger>
           <TabsTrigger value="templates"><Copy className="w-4 h-4 mr-1" /> Templates</TabsTrigger>
+          <TabsTrigger value="profiles"><User2 className="w-4 h-4 mr-1" /> প্রোফাইল</TabsTrigger>
           <TabsTrigger value="customers"><FolderOpen className="w-4 h-4 mr-1" /> Customer Docs</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-4"><DashboardTab onNav={setTab} /></TabsContent>
         <TabsContent value="applications" className="mt-4"><ApplicationsTab /></TabsContent>
         <TabsContent value="templates" className="mt-4"><TemplatesTab /></TabsContent>
+        <TabsContent value="profiles" className="mt-4"><CustomerProfiles /></TabsContent>
         <TabsContent value="customers" className="mt-4"><CustomerDocsTab /></TabsContent>
       </Tabs>
+
     </div>
   );
 }

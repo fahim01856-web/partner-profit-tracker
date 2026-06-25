@@ -1118,6 +1118,150 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_form_documents: {
+        Row: {
+          attachments: Json
+          body: string
+          created_at: string
+          created_by: string | null
+          customer_profile_id: string
+          document_date: string
+          field_values: Json
+          form_type_code: string | null
+          form_type_id: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          attachments?: Json
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          customer_profile_id: string
+          document_date?: string
+          field_values?: Json
+          form_type_code?: string | null
+          form_type_id?: string | null
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          attachments?: Json
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          customer_profile_id?: string
+          document_date?: string
+          field_values?: Json
+          form_type_code?: string | null
+          form_type_id?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_form_documents_customer_profile_id_fkey"
+            columns: ["customer_profile_id"]
+            isOneToOne: false
+            referencedRelation: "customer_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "customer_form_documents_form_type_id_fkey"
+            columns: ["form_type_id"]
+            isOneToOne: false
+            referencedRelation: "customer_form_types"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_form_types: {
+        Row: {
+          body_template: string
+          code: string
+          created_at: string
+          description: string | null
+          fields_schema: Json
+          id: string
+          is_system: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          body_template?: string
+          code: string
+          created_at?: string
+          description?: string | null
+          fields_schema?: Json
+          id?: string
+          is_system?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          body_template?: string
+          code?: string
+          created_at?: string
+          description?: string | null
+          fields_schema?: Json
+          id?: string
+          is_system?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_profiles: {
+        Row: {
+          account_number: string
+          account_type: string | null
+          address: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          mobile: string | null
+          name: string
+          notes: string | null
+          opening_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          account_number: string
+          account_type?: string | null
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mobile?: string | null
+          name: string
+          notes?: string | null
+          opening_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          account_number?: string
+          account_type?: string | null
+          address?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mobile?: string | null
+          name?: string
+          notes?: string | null
+          opening_date?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_deposits: {
         Row: {
           amount: number
