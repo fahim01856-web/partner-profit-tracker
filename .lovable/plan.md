@@ -1,109 +1,57 @@
+
 ## লক্ষ্য
-Sidebar-এ নতুন গ্রুপ **"M.S. KYC. Task"** যোগ করব ৩টা সাব-মেনু সহ। পুরোনো **Documents, Signature Cards, Pending Works** এই গ্রুপের ভিতরে চলে আসবে (ডেটা loss নেই — শুধু route + sidebar reorganize)।
 
----
+Application Management পেজে নতুন **"Customer Profiles"** ট্যাব যোগ করব, যেখানে প্রতিটি কাস্টমারের account number দিয়ে আলাদা profile থাকবে, এবং সেই profile-এর ভিতরে বিভিন্ন ধরনের application/form (Account Close, RTGS, EFT, Mobile Change, BEFTN, Others ইত্যাদি) আলাদা আলাদা ভাবে তৈরি ও সংরক্ষণ করা যাবে। প্রতিটা form type-এর জন্য editable template body থাকবে — ঠিক বর্তমান Application Templates module-এর মতো — এবং user নিজে নতুন form type তৈরি/edit করতে পারবে।
 
-## ১. Meeting Schedule (`/meetings`)
-Smart Meeting + Follow-up System।
+## কী কী তৈরি হবে
 
-**ফিচার:**
-- Meeting create/edit/delete (Date, Time, Title, Type: Weekly/Monthly/Emergency/Review, Location, Chairperson)
-- **Agenda** (multi-item: topic, presenter, time-slot)
-- **Problem Tracking** (issue, raised by, status: Open/Resolved, resolution)
-- **Target Management** (target, assigned to, due date, achievement %)
-- **Action Plan** (action, responsible, deadline, status)
-- **Previous Meeting Review** (গত meeting-এর pending action auto-show)
-- **Progress Tracking** dashboard (completed vs pending)
-- Reminder badge (upcoming meetings within 7 days)
-- PDF Export + Print
-- Attendee list (staff থেকে select)
+### ১. Database (নতুন ৩টা টেবিল)
 
-**Tables:** `meetings`, `meeting_agendas`, `meeting_problems`, `meeting_targets`, `meeting_actions`, `meeting_attendees`
+- **`customer_profiles`** — account_number (unique), name, mobile, account_type, address, opening_date, notes
+- **`customer_form_types`** — form type templates (name, code, body_template, fields_schema, is_system) — pre-seed: Account Close, RTGS (sender/receiver pair), EFT/BEFTN, Mobile Number Change, BACH/MSA to MSA Transfer, Others
+- **`customer_documents`** — customer_profile_id, form_type_id, title, body (rich text), field_values (jsonb), attachments, created_at
 
----
+RLS: সব authenticated user-এর জন্য full access (existing pattern অনুযায়ী)।
 
-## ২. KYC Documents (`/kyc`)
-পুরো KYC + Document + Signature Card management একত্রে।
+### ২. UI — Applications পেজে নতুন ট্যাব
 
-**ফিচার:**
-- Customer KYC Profile (name, NID, phone, address, account no, photo, occupation, source of income, risk level: Low/Medium/High)
-- Document upload (NID copy, photo, trade license, etc.) — Supabase storage
-- Document expiry tracking + alert badge
-- Signature Card management (existing `signature_cards` table-এর সাথে integrate)
-- **KYC Verification Checklist** (10 points: NID verified, photo, address proof, signature, nominee, risk assessment, etc.)
-- Pending KYC list (incomplete checklist)
-- Approval workflow: Pending → Verified → Approved (with verifier/approver name)
-- **Compliance Dashboard** (Total KYC, Pending, Approved, Expired docs, High-risk)
-- Search + filters (status, risk, date range)
-- Audit integration — audit findings থেকে KYC issue link করা যাবে
-- PDF report per customer + bulk report
+বর্তমান tabs-এর পাশে নতুন **"কাস্টমার প্রোফাইল"** tab। ভিতরে:
 
-**Tables:** `kyc_profiles`, `kyc_documents`, `kyc_checklist_items`
-পুরোনো `documents` + `signature_cards` table reuse + এই page থেকেও access।
+**A. Customer list view**
+- উপরে search box: account number বা name দিয়ে search
+- "+ নতুন কাস্টমার" button → dialog (account number, name, mobile, account_type, address)
+- Card grid: প্রতিটা customer-এর নাম, A/C number, mobile, কতগুলো document আছে
 
----
+**B. Customer profile detail view** (card-এ click করলে)
+- উপরে customer info (edit করা যাবে)
+- নিচে "Documents/Forms" section — list of all forms created for this customer
+- "+ নতুন ফর্ম" button → form type select করার dialog → template auto-load হবে customer info সহ pre-filled → edit → save
+- প্রতিটা saved document-এ: View, Edit, Print/PDF download, Delete
 
-## ৩. Task Management (`/tasks`)
-Smart Task System (পুরোনো `pending_works` data এই module-এ migrate/link)।
+**C. Form Types management** (profile view-এর উপরে একটা "ফর্ম টাইপ ম্যানেজ" button)
+- Existing Application Templates editor-এর মতোই full editor: name, body template (rich text with `{{customer_name}}`, `{{account_number}}` ইত্যাদি placeholder), custom fields list
+- নতুন type তৈরি, system types edit/clone করা যাবে
 
-**ফিচার:**
-- Task create/edit/delete
-- Assign to staff (multi-assignee support)
-- Category (Daily/Audit/Meeting/Compliance/KYC/Other) + Priority (Low/Med/High/Urgent)
-- Deadline + reminder (overdue auto-flag)
-- Status: Pending → In Progress → Completed → Verified
-- Completion note + file upload (evidence)
-- **Dashboard:** stats cards (Total/Pending/Overdue/Completed) + Pie chart (by status) + Bar chart (by staff)
-- Staff-wise performance (completion rate, on-time %)
-- Meeting integration — meeting action plan auto-create task
-- Audit integration — audit task থেকেও pull
-- Task history log (status change timeline)
-- Filters: staff, status, priority, category, date range
-- PDF report
+### ৩. Pre-seeded form types
 
-**Tables:** `tasks`, `task_assignees`, `task_history` (existing `pending_works` কে এই page-এ display + নতুন `tasks` table প্রধান)
+মাইগ্রেশনেই এই default templates seed হবে (user পরে edit করতে পারবে):
+1. একাউন্ট ক্লোজ আবেদন
+2. RTGS ফর্ম (sender + receiver info সহ)
+3. EFT/BEFTN ফর্ম
+4. মোবাইল নাম্বার পরিবর্তন আবেদন
+5. MSA to MSA ট্রান্সফার আবেদন
+6. অন্যান্য আবেদন (blank template)
 
----
+প্রতিটাতে relevant placeholder fields (sender A/C, receiver A/C, amount, reason, ইত্যাদি)।
 
-## Sidebar পরিবর্তন (`src/components/AppLayout.tsx`)
-নতুন গ্রুপ:
-```
-M.S. KYC. Task
-  ├─ Meeting Schedule  (/meetings)
-  ├─ KYC Documents     (/kyc)         [Documents + Signature Cards এখানে]
-  └─ Task Management   (/tasks)        [Pending Works এখানে]
-```
-পুরোনো top-level Documents/Signature Cards/Pending Works মেনু item সরিয়ে এই গ্রুপের ভিতরে নেস্ট হবে (route থাকবে, শুধু sidebar reorganize)।
+## টেকনিক্যাল ডিটেইলস
 
----
+- বর্তমান `application_templates` + `application_records` pattern সম্পূর্ণ reuse করব structurally, কিন্তু separate tables রাখব যাতে existing applications-এর সাথে conflict না হয়।
+- Rich body editor: existing `RichBodyEditor` component reuse।
+- Placeholder rendering: customer info থেকে auto-substitute (e.g. `{{name}}` → customer.name)।
+- Print/PDF: existing applications-এর print logic reuse।
+- File: নতুন route `_app/applications.tsx`-এ tab যোগ করব; বড় হলে আলাদা component file-এ ভাঙব।
 
-## Technical Plan
+## অনুমোদনের পরে
 
-**Migration (১টা single migration):**
-- `meetings`, `meeting_agendas`, `meeting_problems`, `meeting_targets`, `meeting_actions`, `meeting_attendees`
-- `kyc_profiles`, `kyc_documents`, `kyc_checklist_items`
-- `tasks`, `task_assignees`, `task_history`
-- প্রতিটায় GRANT + RLS (`authenticated` full access, owner-based যেখানে দরকার)
-- `updated_at` trigger
-- Storage bucket: `kyc-documents` (private), `task-attachments` (private), `meeting-files` (private)
-
-**Routes তৈরি:**
-- `src/routes/_app/meetings.tsx` (list) + `meetings.$id.tsx` (detail with tabs)
-- `src/routes/_app/kyc.tsx` (list) + `kyc.$id.tsx` (profile detail with tabs)
-- `src/routes/_app/tasks.tsx` (dashboard + list)
-
-**Library:** existing shadcn (Card/Tabs/Dialog/Table/Select/Badge), `recharts` (charts), `react-to-print` বা browser print CSS (PDF)।
-
-**Mobile responsive:** Tailwind `grid-cols-1 md:grid-cols-2/3/4`, sticky filter bar।
-
----
-
-## ক্রম
-1. Migration (DB schema + storage buckets) — approval দরকার
-2. Sidebar reorganize
-3. Meetings module (list + detail + agenda/problem/target/action tabs)
-4. KYC module (profile list + detail tabs)
-5. Tasks module (dashboard + CRUD + charts)
-6. Verification (Playwright smoke test প্রতিটা page)
-
-প্রথমে migration submit করব — approve হলে কোড লেখা শুরু।
+প্রথমে migration submit করব (আপনার approval লাগবে), তারপর UI implement করব।
