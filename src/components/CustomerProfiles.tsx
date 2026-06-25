@@ -313,7 +313,7 @@ function ProfileDetail({ id, onBack }: { id: string; onBack: () => void }) {
             এই গ্রাহকের কোনো ফর্ম নেই — উপরে "নতুন ফর্ম/আবেদন" ক্লিক করুন
           </div>
         )}
-        {Object.entries(grouped).map(([typeName, list]) => (
+        {(Object.entries(grouped) as [string, any[]][]).map(([typeName, list]) => (
           <Card key={typeName} className="p-3">
             <div className="flex items-center gap-2 mb-2">
               <FileText className="w-4 h-4 text-emerald-700" />
