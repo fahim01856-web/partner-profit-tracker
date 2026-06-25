@@ -376,7 +376,7 @@ function Dashboard({
               <TableRow key={r.account}>
                 <TableCell className="font-medium">{r.account}</TableCell>
                 <TableCell className="text-right">{fmtBDT(r.balance)}</TableCell>
-                <TableCell className="text-right">{r.pct}%</TableCell>
+                <TableCell className="text-right">{r.pct.toFixed(2)}%</TableCell>
                 <TableCell className="text-right text-emerald-600">{fmtBDT(r.dailyProfit)}</TableCell>
                 <TableCell className="text-right text-emerald-700 font-semibold">{fmtBDT(r.dailyProfit * 365)}</TableCell>
               </TableRow>
