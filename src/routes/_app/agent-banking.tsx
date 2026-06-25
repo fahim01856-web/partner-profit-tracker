@@ -55,7 +55,8 @@ function calcDailyProfit(balance: number, slabs: Slab[]): { profit: number; pct:
     const slice = Math.min(balance, hi) - lo;
     if (slice > 0) yearly += slice * (Number(s.yearly_percent) / 100);
   }
-  const pct = (yearly / balance) * 100; // effective weighted percentage
+  // Round to 2 decimals to avoid floating-point artefacts (e.g. 2.9999999 → 3.00)
+  const pct = Math.round(((yearly / balance) * 100) * 100) / 100;
   return { profit: yearly / 365, pct };
 }
 
