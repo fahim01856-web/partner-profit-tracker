@@ -17,8 +17,9 @@ import { toast } from "sonner";
 import {
   Plus, Search, FileText, Printer, Download, Trash2, Edit3, Eye, Copy, Upload,
   CheckCircle2, Clock, XCircle, FileCheck2, Send, Files, LayoutGrid, FolderOpen,
-  History as HistoryIcon, ShieldCheck, Sparkles,
+  History as HistoryIcon, ShieldCheck, Sparkles, User2,
 } from "lucide-react";
+import CustomerProfiles from "@/components/CustomerProfiles";
 
 
 const APPLICATION_TABS = ["dashboard", "applications", "templates", "customers"] as const;
